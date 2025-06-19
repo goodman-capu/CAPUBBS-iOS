@@ -14,6 +14,7 @@
     NSString *previewFilePath;
     NSString *previewFileTitle;
     UIView *previewFrame;
+    UIImage *previewTransitionImage;
 }
 
 @property (strong, nonatomic) UIWindow *window;

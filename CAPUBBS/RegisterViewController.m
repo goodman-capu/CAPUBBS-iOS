@@ -24,8 +24,8 @@
     [targetView addSubview:hud];
     
     [NOTIFICATION addObserver:self selector:@selector(setUserIcon:) name:@"selectIcon" object:nil];
-    [self.labelUidGuide setTextColor:BLUE];
     
+    [self.labelUidGuide setTextColor:BLUE];
     for (UITextView *view in @[self.textIntro, self.textSig, self.textSig2, self.textSig3]) {
         [view.layer setCornerRadius:6.0];
         [view.layer setBorderColor:[UIColor colorWithWhite:0 alpha:0.2].CGColor];
@@ -110,7 +110,7 @@
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
-- (void)setUserIcon:(NSNotification *)notification{
+- (void)setUserIcon:(NSNotification *)notification {
     dispatch_main_async_safe(^{
         iconURL = [notification.userInfo objectForKey:@"URL"];
         [self.icon setUrl:iconURL];
@@ -212,13 +212,17 @@
         }];
         return;
     }
+    NSString *url = iconURL;
+    if ([url hasPrefix:CHEXIE]) {
+        url = [url stringByReplacingOccurrencesOfString:CHEXIE withString:@""];
+    }
     NSDictionary *dict = @{
         @"username" : uid,
         @"password" : [ActionPerformer md5:pass],
         @"sex" : sex,
         @"qq" : qq,
         @"mail" : email,
-        @"icon" : iconURL,
+        @"icon" : url,
         @"from" : from,
         @"intro" : intro,
         @"hobby" : hobby,

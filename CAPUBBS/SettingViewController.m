@@ -30,6 +30,8 @@
     [NOTIFICATION addObserver:self selector:@selector(userChanged) name:@"userChanged" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(refreshInfo) name:@"infoRefreshed" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(cacheChanged:) name:nil object:nil];
+    
+    isCalculatingCache = NO;
     [self setDefault];
     // Uncomment the following line to preserve selection between presentations.
     // self.clearsSelectionOnViewWillAppear = NO;
@@ -40,14 +42,15 @@
 
 - (void)setDefault {
     //[self.segmentProxy setSelectedSegmentIndex:[[DEFAULTS objectForKey:@"proxy"] integerValue]];
-    [self.autoLogin setOn:[[DEFAULTS objectForKey:@"autoLogin"] boolValue]];
+    [self.switchAutoLogin setOn:[[DEFAULTS objectForKey:@"autoLogin"] boolValue]];
     [self.switchVibrate setOn:[[DEFAULTS objectForKey:@"vibrate"] boolValue]];
     [self.segmentDirection setSelectedSegmentIndex:[[DEFAULTS objectForKey:@"oppositeSwipe"] intValue]];
     [self.segmentEditTool setSelectedSegmentIndex:[[DEFAULTS objectForKey:@"toolbarEditor"] intValue]];
     [self.switchPic setOn:[[DEFAULTS objectForKey:@"picOnlyInWifi"] boolValue]];
     [self.switchIcon setOn:[[GROUP_DEFAULTS objectForKey:@"iconOnlyInWifi"] boolValue]];
-    [self.autoSave setOn:[[DEFAULTS objectForKey:@"autoSave"] boolValue]];
+    [self.switchAutoSave setOn:[[DEFAULTS objectForKey:@"autoSave"] boolValue]];
     [self.switchSimpleView setOn:SIMPLE_VIEW];
+    [self.switchChangeBackground setOn:[[DEFAULTS objectForKey:@"changeBackground"] boolValue]];
     [self.stepperSize setValue:[[DEFAULTS objectForKey:@"textSize"] intValue]];
     [self.defaultSize setText:[NSString stringWithFormat:@"默认页面缩放 - %d%%", (int)self.stepperSize.value]];
     [self userChanged];
@@ -88,18 +91,26 @@
 }
 
 - (void)cacheChanged:(NSNotification *)noti {
-    dispatch_main_async_safe((^{
-        if (noti == nil || [noti.name hasPrefix:@"imageGet"]) {
-            unsigned long long cacheSize = 0;
-            // tmp目录
-            cacheSize += [SettingViewController folderSizeAtPath:NSTemporaryDirectory()];
-            // Caches目录
-            cacheSize += [SettingViewController folderSizeAtPath:CACHE_DIRECTORY];
-            unsigned long long iconCacheSize = [SettingViewController folderSizeAtPath:IMAGE_CACHE_PATH];
+    if (noti != nil && ![noti.name hasPrefix:@"imageGet"]) {
+        return;
+    }
+    if (isCalculatingCache) {
+        return;
+    }
+    isCalculatingCache = YES;
+    dispatch_global_default_async(^{
+        unsigned long long cacheSize = 0;
+        // tmp目录
+        cacheSize += [SettingViewController folderSizeAtPath:NSTemporaryDirectory()];
+        // Caches目录
+        cacheSize += [SettingViewController folderSizeAtPath:CACHE_DIRECTORY];
+        unsigned long long iconCacheSize = [SettingViewController folderSizeAtPath:IMAGE_CACHE_PATH];
+        isCalculatingCache = NO;
+        dispatch_main_async_safe((^{
             self.appCacheSize.text = [NSString stringWithFormat:@"%.2fMB", (float)(cacheSize - iconCacheSize) / (1024 * 1024)];
             self.iconCacheSize.text = [NSString stringWithFormat:@"%.2fMB", (float)iconCacheSize / (1024 * 1024)];
-        }
-    }));
+        }));
+    });
 }
 
 //单个文件的大小
@@ -171,7 +182,7 @@
 }*/
 
 - (IBAction)loginChanged:(id)sender {
-    [DEFAULTS setObject:@(self.autoLogin.isOn) forKey:@"autoLogin"];
+    [DEFAULTS setObject:@(self.switchAutoLogin.isOn) forKey:@"autoLogin"];
 }
 
 - (IBAction)vibrateChanged:(id)sender {
@@ -193,7 +204,7 @@
 }
 
 - (IBAction)saveChanged:(id)sender {
-    [DEFAULTS setObject:@(self.autoSave.isOn) forKey:@"autoSave"];
+    [DEFAULTS setObject:@(self.switchAutoSave.isOn) forKey:@"autoSave"];
 }
 
 - (IBAction)sizeChanged:(UIStepper *)sender {
@@ -206,6 +217,10 @@
     if (self.switchSimpleView.isOn) {
         [self showAlertWithTitle:@"简洁版内容已启用" message:@"将隐藏部分详细信息\n楼中楼不默认展示\n动图头像将静态显示\n模糊效果将禁用"];
     }
+}
+
+- (IBAction)changeBackgroundChanged:(id)sender {
+    [DEFAULTS setObject:@(self.switchChangeBackground.isOn) forKey:@"changeBackground"];
 }
 
 - (IBAction)selectDirection:(UISegmentedControl *)sender {

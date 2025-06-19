@@ -22,10 +22,13 @@
 @property (weak, nonatomic) IBOutlet UIButton *buttonIcon;
 @property (weak, nonatomic) IBOutlet UIView *topView;
 @property (weak, nonatomic) IBOutlet UITableView *lzlTableView;
-@property (weak, nonatomic) IBOutlet NSLayoutConstraint *webviewBottomSpacing;
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *webviewHeight;
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *lzlHeight;
 
 @property (strong, nonatomic) NSTimer *webviewUpdateTimer;
 @property (strong, nonatomic) NSArray *lzlDetail;
+
+- (void)invalidateTimerAndHandlers;
 
 @end
 

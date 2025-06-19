@@ -11,13 +11,31 @@
 
 @implementation CustomViewController
 
+#ifdef DEBUG
+- (void)dealloc {
+    NSLog(@"dealloc VC: %@", self);
+}
+#endif
+
 @end
 
 @implementation CustomTableViewController
 
+#ifdef DEBUG
+- (void)dealloc {
+    NSLog(@"dealloc VC: %@", self);
+}
+#endif
+
 @end
 
 @implementation CustomCollectionViewController
+
+#ifdef DEBUG
+- (void)dealloc {
+    NSLog(@"dealloc VC: %@", self);
+}
+#endif
 
 @end
 
@@ -52,7 +70,6 @@ static char kIsAttemptingToPresentKey;
     objc_setAssociatedObject(self, &kPresentTimerKey, timer, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
-// 2. 新增一个BOOL属性的 getter/setter
 - (BOOL)_isAttemptingToPresent {
     return [objc_getAssociatedObject(self, &kIsAttemptingToPresentKey) boolValue];
 }
@@ -96,11 +113,15 @@ static char kIsAttemptingToPresentKey;
         return;
     }
     if (![self _getPresentTimer]) {
-        NSTimer *timer = [NSTimer scheduledTimerWithTimeInterval:0.2
-                                                          target:self
-                                                        selector:@selector(_timerCheck)
-                                                        userInfo:nil
-                                                         repeats:YES];
+        __weak typeof(self) weakSelf = self;
+        NSTimer *timer = [NSTimer scheduledTimerWithTimeInterval:0.2 repeats:YES block:^(NSTimer * _Nonnull timer) {
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (strongSelf) {
+                [strongSelf _timerCheck];
+            } else {
+                [timer invalidate];
+            }
+        }];
         [self _setPresentTimer:timer];
     }
 }

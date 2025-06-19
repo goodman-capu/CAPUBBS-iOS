@@ -24,13 +24,25 @@
     [self.lzlTableView setBackgroundColor:[UIColor clearColor]];
 }
 
-- (void)prepareForReuse {
-    [super prepareForReuse];
-    // 加载空HTML以快速清空，防止reuse后还短暂显示之前的内容
-    [self.webViewContainer.webView loadHTMLString:EMPTY_HTML baseURL:[NSURL URLWithString:CHEXIE]];
+- (void)dealloc {
+    [self invalidateTimerAndHandlers];
+    [self.webViewContainer.webView stopLoading];
+    [self.webViewContainer.webView setNavigationDelegate:nil];
+}
+
+- (void)invalidateTimerAndHandlers {
     if (self.webviewUpdateTimer && [self.webviewUpdateTimer isValid]) {
         [self.webviewUpdateTimer invalidate];
+        self.webviewUpdateTimer = nil;
     }
+    [self.webViewContainer.webView.configuration.userContentController removeScriptMessageHandlerForName:@"imageClickHandler"];
+}
+
+- (void)prepareForReuse {
+    [super prepareForReuse];
+    [self invalidateTimerAndHandlers];
+    // 加载空HTML以快速清空，防止reuse后还短暂显示之前的内容
+    [self.webViewContainer.webView loadHTMLString:EMPTY_HTML baseURL:[NSURL URLWithString:CHEXIE]];
 }
 
 - (nonnull UITableViewCell *)tableView:(nonnull UITableView *)tableView cellForRowAtIndexPath:(nonnull NSIndexPath *)indexPath { 

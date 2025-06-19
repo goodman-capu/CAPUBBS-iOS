@@ -16,6 +16,7 @@ typedef void (^ActionPerformerResultBlock)(NSArray* result, NSError* err);
 + (BOOL)checkLogin:(BOOL)showAlert;
 + (int)checkRight;
 + (void)checkPasswordLength;
++ (void)updateUserInfo:(NSDictionary *)userInfo;
 
 /// 移除帖子标题里嵌套的 Re：Re：Re：xxx
 + (NSString *)restoreTitle:(NSString *)text;

@@ -9,6 +9,8 @@
 #import <UIKit/UIKit.h>
 #import <WebKit/WebKit.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 @interface CustomWebViewContainer : UIView <WKUIDelegate>
 
 @property (nonatomic, strong) WKWebView *webView;
@@ -19,3 +21,14 @@
 - (void)initiateWebViewWithToken:(BOOL)hasToken;
 
 @end
+
+// 防止循环引用的delegate
+@interface WeakScriptMessageDelegate : NSObject <WKScriptMessageHandler>
+
+- (instancetype)initWithDelegate:(id<WKScriptMessageHandler>)delegate;
+
+@property (nonatomic, weak, readonly) id<WKScriptMessageHandler> delegate;
+
+@end
+
+NS_ASSUME_NONNULL_END

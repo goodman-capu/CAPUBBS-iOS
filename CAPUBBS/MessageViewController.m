@@ -27,9 +27,11 @@
     
     messageRefreshing = NO;
     isFirstTime = YES;
+    
     [NOTIFICATION addObserver:self selector:@selector(backgroundRefresh) name:@"userChanged" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(getInfo) name:@"chatChanged" object:nil];
-    [NOTIFICATION addObserver:self.tableView selector:@selector(reloadData) name:@"collectionChanged" object:nil];
+    [NOTIFICATION addObserver:self selector:@selector(reloadTableView) name:@"collectionChanged" object:nil];
+    
     control = [[UIRefreshControl alloc] init];
     [control addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
     [self.tableView addSubview:control];
@@ -70,79 +72,87 @@
     [self getInfo];
 }
 
+- (void)reloadTableView {
+    dispatch_main_sync_safe(^{
+        [self.tableView reloadData];
+    });
+}
+
 - (void)getInfo {
-    if (self.segmentType.selectedSegmentIndex == 0) {
-        self.toolbarItems = @[self.buttonPrevious, self.barFreeSpace, self.barFreeSpace, self.buttonNext];
-    } else {
-        self.toolbarItems = @[self.barFreeSpace, self.buttonAdd, self.barFreeSpace];
-    }
-    if ([ActionPerformer checkLogin:NO] && messageRefreshing == NO) {
-        messageRefreshing = YES;
-        NSString *type = (self.segmentType.selectedSegmentIndex == 0) ? @"system" : @"private";
-        [hud showWithProgressMessage:@"正在加载"];
-        NSDictionary *dict = @{
-            @"type" : type,
-            @"page" : [NSString stringWithFormat:@"%ld", (long)page]
-        };
-        [ActionPerformer callApiWithParams:dict toURL:@"msg" callback: ^(NSArray *result, NSError *err) {
+    dispatch_main_async_safe((^{
+        if (self.segmentType.selectedSegmentIndex == 0) {
+            self.toolbarItems = @[self.buttonPrevious, self.barFreeSpace, self.barFreeSpace, self.buttonNext];
+        } else {
+            self.toolbarItems = @[self.barFreeSpace, self.buttonAdd, self.barFreeSpace];
+        }
+        if ([ActionPerformer checkLogin:NO] && !messageRefreshing) {
+            messageRefreshing = YES;
+            NSString *type = (self.segmentType.selectedSegmentIndex == 0) ? @"system" : @"private";
+            [hud showWithProgressMessage:@"正在加载"];
+            NSDictionary *dict = @{
+                @"type" : type,
+                @"page" : [NSString stringWithFormat:@"%ld", (long)page]
+            };
+            [ActionPerformer callApiWithParams:dict toURL:@"msg" callback: ^(NSArray *result, NSError *err) {
+                if (control.isRefreshing) {
+                    [control endRefreshing];
+                }
+                messageRefreshing = NO;
+                isBackground = NO;
+                if (err || result.count == 0) {
+                    [hud hideWithFailureMessage:@"加载失败"];
+                    return;
+                }
+                [hud hideWithSuccessMessage:@"加载成功"];
+                
+                // NSLog(@"%@", result);
+                data = result;
+                if ([data[0][@"code"] isEqualToString:@"1"]) {
+                    [self showAlertWithTitle:@"错误" message:@"尚未登录或登录超时"];
+                }
+                [self setMessageNum];
+                
+                int rowAnimation = -1;
+                if (originalSegment < self.segmentType.selectedSegmentIndex) {
+                    rowAnimation = UITableViewRowAnimationLeft;
+                }
+                if (originalSegment > self.segmentType.selectedSegmentIndex) {
+                    rowAnimation = UITableViewRowAnimationRight;
+                }
+                if (rowAnimation > 0) {
+                    [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:rowAnimation];
+                } else {
+                    if (isFirstTime) {
+                        [self.tableView reloadData];
+                    } else {
+                        [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationAutomatic];
+                    }
+                    isFirstTime = NO;
+                }
+                originalSegment = self.segmentType.selectedSegmentIndex;
+                
+                if (data.count > 1) {
+                    [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UITableViewScrollPositionBottom animated:YES];
+                }
+                if (data.count - 1 < 10) {
+                    maxPage = page;
+                }
+                self.buttonPrevious.enabled = (page > 1);
+                self.buttonNext.enabled = (page < maxPage);
+            }];
+        } else {
             if (control.isRefreshing) {
                 [control endRefreshing];
             }
-            messageRefreshing = NO;
-            isBackground = NO;
-            if (err || result.count == 0) {
-                [hud hideWithFailureMessage:@"加载失败"];
-                return;
-            }
-            [hud hideWithSuccessMessage:@"加载成功"];
-            
-            // NSLog(@"%@", result);
-            data = result;
-            if ([data[0][@"code"] isEqualToString:@"1"]) {
-                [self showAlertWithTitle:@"错误" message:@"尚未登录或登录超时"];
-            }
+            [hud showAndHideWithFailureMessage:@"尚未登录"];
+            data = nil;
+            self.buttonPrevious.enabled = NO;
+            self.buttonNext.enabled = NO;
+            self.buttonAdd.enabled = NO;
             [self setMessageNum];
-            
-            int rowAnimation = -1;
-            if (originalSegment < self.segmentType.selectedSegmentIndex) {
-                rowAnimation = UITableViewRowAnimationLeft;
-            }
-            if (originalSegment > self.segmentType.selectedSegmentIndex) {
-                rowAnimation = UITableViewRowAnimationRight;
-            }
-            if (rowAnimation > 0) {
-                [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:rowAnimation];
-            } else {
-                if (isFirstTime) {
-                    [self.tableView reloadData];
-                } else {
-                    [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationAutomatic];
-                }
-                isFirstTime = NO;
-            }
-            originalSegment = self.segmentType.selectedSegmentIndex;
-            
-            if (data.count > 1) {
-                [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UITableViewScrollPositionBottom animated:YES];
-            }
-            if (data.count - 1 < 10) {
-                maxPage = page;
-            }
-            self.buttonPrevious.enabled = (page > 1);
-            self.buttonNext.enabled = (page < maxPage);
-        }];
-    } else {
-        if (control.isRefreshing) {
-            [control endRefreshing];
+            [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationAutomatic];
         }
-        [hud showAndHideWithFailureMessage:@"尚未登录"];
-        data = nil;
-        self.buttonPrevious.enabled = NO;
-        self.buttonNext.enabled = NO;
-        self.buttonAdd.enabled = NO;
-        [self setMessageNum];
-        [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationAutomatic];
-    }
+    }));
 }
 
 - (IBAction)typeChanged:(UISegmentedControl *)sender {
@@ -207,9 +217,7 @@
         [dict setObject:msgNum forKey:@"newmsg"];
         [GROUP_DEFAULTS setObject:dict forKey:@"userInfo"];
     }
-    dispatch_main_async_safe(^{
-        [NOTIFICATION postNotificationName:@"infoRefreshed" object:nil];
-    });
+    [NOTIFICATION postNotificationName:@"infoRefreshed" object:nil];
 }
 
 - (IBAction)previous:(id)sender {

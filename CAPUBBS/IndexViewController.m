@@ -29,8 +29,10 @@
         ((UICollectionViewFlowLayout *)self.collectionView.collectionViewLayout).sectionInsetReference = UICollectionViewFlowLayoutSectionInsetFromSafeArea;
     }
     cellWidth = cellHeight = 0;
+    
     [NOTIFICATION addObserver:self selector:@selector(setVibrate) name:@"userChanged" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(changeNoti) name:@"infoRefreshed" object:nil];
+    
     [self setVibrate];
     [self changeNoti];
 
@@ -185,10 +187,14 @@
 
 - (void)multiAction:(NSString *)text {
     NSString *oriURL = CHEXIE;
-    if ([text containsString:@"filesize"]) {
-        NSString *result = [self folderInfo:NSHomeDirectory() showAll:[text containsString:@"all"]];
-        [self showAlertWithTitle:@"空间用量\n内容已复制到剪贴板" message:result];
-        [[UIPasteboard generalPasteboard] setString:result];
+    if ([text hasPrefix:@"filesize"]) {
+        [hud showWithProgressMessage:@"计算中"];
+        dispatch_global_default_async(^{
+            NSString *result = [self folderInfo:NSHomeDirectory() showAll:[text hasSuffix:@"all"]];
+            [hud hideWithSuccessMessage:@"计算完成"];
+            [self showAlertWithTitle:@"空间用量" message:[@"完整内容已复制到剪贴板\n\n" stringByAppendingString:result]];
+            [[UIPasteboard generalPasteboard] setString:result];
+        });
         return;
     }
     
@@ -212,7 +218,7 @@
             [DEFAULTS setObject:@(MAX_ID_NUM) forKey:@"IDNum"];
             [DEFAULTS setObject:@(MAX_HOT_NUM) forKey:@"hotNum"];
         } else {
-            if (!([text containsString:@"chexie"] || [text containsString:@"capu"] || [text containsString:@"local"] || [text containsString:@"test"] || [text containsString:@"/"] || [text rangeOfString:@"[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" options:NSRegularExpressionSearch].location != NSNotFound)) {
+            if (!([text containsString:@"chexie"] || [text containsString:@"capu"] || [text containsString:@"local"] || [text containsString:@"test"] || [text rangeOfString:@"[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" options:NSRegularExpressionSearch].location != NSNotFound) || [text hasSuffix:@"/"]) {
                 [DEFAULTS removeObjectForKey:@"IDNum"];
                 [DEFAULTS removeObjectForKey:@"hotNum"];
                 [self showAlertWithTitle:@"错误" message:@"不是有效的链接"];
@@ -221,9 +227,7 @@
                 [GROUP_DEFAULTS setObject:text forKey:@"URL"];
                 if (![text isEqualToString:oriURL]) {
                     [GROUP_DEFAULTS removeObjectForKey:@"token"];
-                    dispatch_main_async_safe(^{
-                        [NOTIFICATION postNotificationName:@"userChanged" object:nil userInfo:nil];
-                    });
+                    [NOTIFICATION postNotificationName:@"userChanged" object:nil userInfo:nil];
                 }
             }
         }
@@ -235,8 +239,10 @@
     for (NSString *path in childPaths) {
         NSString *childPath = [NSString stringWithFormat:@"%@/%@", rootFolder, path];
         NSArray *testPaths = [MANAGER subpathsAtPath:childPath];
-        if (!(testPaths.count == 0 && all == NO)) {
-            result = [NSString stringWithFormat:@"%@%@:%.2fKB\n", result, path, (float)[SettingViewController folderSizeAtPath:childPath] / (1024)];
+        if (testPaths.count > 0) { // Folder
+            result = [NSString stringWithFormat:@"%@%@: %.2fKB\n", result, path, (float)[SettingViewController folderSizeAtPath:childPath] / (1024)];
+        } else if (all) { // File
+            result = [NSString stringWithFormat:@"%@%@: %.2fKB\n", result, path, (float)[SettingViewController fileSizeAtPath:childPath] / (1024)];
         }
     }
     return result;

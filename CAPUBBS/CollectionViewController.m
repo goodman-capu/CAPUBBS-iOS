@@ -35,6 +35,7 @@
     [targetView addSubview:hud];
     
     [NOTIFICATION addObserver:self selector:@selector(refresh) name:@"collectionChanged" object:nil];
+    
     sortType = [[DEFAULTS objectForKey:@"viewCollectionType"] intValue];
     
     self.searchController = [[CustomSearchController alloc] initWithSearchResultsController:nil];
@@ -129,16 +130,18 @@
 }
 
 - (void)refresh {
-    data = [[DEFAULTS objectForKey:@"collection"] mutableCopy];
-    [self sortData];
-    
-    if (self.searchController.isActive) {
-        [self updateSearchResultsForSearchController:self.searchController];
-    } else {
+    dispatch_global_default_async(^{
+        data = [[DEFAULTS objectForKey:@"collection"] mutableCopy];
+        [self sortData];
+        
         dispatch_main_async_safe(^{
-            [self.tableView reloadData];
+            if (self.searchController.isActive) {
+                [self updateSearchResultsForSearchController:self.searchController];
+            } else {
+                [self.tableView reloadData];
+            }
         });
-    }
+    });
 }
 
 - (void)sortData {
@@ -460,7 +463,7 @@
             [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
         }
         [DEFAULTS setObject:data forKey:@"collection"];
-        dispatch_main_after(0.5, ^{
+        dispatch_global_after(0.5, ^{
             [self commitChange];
         });
     }

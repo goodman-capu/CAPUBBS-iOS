@@ -242,4 +242,44 @@ static dispatch_once_t onceSharedDataSource;
     [viewController presentViewControllerSafe:alert];
 }
 
+- (WKWebView *)webView:(WKWebView *)webView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures {
+    // Open in new page request (like target='_blank')
+    if (!navigationAction.targetFrame.isMainFrame && navigationAction.request.URL) {
+        const NSURL *currentUrl = webView.URL;
+        const NSURL *newUrl = navigationAction.request.URL;
+        if ([currentUrl.host isEqualToString:newUrl.host]) {
+            // Same host, navigate directly
+            [webView loadRequest:navigationAction.request];
+        } else {
+            // Ask for user confirmation
+            UIViewController *viewController = [AppDelegate getTopViewController];
+            if (viewController) {
+                [viewController showAlertWithTitle:@"是否跳转至" message:newUrl.absoluteString confirmTitle:@"确定" confirmAction:^(UIAlertAction *action) {
+                    [webView loadRequest:navigationAction.request];
+                }];
+            }
+        }
+    }
+    return nil; // 不创建新 webView，防止空白页
+}
+
+@end
+
+@implementation WeakScriptMessageDelegate
+
+- (instancetype)initWithDelegate:(id<WKScriptMessageHandler>)delegate {
+    self = [super init];
+    if (self) {
+        _delegate = delegate;
+    }
+    return self;
+}
+
+// 实现 WKScriptMessageHandler 协议方法，并把消息转发给真正的代理
+- (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message {
+    if ([self.delegate respondsToSelector:@selector(userContentController:didReceiveScriptMessage:)]) {
+        [self.delegate userContentController:userContentController didReceiveScriptMessage:message];
+    }
+}
+
 @end

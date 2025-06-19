@@ -29,6 +29,7 @@
     CGFloat contentOffsetY;
     BOOL isAtEnd;
     NSInteger scrollTargetRow;
+    NSIndexPath *longPressIndexPath;
 }
 
 @property NSString *bid;

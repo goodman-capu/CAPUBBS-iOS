@@ -12,7 +12,6 @@
 #import "PreviewViewController.h"
 #import "TextViewController.h"
 #import "ContentViewController.h"
-#import "UIImageEffects.h"
 
 @interface ComposeViewController ()
 
@@ -45,7 +44,8 @@
     }
     if (self.defaultTitle) {
         self.textTitle.text = self.defaultTitle;
-    }    
+    }
+    
     [NOTIFICATION addObserver:self selector:@selector(keyboardChange:) name:UIKeyboardWillChangeFrameNotification object:nil];
     [NOTIFICATION addObserver:self selector:@selector(keyboardChange:) name:UIKeyboardDidChangeFrameNotification object:nil];
     [NOTIFICATION addObserver:self selector:@selector(insertContent:) name:@"addContent" object:nil];
@@ -216,8 +216,10 @@
 }
 
 - (void)insertContent:(NSNotification *)notification {
-    [self.textBody insertText:notification.userInfo[@"HTML"]];
-    [self.textBody becomeFirstResponder];
+    dispatch_main_async_safe(^{
+        [self.textBody insertText:notification.userInfo[@"HTML"]];
+        [self.textBody becomeFirstResponder];
+    });
 }
 
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {

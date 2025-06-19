@@ -55,11 +55,7 @@
 #define IS_SUPER_USER (ID_NUM == MAX_ID_NUM && HOT_NUM == MAX_HOT_NUM)
 
 static inline void dispatch_main_async_safe(dispatch_block_t block) {
-    if ([NSThread isMainThread]) {
-        block();
-    } else {
-        dispatch_async(dispatch_get_main_queue(), block);
-    }
+    dispatch_async(dispatch_get_main_queue(), block);
 }
 
 static inline void dispatch_main_sync_safe(dispatch_block_t block) {

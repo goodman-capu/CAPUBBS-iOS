@@ -13,7 +13,6 @@
 #import "UserViewController.h"
 #import "WebViewController.h"
 
-static const CGFloat kOtherViewHeight = 118;
 static const CGFloat kWebViewMinHeight = 40;
 
 @interface ContentViewController ()
@@ -47,8 +46,15 @@ static const CGFloat kWebViewMinHeight = 40;
     HTMLStrings = [[NSMutableArray alloc] init];
     
     [self.refreshControl addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
+    UITapGestureRecognizer *tapTwice = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(doubleTapWeb:)];
+    [tapTwice setNumberOfTapsRequired:2];
+    [self.tableView addGestureRecognizer:tapTwice];
+    UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)];
+    longPress.cancelsTouchesInView = NO;
+    [self.tableView addGestureRecognizer:longPress];
+    
     [NOTIFICATION addObserver:self selector:@selector(refreshLzl:) name:@"refreshLzl" object:nil];
-    [NOTIFICATION addObserver:self selector:@selector(shouldRefresh:) name:@"refreshContent" object:nil];
+    [NOTIFICATION addObserver:self selector:@selector(doRefresh:) name:@"refreshContent" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(cancelScroll) name:@"globalTap" object:nil];
     
     [self jumpTo:page];
@@ -197,9 +203,7 @@ static const CGFloat kWebViewMinHeight = 40;
                     if (cell.webViewContainer.webView.isLoading) {
                         [cell.webViewContainer.webView stopLoading];
                     }
-                    if (cell.webviewUpdateTimer && [cell.webviewUpdateTimer isValid]) {
-                        [cell.webviewUpdateTimer invalidate];
-                    }
+                    [cell invalidateTimerAndHandlers];
                     // 加载空HTML以快速清空，防止reuse后还短暂显示之前的内容
                     [cell.webViewContainer.webView loadHTMLString:EMPTY_HTML baseURL:[NSURL URLWithString:CHEXIE]];
                 }
@@ -325,7 +329,7 @@ static const CGFloat kWebViewMinHeight = 40;
     });
 }
 
-- (void)shouldRefresh:(NSNotification *)notification {
+- (void)doRefresh:(NSNotification *)notification {
     NSDictionary *userInfo = notification.userInfo;
     if ([userInfo[@"isEdit"] boolValue] == YES) {
         self.destinationFloor = userInfo[@"floor"];
@@ -384,8 +388,19 @@ static const CGFloat kWebViewMinHeight = 40;
     if (!lzlDetail || lzlDetail.count == 0) {
         return 0;
     }
-    // Show at most 5 rows
+    // Show at most 8 rows
     return MIN(8, lzlDetail.count) * 44;
+}
+
+- (CGFloat)getWebViewHeightForRow:(NSUInteger)row {
+    CGFloat webViewHeight = 0;
+    for (NSArray *candidate in @[heights, tempHeights]) {
+        if (candidate.count > row && [candidate[row] floatValue] > 0) {
+            webViewHeight = [candidate[row] floatValue];
+            break;
+        }
+    }
+    return MIN(MAX(kWebViewMinHeight, webViewHeight), WEB_VIEW_MAX_HEIGHT);
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
@@ -398,16 +413,10 @@ static const CGFloat kWebViewMinHeight = 40;
     return data.count;
 }
 
-- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+- (CGFloat)tableView:(UITableView *)tableView estimatedHeightForRowAtIndexPath:(nonnull NSIndexPath *)indexPath {
     CGFloat lzlHeight = [self getLzlHeightForRow:indexPath.row];
-    CGFloat webViewHeight = 0;
-    for (NSArray *candidate in @[heights, tempHeights]) {
-        if (candidate.count > indexPath.row && [candidate[indexPath.row] floatValue] > 0) {
-            webViewHeight = [candidate[indexPath.row] floatValue];
-            break;
-        }
-    }
-    return kOtherViewHeight + lzlHeight + (lzlHeight > 0 ? 8 : 0) + MIN(MAX(kWebViewMinHeight, webViewHeight), WEB_VIEW_MAX_HEIGHT);
+    CGFloat webViewHeight = [self getWebViewHeightForRow:indexPath.row];
+    return 106 + lzlHeight + webViewHeight;
 }
 
 - (UITableViewCell *)getCellForView:(UIView *)view {
@@ -437,7 +446,7 @@ static const CGFloat kWebViewMinHeight = 40;
         !self.tableView || !self.tableView.window) { // Fix occasional crash
         return;
     }
-    UITableViewCell *cell = [self getCellForView:webView];
+    ContentCell *cell = (ContentCell *)[self getCellForView:webView];
     if (!cell || [self.tableView indexPathForCell:cell].row != row) {
         return;
     }
@@ -449,7 +458,7 @@ static const CGFloat kWebViewMinHeight = 40;
         }
         float height = 0;
         if (result && [result isKindOfClass:[NSNumber class]]) {
-            height = [result floatValue] * (textSize / 100.0);
+            height = ([result floatValue] + 14) * (textSize / 100.0);
         }
         if (height > 0 && row < heights.count && height - [heights[row] floatValue] >= 1) {
             heights[row] = @(height);
@@ -457,20 +466,20 @@ static const CGFloat kWebViewMinHeight = 40;
             if (scrollTargetRow >= 0) {
                 [UIView performWithoutAnimation:^{
                     [self.tableView beginUpdates];
+                    [cell.webviewHeight setConstant:MAX(height, kWebViewMinHeight)];
                     [self.tableView endUpdates];
                     [self maybeTriggerTableViewScrollAnimated:NO];
                 }];
             } else {
-                [self.tableView beginUpdates];
-                [self.tableView endUpdates];
-                [self maybeTriggerTableViewScrollAnimated:NO];
+                [UIView animateWithDuration:0.15 animations:^{
+                    [self.tableView beginUpdates];
+                    [cell.webviewHeight setConstant:MAX(height, kWebViewMinHeight)];
+                    [self.tableView endUpdates];
+                    [self maybeTriggerTableViewScrollAnimated:NO];
+                }];
             }
         }
     }];
-}
-
-- (void)timerFiredupdateWebView:(NSTimer *)timer {
-    [self updateWebView:timer.userInfo];
 }
 
 - (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation {
@@ -483,14 +492,21 @@ static const CGFloat kWebViewMinHeight = 40;
     if (!cell || [self.tableView indexPathForCell:cell].row != row) {
         return;
     }
-    if (cell.webviewUpdateTimer && [cell.webviewUpdateTimer isValid]) {
-        [cell.webviewUpdateTimer invalidate];
-    }
+    [cell invalidateTimerAndHandlers];
+    // 使用 weakSelf 防止循环引用
+    __weak typeof(self) weakSelf = self;
     // Do not trigger immediately, the webview might still be showing the previous content.
-    cell.webviewUpdateTimer = [NSTimer scheduledTimerWithTimeInterval:0.2 target:self selector:@selector(timerFiredupdateWebView:) userInfo:webView repeats:YES];
-    [cell.webViewContainer.webView.configuration.userContentController removeScriptMessageHandlerForName:@"imageClickHandler"];
-    [cell.webViewContainer.webView.configuration.userContentController addScriptMessageHandler:self name:@"imageClickHandler"];
-    [cell.webViewContainer.webView evaluateJavaScript:@"window._imageClickHandlerAvailable = true;" completionHandler:nil];
+    cell.webviewUpdateTimer = [NSTimer scheduledTimerWithTimeInterval:0.2 repeats:YES block:^(NSTimer * _Nonnull timer) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) {
+            [timer invalidate];
+            return;
+        }
+        [strongSelf updateWebView:webView];
+    }];
+    WeakScriptMessageDelegate *weakDelegate = [[WeakScriptMessageDelegate alloc] initWithDelegate:self];
+    [webView.configuration.userContentController addScriptMessageHandler:weakDelegate name:@"imageClickHandler"];
+    [webView evaluateJavaScript:@"window._imageClickHandlerAvailable = true;" completionHandler:nil];
 }
 
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
@@ -585,6 +601,7 @@ static const CGFloat kWebViewMinHeight = 40;
     
     [cell.webViewContainer.webView setNavigationDelegate:self];
     [cell.webViewContainer.webView loadHTMLString:HTMLStrings[indexPath.row] baseURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/bbs/content/?", CHEXIE]]];
+    [cell.webviewHeight setConstant:[self getWebViewHeightForRow:indexPath.row]];
     
     
     if (heights.count > indexPath.row && [heights[indexPath.row] floatValue] > 0) {
@@ -592,24 +609,18 @@ static const CGFloat kWebViewMinHeight = 40;
     } else {
         [cell.indicatorLoading startAnimating];
     }
-    
-    if (cell.gestureRecognizers.count == 0 && cell.topView.gestureRecognizers.count == 0) {
-        UITapGestureRecognizer *tapTwice = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(doubleTapWeb:)];
-        [tapTwice setNumberOfTapsRequired:2];
-        [cell addGestureRecognizer:tapTwice];
-        [cell.topView addGestureRecognizer:[[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPressTop:)]];
-    }
-    NSArray *lzlDetail = dict[@"lzldetail"];
-    if (!lzlDetail || lzlDetail.count == 0 || SIMPLE_VIEW) {
-        cell.lzlTableView.hidden = YES;
-    } else {
+
+    CGFloat lzlHeight = [self getLzlHeightForRow:indexPath.row];
+    if (lzlHeight > 0) {
         cell.lzlTableView.hidden = NO;
         cell.lzlDetail = dict[@"lzldetail"];
-        [cell.lzlTableView reloadData];
+        [cell.lzlHeight setConstant:[self getLzlHeightForRow:indexPath.row]];
+    } else {
+        cell.lzlTableView.hidden = YES;
+        cell.lzlDetail = @[];
+        [cell.lzlHeight setConstant:0];
     }
-    CGFloat lzlHeight = [self getLzlHeightForRow:indexPath.row];
-    [cell.webviewBottomSpacing setConstant:lzlHeight ? 12 + lzlHeight : 5];
-    [cell layoutIfNeeded];
+    [cell.lzlTableView reloadData];
     
     return cell;
 }
@@ -1036,11 +1047,16 @@ static const CGFloat kWebViewMinHeight = 40;
 - (void)refreshLzl:(NSNotification *)notification {
     if (selectedIndex >= 0 && selectedIndex < data.count && notification && [[notification.userInfo objectForKey:@"fid"] isEqualToString:data[selectedIndex][@"fid"]]) {
         NSDictionary *details = notification.userInfo[@"details"];
-        int num = (int)details.count;
         data[selectedIndex][@"lzldetail"] = details;
-        data[selectedIndex][@"lzl"] = [NSString stringWithFormat:@"%d", num];
-        [self.tableView reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:selectedIndex inSection:0]] withRowAnimation:UITableViewRowAnimationAutomatic];
+        data[selectedIndex][@"lzl"] = [NSString stringWithFormat:@"%ld", details.count];
+        dispatch_main_async_safe(^{
+            [self.tableView reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:selectedIndex inSection:0]] withRowAnimation:UITableViewRowAnimationAutomatic];
+        });
     }
+}
+
+- (void)triggerBackgroundChange:(WKWebView *)webView {
+    [webView evaluateJavaScript:@"(()=>{const bodyMask=document.getElementById('body-mask');if(bodyMask&&bodyMask.style.backgroundColor){ bodyMask.style.backgroundColor='';}else{bodyMask.style.backgroundColor='rgba(127,127,127,0.5)';}})()" completionHandler:nil];
 }
 
 - (void)doubleTapWeb:(UITapGestureRecognizer *)sender {
@@ -1048,11 +1064,48 @@ static const CGFloat kWebViewMinHeight = 40;
         CGPoint point = [sender locationInView:self.tableView];
         NSIndexPath * indexPath = [self.tableView indexPathForRowAtPoint:point];
         if (indexPath == nil) {
-            return ;
+            return;
         }
-        ContentCell *cell = (ContentCell *)[self.tableView cellForRowAtIndexPath:indexPath];
-        [hud showAndHideWithSuccessMessage:@"双击切换背景"];
-        [cell.webViewContainer.webView evaluateJavaScript:@"(()=>{const bodyMask=document.getElementById('body-mask');if(bodyMask.style.backgroundColor){ bodyMask.style.backgroundColor='';}else{bodyMask.style.backgroundColor='rgba(127, 127, 127, 0.75)';}})()" completionHandler:nil];
+        if ([[DEFAULTS objectForKey:@"changeBackground"] boolValue]) {
+            ContentCell *cell = (ContentCell *)[self.tableView cellForRowAtIndexPath:indexPath];
+            [hud showAndHideWithSuccessMessage:@"双击切换背景"];
+            [self triggerBackgroundChange:cell.webViewContainer.webView];
+        }
+    }
+}
+
+- (void)longPress:(UILongPressGestureRecognizer *)sender {
+    if (sender.state == UIGestureRecognizerStateBegan) {
+        CGPoint point = [sender locationInView:self.tableView];
+        NSIndexPath *indexPath = [self.tableView indexPathForRowAtPoint:point];
+        if (indexPath == nil) {
+            longPressIndexPath = nil;
+            return;
+        }
+        ContentCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
+        if (!cell) {
+            longPressIndexPath = nil;
+            return;
+        }
+        CGPoint pointInCell = [sender locationInView:cell.contentView];
+        UIView *hitView = [cell.contentView hitTest:pointInCell withEvent:nil];
+        if ([hitView isDescendantOfView:cell.topView]) {
+            longPressIndexPath = nil;
+            selectedIndex = indexPath.row;
+            ContentCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
+            [self showMoreAction:cell.labelAuthor];
+        } else if (hitView == cell.contentView && [[DEFAULTS objectForKey:@"changeBackground"] boolValue]) {
+            longPressIndexPath = indexPath;
+            [self triggerBackgroundChange:cell.webViewContainer.webView];
+        }
+    } else if (sender.state == UIGestureRecognizerStateEnded || sender.state == UIGestureRecognizerStateCancelled) {
+        if (longPressIndexPath) {
+            ContentCell *cell = [self.tableView cellForRowAtIndexPath:longPressIndexPath];
+            if (cell && [[DEFAULTS objectForKey:@"changeBackground"] boolValue]) {
+                [self triggerBackgroundChange:cell.webViewContainer.webView];
+            }
+            longPressIndexPath = nil;
+        }
     }
 }
 
@@ -1206,19 +1259,6 @@ static const CGFloat kWebViewMinHeight = 40;
     }
     //NSLog(@"%@", text);
     return text;
-}
-
-- (void)longPressTop:(UILongPressGestureRecognizer *)sender {
-    if (sender.state == UIGestureRecognizerStateBegan) {
-        CGPoint point = [sender locationInView:self.tableView];
-        NSIndexPath * indexPath = [self.tableView indexPathForRowAtPoint:point];
-        if (indexPath == nil) {
-            return;
-        }
-        selectedIndex = indexPath.row;
-        ContentCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
-        [self showMoreAction:cell.labelAuthor];
-    }
 }
 
 #pragma mark - Navigation

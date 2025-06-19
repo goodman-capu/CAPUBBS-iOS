@@ -23,8 +23,10 @@
     if (!IS_SUPER_USER) {
         self.navigationItem.rightBarButtonItems = @[self.buttonLogout];
     }
+    
     [NOTIFICATION addObserver:self selector:@selector(userChanged:) name:@"userChanged" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(userChanged:) name:@"infoRefreshed" object:nil];
+    
     [self userChanged:nil];
     
     // Uncomment the following line to preserve selection between presentations.
@@ -49,16 +51,17 @@
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     IDCell *cell;
     if (indexPath.row < data.count) {
+        NSDictionary *info = data[indexPath.row];
         cell = [tableView dequeueReusableCellWithIdentifier:@"id" forIndexPath:indexPath];
-        cell.labelText.text = data[indexPath.row][@"id"];
-        if ([cell.labelText.text isEqualToString:UID] && [ActionPerformer checkLogin:NO]) {
+        cell.labelText.text = info[@"id"];
+        if ([info[@"id"] isEqualToString:UID] && [ActionPerformer checkLogin:NO]) {
             cell.accessoryType = UITableViewCellAccessoryCheckmark;
             cell.userInteractionEnabled = NO;
         } else {
             cell.accessoryType = UITableViewCellAccessoryNone;
             cell.userInteractionEnabled = YES;
         }
-        [cell.icon setUrl:data[indexPath.row][@"icon"]];
+        [cell.icon setUrl:info[@"icon"]];
     } else {
         cell = [tableView dequeueReusableCellWithIdentifier:@"new" forIndexPath:indexPath];
     }
@@ -129,9 +132,7 @@
         [GROUP_DEFAULTS removeObjectForKey:@"pass"];
         [GROUP_DEFAULTS removeObjectForKey:@"token"];
         [GROUP_DEFAULTS removeObjectForKey:@"userInfo"];
-        dispatch_main_async_safe(^{
-            [NOTIFICATION postNotificationName:@"userChanged" object:nil userInfo:nil];
-        });
+        [NOTIFICATION postNotificationName:@"userChanged" object:nil userInfo:nil];
     }];
 }
 

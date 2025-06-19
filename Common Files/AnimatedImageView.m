@@ -8,7 +8,6 @@
 
 #import "AnimatedImageView.h"
 #import <MobileCoreServices/MobileCoreServices.h>
-#import "UIImageEffects.h"
 
 @implementation AnimatedImageView {
     NSString * latestUrl;

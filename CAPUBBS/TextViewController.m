@@ -34,7 +34,7 @@
     
     colors = @[[UIColor redColor], [UIColor orangeColor], [UIColor yellowColor], [UIColor greenColor], [UIColor cyanColor], [UIColor blueColor], [UIColor purpleColor], [UIColor whiteColor], [UIColor grayColor], [UIColor blackColor], [UIColor blackColor]];
     colorNames = @[@"red", @"orange", @"yellow", @"green", @"cyan", @"blue", @"purple", @"white", @"gray", @"black", @"default"];
-    fontSizes = @[@10, @13, @16, @16, @18, @24, @32];
+    fontSizes = @[@10, @13, @16, @16, @18, @24, @32, @48];
     fontNames = @[@"ArialMT", @"Arial-BoldMT"];
     
     [self setDefault];
@@ -182,7 +182,7 @@
     
     [NOTIFICATION postNotificationName:@"addContent" object:nil userInfo:@{ @"HTML" : text }];
     UIAlertController *action = [UIAlertController alertControllerWithTitle:@"插入成功" message:@"请选择下一步操作" preferredStyle:UIAlertControllerStyleAlert];
-    [action addAction:[UIAlertAction actionWithTitle:@"清空输入继续" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    [action addAction:[UIAlertAction actionWithTitle:@"清空输入并继续" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         self.textInput.text = @"";;
         [self.textInput becomeFirstResponder];
     }]];

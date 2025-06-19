@@ -45,8 +45,11 @@
         }
     }
     isFirstTime = YES;
-    [NOTIFICATION addObserver:self selector:@selector(shouldRefresh) name:@"refreshList" object:nil];
-    [NOTIFICATION addObserver:self.tableView selector:@selector(reloadData) name:@"collectionChanged" object:nil];
+    [self.tableView addGestureRecognizer:[[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)]];
+    
+    [NOTIFICATION addObserver:self selector:@selector(doRefresh) name:@"refreshList" object:nil];
+    [NOTIFICATION addObserver:self selector:@selector(reloadTableView) name:@"collectionChanged" object:nil];
+    
     self.title = ([self.bid isEqualToString:@"hot"] ? @"🔥论坛热点🔥" : [ActionPerformer getBoardTitle:self.bid]);
     oriTitle = self.title;
     [self.refreshControl addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
@@ -87,6 +90,12 @@
     [activity invalidate];
 }
 
+- (void)reloadTableView {
+    dispatch_main_sync_safe(^{
+        [self.tableView reloadData];
+    });
+}
+
 - (NSURL *)getCurrentUrl {
     NSString *url;
     if ([self.bid isEqualToString:@"hot"]) {
@@ -97,7 +106,7 @@
     return [NSURL URLWithString:url];
 }
 
-- (void)shouldRefresh{
+- (void)doRefresh {
     [self jumpTo:self.page];
 }
 
@@ -385,11 +394,6 @@
         cell.backgroundColor = isTop ? [UIColor colorWithWhite:1.0 alpha:0.5] : [UIColor clearColor];
         cell.titleText.font = isTop ? [UIFont systemFontOfSize:cell.titleText.font.pointSize weight:UIFontWeightMedium] : [UIFont systemFontOfSize:cell.titleText.font.pointSize weight:UIFontWeightRegular];
     }
-    
-    if (cell.gestureRecognizers.count == 0) {
-        [cell addGestureRecognizer:[[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)]];
-    }
-    // Configure the cell...
     return cell;
 }
 
@@ -512,17 +516,19 @@
     }
 }
 
-- (void)longPress:(UILongPressGestureRecognizer*)sender {
+- (void)longPress:(UILongPressGestureRecognizer *)sender {
     if (sender.state == UIGestureRecognizerStateBegan) {
         CGPoint point = [sender locationInView:self.tableView];
         NSIndexPath * indexPath = [self.tableView indexPathForRowAtPoint:point];
-        if (indexPath == nil) return ;
-        selectedRow = indexPath.row;
-        
-        NSDictionary *info = data[selectedRow];
+        if (indexPath == nil) {
+            return;
+        }
         if ([ActionPerformer checkRight] < 2) {
             return;
         }
+        
+        selectedRow = indexPath.row;
+        NSDictionary *info = data[selectedRow];
         
         UIAlertController *action = [UIAlertController alertControllerWithTitle:@"选择操作" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
         if (![self.bid isEqualToString:@"hot"]) {

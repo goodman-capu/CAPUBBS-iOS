@@ -189,34 +189,34 @@
 
 - (IBAction)upload:(id)sender {
     UIAlertController *action = [UIAlertController alertControllerWithTitle:@"选择图片来源" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-    [action addAction:[UIAlertAction actionWithTitle:@"网址链接" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"设置头像"
-                                                                       message:@"请输入图片链接"
-                                                                preferredStyle:UIAlertControllerStyleAlert];
-        
-        [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
-            textField.keyboardType = UIKeyboardTypeURL;
-            textField.placeholder = @"链接";
-        }];
-        [alert addAction:[UIAlertAction actionWithTitle:@"取消"
-                                                  style:UIAlertActionStyleCancel
-                                                handler:nil]];
-        [alert addAction:[UIAlertAction actionWithTitle:@"确认"
-                                                  style:UIAlertActionStyleDefault
-                                                handler:^(UIAlertAction * _Nonnull action) {
-            NSString *url = alert.textFields.firstObject.text;
-            if (url.length > 0) {
-                [NOTIFICATION postNotificationName:@"selectIcon" object:nil userInfo:@{
-                    @"num" : @"-1",
-                    @"URL" : url
-                }];
-                [self.navigationController popViewControllerAnimated:YES];
-            } else {
-                [self showAlertWithTitle:@"错误" message:@"链接不能为空"];
-            }
-        }]];
-        [self presentViewControllerSafe:alert];
-    }]];
+//    [action addAction:[UIAlertAction actionWithTitle:@"网址链接" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+//        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"设置头像"
+//                                                                       message:@"请输入图片链接"
+//                                                                preferredStyle:UIAlertControllerStyleAlert];
+//        
+//        [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+//            textField.keyboardType = UIKeyboardTypeURL;
+//            textField.placeholder = @"链接";
+//        }];
+//        [alert addAction:[UIAlertAction actionWithTitle:@"取消"
+//                                                  style:UIAlertActionStyleCancel
+//                                                handler:nil]];
+//        [alert addAction:[UIAlertAction actionWithTitle:@"确认"
+//                                                  style:UIAlertActionStyleDefault
+//                                                handler:^(UIAlertAction * _Nonnull action) {
+//            NSString *url = alert.textFields.firstObject.text;
+//            if (url.length > 0) {
+//                [NOTIFICATION postNotificationName:@"selectIcon" object:nil userInfo:@{
+//                    @"num" : @"-1",
+//                    @"URL" : url
+//                }];
+//                [self.navigationController popViewControllerAnimated:YES];
+//            } else {
+//                [self showAlertWithTitle:@"错误" message:@"链接不能为空"];
+//            }
+//        }]];
+//        [self presentViewControllerSafe:alert];
+//    }]];
     [action addAction:[UIAlertAction actionWithTitle:@"照片图库" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         UIImagePickerController *imagePicker = [[UIImagePickerController alloc] init];
         imagePicker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
@@ -282,14 +282,6 @@
             }
         }];
     });
-}
-
-- (UIImage *)reSizeImage:(UIImage *)oriImage toSize:(CGSize)reSize{
-    UIGraphicsBeginImageContext(CGSizeMake(reSize.width, reSize.height));
-    [oriImage drawInRect:CGRectMake(0, 0, reSize.width, reSize.height)];
-    UIImage *reSizeImage = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    return reSizeImage;
 }
 
 @end

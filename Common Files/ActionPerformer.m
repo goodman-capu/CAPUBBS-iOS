@@ -221,6 +221,23 @@
     }
 }
 
++ (void)updateUserInfo:(NSDictionary *)userInfo {
+    [GROUP_DEFAULTS setObject:userInfo forKey:@"userInfo"];
+    NSMutableArray *data = [NSMutableArray arrayWithArray:[DEFAULTS objectForKey:@"ID"]];
+    for (int i = 0; i < data.count; i++) {
+        if (![data[i][@"id"] isEqualToString:userInfo[@"username"]]) {
+            continue;
+        }
+        if (![data[i][@"icon"] isEqualToString:userInfo[@"icon"]]) {
+            NSMutableDictionary *tempDict = [data[i] mutableCopy];
+            tempDict[@"icon"] = userInfo[@"icon"];
+            data[i] = tempDict;
+            [DEFAULTS setObject:data forKey:@"ID"];
+        }
+        break;
+    }
+}
+
 + (NSString *)restoreTitle:(NSString *)text {
     BOOL remove = YES;
     while (remove) {
@@ -295,7 +312,7 @@
             "body{font-size:16px;word-wrap:break-word;zoom:%d%%;}"
             "#body-wrapper{padding:0 0.25em;}"
             "#body-mask{position:absolute;top:0;bottom:0;left:0;right:0;z-index:-1;background-color:%@;transition:background-color 0.2s linear;}"
-            ".quoteblock{background-color:#f5f5f5;color:gray;font-size:small;padding:0.6em 2em 0;margin:0.6em 0;border-radius:0.5em;border:1px solid #ddd;position:relative;}"
+            ".quoteblock{background-color:rgba(235,235,235,0.5);color:gray;font-size:small;padding:0.6em 2em 0;margin:0.6em 0;border-radius:0.5em;border:1px solid #ddd;position:relative;}"
             ".quoteblock::before,.quoteblock::after{position:absolute;font-size:4em;color:#d8e7f1;font-family:sans-serif;pointer-events:none;line-height:1;}"
             ".quoteblock::before{content:'“';top:0.05em;left:0.1em;}"
             ".quoteblock::after{content:'”';bottom:-0.5em;right:0.15em;}"

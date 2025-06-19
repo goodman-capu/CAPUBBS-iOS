@@ -89,6 +89,7 @@
         @"wakeLogin" : @NO,
         @"vibrate" : @YES,
         @"picOnlyInWifi" : @NO,
+        @"changeBackground" : @YES,
         @"autoSave" : @YES,
         @"oppositeSwipe" : @YES,
         @"toolbarEditor" : @1,
@@ -256,6 +257,11 @@
     } else {
         previewFrame = nil;
     }
+    if (dict[@"transitionImage"] && [dict[@"transitionImage"] isKindOfClass:[UIImage class]]) {
+        previewTransitionImage = dict[@"transitionImage"];
+    } else {
+        previewTransitionImage = nil;
+    }
     
     dispatch_main_sync_safe(^{
         QLPreviewController *previewController = [[QLPreviewController alloc] init];
@@ -284,17 +290,22 @@
     previewFilePath = nil;
     previewFileTitle = nil;
     previewFrame = nil;
+    previewTransitionImage = nil;
 }
 
-- (UIImage *)previewController:(QLPreviewController *)controller
- transitionImageForPreviewItem:(id<QLPreviewItem>)item
-                   contentRect:(CGRect *)contentRect {
+- (UIImage *)previewController:(QLPreviewController *)controller transitionImageForPreviewItem:(id<QLPreviewItem>)item contentRect:(CGRect *)contentRect {
     if (!previewFrame) {
         *contentRect = CGRectZero;
         return nil;
     }
     *contentRect = previewFrame.bounds;
-    return [UIImage imageWithContentsOfFile:previewFilePath];
+    if (previewTransitionImage) {
+        return previewTransitionImage;
+    } else if ([previewFrame isKindOfClass:[UIImageView class]]) {
+        return ((UIImageView *)previewFrame).image;
+    } else {
+        return [UIImage imageWithContentsOfFile:previewFilePath];
+    }
 }
 
 - (CGRect)previewController:(QLPreviewController *)controller frameForPreviewItem:(id<QLPreviewItem>)item inSourceView:(UIView * _Nullable * _Nonnull)view {

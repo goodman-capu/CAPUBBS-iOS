@@ -46,6 +46,8 @@
     if (titleCheckTimer && titleCheckTimer.isValid) {
         [titleCheckTimer invalidate];
     }
+    [self.webViewContainer.webView stopLoading];
+    [self.webViewContainer.webView setNavigationDelegate:nil];
 }
 
 - (void)dealloc {

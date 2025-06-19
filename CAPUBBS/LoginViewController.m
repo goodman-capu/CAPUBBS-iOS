@@ -30,6 +30,7 @@
     
     [NOTIFICATION addObserver:self selector:@selector(userChanged) name:@"userChanged" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(refreshIcon) name:@"infoRefreshed" object:nil];
+    
     userInfoRefreshing = NO;
     newsRefreshing = NO;
     news = [NSArray arrayWithArray:[DEFAULTS objectForKey:@"newsCache"]];
@@ -233,20 +234,8 @@
                 [ActionPerformer callApiWithParams:@{@"uid": UID} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
                     userInfoRefreshing = NO;
                     if (!err && result.count > 0) {
-                        [GROUP_DEFAULTS setObject:[NSDictionary dictionaryWithDictionary:result[0]] forKey:@"userInfo"];
-                        NSMutableArray *data = [NSMutableArray arrayWithArray:[DEFAULTS objectForKey:@"ID"]];
-                        for (int i = 0; i < data.count; i++) {
-                            NSMutableDictionary *dict = [data[i] mutableCopy];
-                            if ([dict[@"id"] isEqualToString:result[0][@"username"]]) {
-                                dict[@"icon"] = result[0][@"icon"];
-                                data[i] = dict;
-                                [DEFAULTS setObject:data forKey:@"ID"];
-                                break;
-                            }
-                        }
-                        dispatch_main_async_safe(^{
-                            [NOTIFICATION postNotificationName:@"infoRefreshed" object:nil];
-                        });
+                        [ActionPerformer updateUserInfo:result[0]];
+                        [NOTIFICATION postNotificationName:@"infoRefreshed" object:nil];
                     }
                 }];
             }
@@ -354,9 +343,7 @@
             [GROUP_DEFAULTS setObject:result[0][@"token"] forKey:@"token"];
             [LoginViewController updateIDSaves];
             NSLog(@"Login - %@", uid);
-            dispatch_main_async_safe(^{
-                [NOTIFICATION postNotificationName:@"userChanged" object:nil userInfo:nil];
-            });
+            [NOTIFICATION postNotificationName:@"userChanged" object:nil userInfo:nil];
             [ActionPerformer checkPasswordLength];
         } else {
             [self showAlertWithTitle:@"登录失败" message:@"发生未知错误！"];

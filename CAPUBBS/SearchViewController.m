@@ -8,7 +8,6 @@
 
 #import "SearchViewController.h"
 #import "ContentViewController.h"
-#import "UIImageEffects.h"
 
 #define MIN_DATE @"1995-10-25"
 

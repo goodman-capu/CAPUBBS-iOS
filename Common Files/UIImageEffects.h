@@ -85,6 +85,8 @@
 
 - (UIImage *)imageByApplyingCornerRadius:(CGFloat)cornerRadius;
 
+- (UIImage *)getCenterSquareImage;
+
 + (UIImage *)imageWithColor:(UIColor *)color size:(CGSize)size;
 
 @end

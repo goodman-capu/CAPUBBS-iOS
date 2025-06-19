@@ -104,9 +104,7 @@
             [GROUP_DEFAULTS setObject:result[0][@"token"] forKey:@"token"];
             [LoginViewController updateIDSaves];
             NSLog(@"Login - %@", uid);
-            dispatch_main_async_safe(^{
-                [NOTIFICATION postNotificationName:@"userChanged" object:nil userInfo:nil];
-            });
+            [NOTIFICATION postNotificationName:@"userChanged" object:nil userInfo:nil];
             [ActionPerformer checkPasswordLength];
             shouldPop = YES;
             dispatch_main_after(0.5, ^{

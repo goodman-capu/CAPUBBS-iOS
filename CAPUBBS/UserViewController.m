@@ -63,7 +63,9 @@
     recentPost = [NSMutableArray array];
     recentReply = [NSMutableArray array];
     property = @[@"rights", @"sign", @"hobby", @"qq", @"mail", @"place", @"regdate", @"lastdate", @"post", @"reply", @"water", @"extr"];
+    
     [NOTIFICATION addObserver:self selector:@selector(getInformation) name:@"userUpdated" object:nil];
+    
     control = [[UIRefreshControl alloc] init];
     [control addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
 //    self.tableView.rowHeight = UITableViewAutomaticDimension;
@@ -86,13 +88,24 @@
     }
 }
 
-- (void)refresh:(NSNotification *)noti {
-    if (self.iconData.length == 0) {
-        self.iconData = noti.userInfo[@"data"];
-        dispatch_main_async_safe(^{
-            [self refreshBackgroundViewAnimated:YES];
-        });
+- (void)viewDidDisappear:(BOOL)animated {
+    [super viewDidDisappear:animated];
+    if (heightCheckTimer.isValid) {
+        [heightCheckTimer invalidate];
     }
+    for (CustomWebViewContainer *webviewContainer in webViewContainers) {
+        [webviewContainer.webView stopLoading];
+        [webviewContainer.webView setNavigationDelegate:nil];
+    }
+}
+
+- (void)refresh:(NSNotification *)noti {
+    dispatch_main_async_safe(^{
+        if (self.iconData.length == 0) {
+            self.iconData = noti.userInfo[@"data"];
+            [self refreshBackgroundViewAnimated:YES];
+        }
+    });
 }
 
 - (void)refreshBackgroundViewAnimated:(BOOL)animated {
@@ -113,23 +126,25 @@
 }
 
 - (void)setDefault {
-    self.username.text = self.ID;
-    self.star.text = @"未知";
-    iconURL = @"";
-    for (int i = 0; i < labels.count; i++) {
-        if (i != 4) {
-            UILabel *label = labels[i];
-            if (i >= 1 && i <= 5) {
-                label.text = @"不告诉你";
+    dispatch_main_sync_safe(^{
+        self.username.text = self.ID;
+        self.star.text = @"未知";
+        iconURL = @"";
+        for (int i = 0; i < labels.count; i++) {
+            if (i != 4) {
+                UILabel *label = labels[i];
+                if (i >= 1 && i <= 5) {
+                    label.text = @"不告诉你";
+                } else {
+                    label.text = @"未知";
+                }
             } else {
-                label.text = @"未知";
+                UIButton *button = labels[i];
+                [button setTitle:@"不告诉你" forState:UIControlStateNormal];
+                [button setEnabled:NO];
             }
-        } else {
-            UIButton *button = labels[i];
-            [button setTitle:@"不告诉你" forState:UIControlStateNormal];
-            [button setEnabled:NO];
         }
-    }
+    });
 }
 
 - (NSString *)extractValidEmail:(NSString *)rawEmailString {
@@ -161,18 +176,16 @@
         
         // NSLog(@"%@", result);
         [hud hideWithSuccessMessage:@"查询成功"];
-        NSDictionary *dict = [result firstObject];
+        NSDictionary *dict = result[0];
         if ([dict[@"username"] length] == 0) {
             [self showAlertWithTitle:@"查询错误！" message:@"没有这个ID或者您还未登录！"];
             self.username.text = [self.username.text stringByAppendingString:@"❌"];
             self.navigationItem.rightBarButtonItem.enabled = NO;
         } else {
             if ([dict[@"username"] isEqualToString:UID]) {
-                [GROUP_DEFAULTS setObject:[NSDictionary dictionaryWithDictionary:dict] forKey:@"userInfo"];
                 NSLog(@"User Info Refreshed");
-                dispatch_main_async_safe(^{
-                    [NOTIFICATION postNotificationName:@"infoRefreshed" object:nil];
-                });
+                [ActionPerformer updateUserInfo:dict];
+                [NOTIFICATION postNotificationName:@"infoRefreshed" object:nil];
             }
             if ([dict[@"sex"] isEqualToString:@"男"]) {
                 self.username.text = [dict[@"username"] stringByAppendingString:@" ♂"];
@@ -225,8 +238,17 @@
             if (heightCheckTimer && [heightCheckTimer isValid]) {
                 [heightCheckTimer invalidate];
             }
+
+            __weak typeof(self) weakSelf = self;
             // Do not trigger immediately, the webview might still be showing the previous content.
-            heightCheckTimer = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(updateWebViewHeight) userInfo:nil repeats:YES];
+            heightCheckTimer = [NSTimer scheduledTimerWithTimeInterval:0.2 repeats:YES block:^(NSTimer * _Nonnull timer) {
+                __strong typeof(weakSelf) strongSelf = weakSelf;
+                if (!strongSelf) {
+                    return;
+                }
+                [strongSelf updateWebViewHeight];
+            }];
+            
             for (int i = 1; i < result.count; i++) {
                 if (result[i] && result[i][@"info"]) {
                     id info = result[i][@"info"];
@@ -389,11 +411,13 @@
 }
 
 - (void)presentImage:(NSData *)imageData fileName:(NSString *)fileName {
+    UIImage *iconImage = [self.icon.image getCenterSquareImage];
     [NOTIFICATION postNotificationName:@"previewFile" object:nil userInfo:@{
         @"fileData": imageData,
         @"fileName": fileName,
         @"fileTitle": [NSString stringWithFormat:@"%@的头像", self.ID],
-        @"frame": self.icon
+        @"frame": self.icon,
+        @"transitionImage": [iconImage imageByApplyingCornerRadius:iconImage.size.width / 2]
     }];
 }
 

@@ -19,7 +19,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
-    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(done:)];
+
     [self.webViewContainer initiateWebViewWithToken:NO];
     [self.webViewContainer.layer setBorderColor:GREEN_LIGHT.CGColor];
     [self.webViewContainer.layer setBorderWidth:1.0];
@@ -41,7 +41,13 @@
     // Do any additional setup after loading the view.
 }
 
-- (void)done:(id)sender{
+- (void)viewDidDisappear:(BOOL)animated {
+    [super viewDidDisappear:animated];
+    [self.webViewContainer.webView stopLoading];
+    [self.webViewContainer.webView setNavigationDelegate:nil];
+}
+
+- (IBAction)done:(id)sender {
     [NOTIFICATION postNotificationName:@"publishContent" object:nil];
     [self.navigationController popViewControllerAnimated:YES];
 }
