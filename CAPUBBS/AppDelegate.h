@@ -19,6 +19,8 @@
 
 @property (strong, nonatomic) UIWindow *window;
 
+- (void)openLink:(NSDictionary *)linkInfo postTitle:(NSString *)title;
+
 + (UIViewController *)getTopViewController;
 
 @end

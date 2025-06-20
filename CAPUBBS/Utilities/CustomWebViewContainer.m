@@ -194,15 +194,22 @@ static dispatch_once_t onceSharedDataSource;
     ]];
 }
 
-- (void)webView:(WKWebView *)webView runJavaScriptAlertPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(WK_SWIFT_UI_ACTOR void (^)(void))completionHandler {
+- (void)showTimeoutMessage {
     UIViewController *viewController = [AppDelegate getTopViewController];
     if (!viewController) {
-        completionHandler();
         return;
     }
-    [viewController showAlertWithTitle:[webView getAlertTitle] message:message confirmTitle:nil confirmAction:nil cancelTitle:@"好" cancelAction:^(UIAlertAction *action) {
-        completionHandler();
-    }];
+    [viewController showAlertWithTitle:@"错误" message:@"您太久未选择操作，已帮您自动取消对话"];
+}
+
+- (void)webView:(WKWebView *)webView runJavaScriptAlertPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(WK_SWIFT_UI_ACTOR void (^)(void))completionHandler {
+    // 此类型弹窗最常见，因不需要用户输入，直接调用 completionHandler，防止崩溃
+    completionHandler();
+    UIViewController *viewController = [AppDelegate getTopViewController];
+    if (!viewController) {
+        return;
+    }
+    [viewController showAlertWithTitle:[webView getAlertTitle] message:message];
 }
 
 - (void)webView:(WKWebView *)webView runJavaScriptConfirmPanelWithMessage:(nonnull NSString *)message initiatedByFrame:(nonnull WKFrameInfo *)frame completionHandler:(nonnull WK_SWIFT_UI_ACTOR void (^)(BOOL))completionHandler {
@@ -211,11 +218,32 @@ static dispatch_once_t onceSharedDataSource;
         completionHandler(NO);
         return;
     }
+    __block BOOL handlerCalled = NO;
     [viewController showAlertWithTitle:[webView getAlertTitle] message:message confirmTitle:@"确定" confirmAction:^(UIAlertAction *action) {
-        completionHandler(YES);
+        if (!handlerCalled) {
+            completionHandler(YES);
+            handlerCalled = YES;
+        } else {
+            [self showTimeoutMessage];
+        }
     } cancelTitle:@"取消" cancelAction:^(UIAlertAction *action) {
-        completionHandler(NO);
+        if (!handlerCalled) {
+            completionHandler(NO);
+            handlerCalled = YES;
+        } else {
+            [self showTimeoutMessage];
+        }
     }];
+    
+    // 延迟兜底调用 handler，注意这会保持对 completionHandler 的引用，VC会在计时结束后才dealloc
+    // 考虑到此类型弹窗很罕见，可以接受
+    dispatch_main_after(60, ^{
+        if (!handlerCalled) {
+            NSLog(@"completionHandler not called by user, fallback to call handler");
+            completionHandler(NO);
+            handlerCalled = YES;
+        }
+    });
 }
 
 - (void)webView:(WKWebView *)webView runJavaScriptTextInputPanelWithPrompt:(NSString *)prompt defaultText:(NSString *)defaultText initiatedByFrame:(WKFrameInfo *)frame completionHandler:(WK_SWIFT_UI_ACTOR void (^)(NSString * _Nullable))completionHandler {
@@ -224,6 +252,7 @@ static dispatch_once_t onceSharedDataSource;
         completionHandler(nil);
         return;
     }
+    __block BOOL handlerCalled = NO;
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:[webView getAlertTitle] message:prompt preferredStyle:UIAlertControllerStyleAlert];
     [alert addTextFieldWithConfigurationHandler:^(UITextField * textField) {
         textField.text = defaultText;
@@ -231,15 +260,35 @@ static dispatch_once_t onceSharedDataSource;
     [alert addAction:[UIAlertAction actionWithTitle:@"取消"
                                               style:UIAlertActionStyleCancel
                                             handler:^(UIAlertAction * action) {
-        completionHandler(nil);
+        if (!handlerCalled) {
+            completionHandler(nil);
+            handlerCalled = YES;
+        } else {
+            [self showTimeoutMessage];
+        }
     }]];
     [alert addAction:[UIAlertAction actionWithTitle:@"确定"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * action) {
         NSString *input = alert.textFields.firstObject.text;
-        completionHandler(input);
+        if (!handlerCalled) {
+            completionHandler(input);
+            handlerCalled = YES;
+        } else {
+            [self showTimeoutMessage];
+        }
     }]];
     [viewController presentViewControllerSafe:alert];
+    
+    // 延迟兜底调用 handler，注意这会保持对 completionHandler 的引用，VC会在计时结束后才dealloc
+    // 考虑到此类型弹窗很罕见，可以接受
+    dispatch_main_after(60, ^{
+        if (!handlerCalled) {
+            NSLog(@"completionHandler not called by user, fallback to call handler");
+            completionHandler(nil);
+            handlerCalled = YES;
+        }
+    });
 }
 
 - (WKWebView *)webView:(WKWebView *)webView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures {

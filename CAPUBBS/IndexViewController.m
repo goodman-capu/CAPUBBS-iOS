@@ -198,14 +198,10 @@
         return;
     }
     
-    NSDictionary *dict = [ActionPerformer getLink:text];
-    if (dict.count > 0 && [dict[@"tid"] length] > 0) {
-        ContentViewController *next = [self.storyboard instantiateViewControllerWithIdentifier:@"content"];
-        next.bid = dict[@"bid"];
-        next.tid = dict[@"tid"];
-        next.destinationPage = dict[@"p"];
-        next.title=@"帖子跳转中";
-        [self.navigationController pushViewController:next animated:YES];
+    NSDictionary *linkInfo = [ActionPerformer getLink:text];
+    if ([linkInfo[@"bid"] length] > 0) {
+        AppDelegate *appDelegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
+        [appDelegate openLink:linkInfo postTitle:nil];
         return;
     }
     

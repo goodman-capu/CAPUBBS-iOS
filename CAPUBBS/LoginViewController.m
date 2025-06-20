@@ -453,7 +453,7 @@
         CustomNavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
         dest.URL = [CHEXIE stringByAppendingString:@"/privacy"];
         [navi setToolbarHidden:NO];
-        navi.modalPresentationStyle = UIModalPresentationFullScreen;
+        navi.modalPresentationStyle = UIModalPresentationPageSheet;
         [self presentViewControllerSafe:navi];
         // Show again
         [self showEULA];

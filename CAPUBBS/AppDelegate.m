@@ -317,6 +317,27 @@
     return previewFrame.bounds;
 }
 
+- (void)openLink:(NSDictionary *)linkInfo postTitle:(NSString *)title {
+    if ([linkInfo[@"bid"] length] == 0) {
+        return;
+    }
+    NSDictionary *naviDict = [linkInfo[@"tid"] length] > 0 ? @{
+        @"open": @"post",
+        @"bid": linkInfo[@"bid"],
+        @"tid": linkInfo[@"tid"],
+        @"page": linkInfo[@"p"],
+        @"floor": linkInfo[@"floor"],
+        @"naviTitle": title ?: @""
+    } : @{
+        @"open": @"list",
+        @"bid": linkInfo[@"bid"],
+        @"page": linkInfo[@"p"],
+    };
+    dispatch_global_default_async(^{
+        [self _handleUrlRequestWithDictionary:naviDict];
+    });
+}
+
 - (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity restorationHandler:(void (^)(NSArray<id<UIUserActivityRestoring>> * _Nullable))restorationHandler {
     if ([userActivity.activityType isEqualToString:CSSearchableItemActionType]) {
         NSArray *collectionParts = @[];
@@ -347,26 +368,7 @@
     }
     // From universal link or handfoff
     if ([linkInfo[@"bid"] length] > 0) {
-        NSDictionary *naviDict;
-        if ([linkInfo[@"tid"] length] > 0) {
-            naviDict = @{
-                @"open": @"post",
-                @"bid": linkInfo[@"bid"],
-                @"tid": linkInfo[@"tid"],
-                @"page": linkInfo[@"p"],
-                @"floor": linkInfo[@"floor"],
-                @"naviTitle": isCompose ? @"" : (userActivity.title ?: @"")
-            };
-        } else {
-            naviDict = @{
-                @"open": @"list",
-                @"bid": linkInfo[@"bid"],
-                @"page": linkInfo[@"p"],
-            };
-        }
-        dispatch_global_default_async(^{
-            [self _handleUrlRequestWithDictionary:naviDict];
-        });
+        [self openLink:linkInfo postTitle:isCompose ? @"" : userActivity.title];
         if (!isCompose) {
             return YES;
         }
@@ -575,7 +577,7 @@
                 }
                 
                 UINavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
-                navi.modalPresentationStyle = UIModalPresentationFormSheet;
+                navi.modalPresentationStyle = UIModalPresentationPageSheet;
                 [view presentViewControllerSafe:navi];
             });
         }];

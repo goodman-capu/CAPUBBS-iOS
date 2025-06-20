@@ -43,6 +43,11 @@
         [self editingDidEnd:self.textUid];
     }
     
+    // 不允许点击外部关闭
+    if (@available(iOS 13.0, *)) {
+        [self setModalInPresentation:YES];
+    }
+    
     // Uncomment the following line to preserve selection between presentations.
     // self.clearsSelectionOnViewWillAppear = NO;
     
@@ -459,7 +464,7 @@
         ContentViewController *dest = [segue destinationViewController];
         dest.bid = @"2";
         dest.tid = @"6205";
-        dest.title = @"【新会员请猛戳】协会文化之——论坛ID";
+        dest.title = @"【新会员请猛戳】协会文化之——论坛ID（更新版）";
     }
     // Get the new view controller using [segue destinationViewController].
     // Pass the selected object to the new view controller.

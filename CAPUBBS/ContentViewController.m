@@ -539,6 +539,7 @@ static const CGFloat kWebViewMinHeight = 40;
     
     cell.buttonAction.tag = indexPath.row;
     cell.buttonLzl.tag = indexPath.row;
+    cell.buttonLzlTable.tag = indexPath.row;
     cell.buttonIcon.tag = indexPath.row;
     cell.webViewContainer.webView.tag = indexPath.row;
     
