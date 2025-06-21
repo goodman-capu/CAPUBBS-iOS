@@ -97,6 +97,7 @@
 }
 
 + (void)callApiWithParams:(NSDictionary *)params toURL:(NSString*)url callback:(ActionPerformerResultBlock)block {
+    NSLog(@"🌐 Calling API: %@", url);
     NSString *postUrl = [NSString stringWithFormat:@"%@/api/client.php?ask=%@",CHEXIE, url];
     
     NSMutableDictionary *requestParams = [@{

@@ -71,6 +71,10 @@
     return self.lzlDetail ? self.lzlDetail.count : 0;
 }
 
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    [self.buttonLzl sendActionsForControlEvents:UIControlEventTouchUpInside];
+}
+
 @end
 
 @implementation ContentLzlCell

@@ -25,5 +25,6 @@
 @property NSArray *defaultData;
 @property UITextView *textPost;
 @property UILabel *labelByte;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *buttomCompose;
 
 @end

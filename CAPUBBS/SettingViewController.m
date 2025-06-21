@@ -55,6 +55,8 @@
     [self.defaultSize setText:[NSString stringWithFormat:@"默认页面缩放 - %d%%", (int)self.stepperSize.value]];
     [self userChanged];
     [self refreshInfo];
+    self.appCacheSize.text = @"计算中...";
+    self.iconCacheSize.text = @"计算中...";
     [self cacheChanged:nil];
 }
 

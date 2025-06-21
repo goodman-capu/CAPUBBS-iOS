@@ -7,6 +7,7 @@
 //
 
 #import "LoginViewController.h"
+#import <AudioToolbox/AudioToolbox.h>
 #import "ContentViewController.h"
 #import "WebViewController.h"
 
@@ -29,16 +30,14 @@
     [targetView addSubview:hud];
     
     [NOTIFICATION addObserver:self selector:@selector(userChanged) name:@"userChanged" object:nil];
-    [NOTIFICATION addObserver:self selector:@selector(refreshIcon) name:@"infoRefreshed" object:nil];
+    [NOTIFICATION addObserver:self selector:@selector(refreshUserInfo) name:@"infoRefreshed" object:nil];
     
     userInfoRefreshing = NO;
-    newsRefreshing = NO;
     news = [NSArray arrayWithArray:[DEFAULTS objectForKey:@"newsCache"]];
     control = [[UIRefreshControl alloc] init];
     [control addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
     [self.tableview addSubview:control];
     
-    [self userChanged];
     // Uncomment the following line to preserve selection between presentations.
     // self.clearsSelectionOnViewWillAppear = NO;
     
@@ -48,6 +47,7 @@
 
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
+    [self userChanged];
     [self showEULA];
     if (self.textUid.text.length == 0) {
         [self.textUid becomeFirstResponder];
@@ -73,6 +73,8 @@
 - (void)refreshControlValueChanged:(UIRefreshControl *)refreshControl {
     control.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
     [hud showWithProgressMessage:@"正在刷新"];
+    // Reset to allow manual refresh
+    newsRefreshTime = 0;
     [self getNewsAndInfo];
 }
 
@@ -134,8 +136,6 @@
     // Return NO if you do not want the specified item to be editable.
     return ([ActionPerformer checkRight] > 0);
 }
-
-
 
 // Override to support editing the table view.
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -223,18 +223,23 @@
 - (void)userChanged {
     dispatch_main_async_safe(^{
         NSLog(@"Refresh User State");
-        NSString *username = UID;
-        if (username.length == 0) {
+        NSString *userName = UID;
+        BOOL shouldResetVibrate = lastUserName.length > 0 && ![userName isEqualToString:lastUserName];
+        lastUserName = userName;
+        if (userName.length == 0) {
             [self.iconUser setImage:PLACEHOLDER];
             [self.buttonAddNews setHidden:YES];
         } else {
-            [self refreshIcon];
+            [self refreshUserInfo];
             if (userInfoRefreshing == NO) {
                 userInfoRefreshing = YES;
                 [ActionPerformer callApiWithParams:@{@"uid": UID} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
                     userInfoRefreshing = NO;
                     if (!err && result.count > 0) {
                         [ActionPerformer updateUserInfo:result[0]];
+                        if (shouldResetVibrate) {
+                            vibrateTime = 0;
+                        }
                         [NOTIFICATION postNotificationName:@"infoRefreshed" object:nil];
                     }
                 }];
@@ -244,15 +249,47 @@
     });
 }
 
-- (void)refreshIcon {
-    dispatch_main_async_safe(^{
-        if (![USERINFO isEqual:@""]) {
-            [self.iconUser setUrl:[USERINFO objectForKey:@"icon"]];
+- (void)tryVibrate:(NSUInteger)mewMsgNum {
+    if (![[DEFAULTS objectForKey:@"vibrate"] boolValue]) {
+        return;
+    }
+    NSTimeInterval currentTime = [[NSDate date] timeIntervalSince1970];
+    // 10 min interval between vibrations
+    if (vibrateTime > 0 && currentTime - vibrateTime < 10 * 60) {
+        NSLog(@"Skip Vibrate");
+        return;
+    }
+    vibrateTime = currentTime;
+
+    if ([[[UIDevice currentDevice] model] containsString:@"iPhone"]) {
+        AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+        NSLog(@"Vibreate");
+    } else {
+        NSLog(@"Can Not Vibreate. Show Alert Instead");
+        UIViewController *topVc = [AppDelegate getTopViewController];
+        if (topVc) {
+            [topVc showAlertWithTitle:[NSString stringWithFormat:@"您有%ld条新消息", mewMsgNum]
+                              message:@"可以前往消息中心查看"];
+        }
+    }
+}
+
+- (void)refreshUserInfo {
+    dispatch_main_async_safe((^{
+        NSDictionary *infoDict = USERINFO;
+        if (![infoDict isEqual:@""]) {
+            [self.iconUser setUrl:infoDict[@"icon"]];
+            NSInteger newMsg = [infoDict[@"newmsg"] integerValue];
+            if ([ActionPerformer checkLogin:NO] && newMsg > 0) {
+                dispatch_global_after(0.5, ^{
+                    [self tryVibrate:newMsg];
+                });
+            }
         } else {
             [self.iconUser setImage:PLACEHOLDER];
         }
         [self.buttonAddNews setHidden:([ActionPerformer checkRight] < 1)];
-    });
+    }));
 }
 
 - (void)setLoginView {
@@ -376,12 +413,15 @@
 }
 
 - (void)getNewsAndInfo {
-    if (newsRefreshing) {
+    NSTimeInterval currentTime = [[NSDate date] timeIntervalSince1970];
+    // 60 min interval between news refresh
+    if (newsRefreshTime > 0 && currentTime - newsRefreshTime < 60 * 60) {
+        NSLog(@"Skip Fetch News");
         return;
     }
-    newsRefreshing = YES;
+    NSLog(@"Fetch News");
+    newsRefreshTime = currentTime;
     [ActionPerformer callApiWithParams:@{@"more":@"YES"} toURL:@"main" callback:^(NSArray *result, NSError *err) {
-        newsRefreshing = NO;
         if (control.isRefreshing) {
             [control endRefreshing];
         }

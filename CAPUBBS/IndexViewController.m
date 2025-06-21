@@ -6,7 +6,6 @@
 //  Copyright (c) 2014年 熊典. All rights reserved.
 //
 
-#import <AVFoundation/AVFoundation.h>
 #import "IndexViewController.h"
 #import "ListViewController.h"
 #import "ContentViewController.h"
@@ -30,10 +29,8 @@
     }
     cellWidth = cellHeight = 0;
     
-    [NOTIFICATION addObserver:self selector:@selector(setVibrate) name:@"userChanged" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(changeNoti) name:@"infoRefreshed" object:nil];
     
-    [self setVibrate];
     [self changeNoti];
 
     // Uncomment the following line to preserve selection between presentations.
@@ -61,20 +58,11 @@
     [self.collectionView reloadData];
 }
 
-- (void)setVibrate {
-    shouldVibrate = YES;
-}
-
 - (void)changeNoti {
     dispatch_main_async_safe(^{
         NSDictionary *infoDict = USERINFO;
-        if ([ActionPerformer checkLogin:NO] && ![infoDict isEqual:@""] && [[infoDict objectForKey:@"newmsg"] integerValue] > 0) {
+        if ([ActionPerformer checkLogin:NO] && ![infoDict isEqual:@""] && [infoDict[@"newmsg"] integerValue] > 0) {
             [self.buttonUser setImage:[UIImage imageNamed:@"user-noti"]];
-            if (shouldVibrate && [[DEFAULTS objectForKey:@"vibrate"] boolValue] == YES) {
-                AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
-                NSLog(@"Vibreate");
-            }
-            shouldVibrate = NO;
         } else {
             [self.buttonUser setImage:[UIImage imageNamed:@"user"]];
         }

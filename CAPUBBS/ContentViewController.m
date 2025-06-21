@@ -161,6 +161,9 @@ static const CGFloat kWebViewMinHeight = 40;
             }
             // text
             NSString *textraw = fixedEntry[@"textraw"];
+            if (!textraw || [textraw isEqualToString:@"Array"]) {
+                textraw = @"";
+            }
             if (![fixedEntry[@"ishtml"] isEqualToString:@"YES"]) {
                 NSData *data = [textraw dataUsingEncoding:NSUTF8StringEncoding];
                 NSDictionary *options = @{
@@ -174,11 +177,11 @@ static const CGFloat kWebViewMinHeight = 40;
             [fixedEntry removeObjectForKey:@"textraw"];
             [fixedEntry removeObjectForKey:@"ishtml"];
             // sig
-            if (!fixedEntry[@"sigraw"] || [fixedEntry[@"sigraw"] isEqualToString:@"Array"]) {
-                fixedEntry[@"sig"] = @"";
-            } else {
-                fixedEntry[@"sig"] = fixedEntry[@"sigraw"];
+            NSString *sigRaw = fixedEntry[@"sigraw"];
+            if (!sigRaw || [sigRaw isEqualToString:@"Array"]) {
+                sigRaw = @"";
             }
+            fixedEntry[@"sig"] = sigRaw;
             [fixedEntry removeObjectForKey:@"sigraw"];
             
             [data addObject:fixedEntry];
@@ -539,7 +542,6 @@ static const CGFloat kWebViewMinHeight = 40;
     
     cell.buttonAction.tag = indexPath.row;
     cell.buttonLzl.tag = indexPath.row;
-    cell.buttonLzlTable.tag = indexPath.row;
     cell.buttonIcon.tag = indexPath.row;
     cell.webViewContainer.webView.tag = indexPath.row;
     

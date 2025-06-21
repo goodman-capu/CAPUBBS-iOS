@@ -32,6 +32,7 @@
     [self.refreshControl addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
     shouldShowHud = YES;
     [self.tableView addGestureRecognizer:[[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)]];
+    [self.buttomCompose setEnabled:[ActionPerformer checkLogin:NO]];
     
     if (self.defaultData) {
         data = [self.defaultData mutableCopy];
@@ -128,7 +129,7 @@
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
     // Return the number of sections.
-    return 2;
+    return [ActionPerformer checkLogin:NO] ? 2 : 1;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
@@ -178,9 +179,11 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     if (indexPath.section == 0) {
         UIAlertController *action = [UIAlertController alertControllerWithTitle:@"选择操作" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-        [action addAction:[UIAlertAction actionWithTitle:@"回复" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            [self directPost:nil];
-        }]];
+        if ([ActionPerformer checkLogin:NO]) {
+            [action addAction:[UIAlertAction actionWithTitle:@"回复" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                [self directPost:nil];
+            }]];
+        }
         [action addAction:[UIAlertAction actionWithTitle:@"复制" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             [[UIPasteboard generalPasteboard] setString:lzlText];
             [hud showAndHideWithSuccessMessage:@"复制完成"];
@@ -221,7 +224,7 @@
             }]];
         }
         LzlCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
-        UIView *view = cell.textMain;
+        UIView *view = cell.imageBottom;
         action.popoverPresentationController.sourceView = view;
         action.popoverPresentationController.sourceRect = view.bounds;
         [self presentViewControllerSafe:action];
@@ -321,6 +324,9 @@
 }
 
 - (IBAction)directPost:(id)sender {
+    if (![ActionPerformer checkLogin:YES]) {
+        return;
+    }
     [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:1] atScrollPosition:UITableViewScrollPositionBottom animated:YES];
     if (sender == nil) {
         [self.textPost insertText:[NSString stringWithFormat:@"回复 @%@: ", lzlAuthor]];
@@ -353,7 +359,7 @@
         if (indexPath == nil || indexPath.section == 1) {
             return;
         }
-        if (![ActionPerformer checkLogin:YES]) {
+        if (![ActionPerformer checkLogin:NO]) {
             return;
         }
         lzlAuthor = data[indexPath.row][@"author"];

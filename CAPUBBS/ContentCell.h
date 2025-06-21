@@ -22,7 +22,6 @@
 @property (weak, nonatomic) IBOutlet UIButton *buttonIcon;
 @property (weak, nonatomic) IBOutlet UIView *topView;
 @property (weak, nonatomic) IBOutlet UITableView *lzlTableView;
-@property (weak, nonatomic) IBOutlet UIButton *buttonLzlTable;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *webviewHeight;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *lzlHeight;
 

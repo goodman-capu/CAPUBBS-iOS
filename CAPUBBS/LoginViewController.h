@@ -15,7 +15,9 @@
     NSString *title;
     UIRefreshControl *control;
     BOOL userInfoRefreshing;
-    BOOL newsRefreshing;
+    NSString *lastUserName;
+    NSTimeInterval vibrateTime;
+    NSTimeInterval newsRefreshTime;
 }
 @property (weak, nonatomic) IBOutlet UITextField *textUid;
 @property (weak, nonatomic) IBOutlet UITextField *textPass;

@@ -29,8 +29,16 @@
     }
 }
 
-- (void)setBlurredImage:(UIImage *)image animated:(BOOL)animated {
+- (void)setImage:(UIImage *)image {
     latestUrl = nil;
+    [super setImage:image];
+}
+
+- (void)setImageInternal:(UIImage *)image {
+    [super setImage:image];
+}
+
+- (void)setBlurredImage:(UIImage *)image animated:(BOOL)animated {
     float animationTime = 0.5;
     image = [UIImageEffects imageByApplyingExtraLightEffectToImage:image];
     if (animated) {
@@ -56,17 +64,22 @@
 }
 
 - (void)setGif:(NSString *)imageName {
-    latestUrl = nil;
-    NSString *filePath = [[NSBundle mainBundle] pathForResource:imageName ofType:nil];
-    NSData *fileData = [NSData dataWithContentsOfFile:filePath];
-    [self _setGifWithData:fileData];
+    dispatch_global_default_async(^{
+        NSString *filePath = [[NSBundle mainBundle] pathForResource:imageName ofType:nil];
+        NSData *fileData = [NSData dataWithContentsOfFile:filePath];
+        dispatch_main_async_safe(^{
+            [self _setGifWithData:fileData internal:NO];
+        });
+    });
 }
 
-- (void)_setGifWithData:(NSData *)data {
-    dispatch_main_async_safe(^{
-        SDAnimatedImage *image = [[SDAnimatedImage alloc] initWithData:data];
+- (void)_setGifWithData:(NSData *)data internal:(BOOL)internal {
+    SDAnimatedImage *image = [[SDAnimatedImage alloc] initWithData:data];
+    if (internal) {
+        [self setImageInternal:image];
+    } else {
         [self setImage:image];
-    });
+    }
 }
 
 - (void)setUrl:(NSString *)urlToSet {
@@ -93,21 +106,22 @@
     NSData *data = [MANAGER contentsAtPath:filePath];
     NSString *oldInfo = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     
-    // 一定要在主线程上刷新图片 否则软件崩溃
     if (data.length > 0 && ![oldInfo hasPrefix:@"loading"]) { // 缓存存在的话直接加载缓存
         dispatch_main_async_safe(^{
             if (SIMPLE_VIEW == YES) {
-                [self setImage:[UIImage imageWithData:data]];
+                [self setImageInternal:[UIImage imageWithData:data]];
             } else {
-                [self _setGifWithData:data];
-            }
-            if (imageUrl.length > 0) {
-                [NOTIFICATION postNotificationName:[@"imageSet" stringByAppendingString:imageUrl] object:nil userInfo:@{@"data": data}];
+                [self _setGifWithData:data internal:YES];
             }
         });
+        if (imageUrl.length > 0) {
+            [NOTIFICATION postNotificationName:[@"imageSet" stringByAppendingString:imageUrl] object:nil userInfo:@{@"data": data}];
+        }
     } else if (imageUrl.length > 0) {
         if (showPlaceholder) {
-            [self setImage:PLACEHOLDER];
+            dispatch_main_async_safe(^{
+                [self setImageInternal:PLACEHOLDER];
+            });
         }
         [NOTIFICATION addObserver:self selector:@selector(loadImageWithPlaceholder:) name:[@"imageGet" stringByAppendingString:imageUrl] object:nil];
         
@@ -152,7 +166,7 @@
     [MANAGER removeItemAtPath:filePath error:nil];
     if (!hasPlaceholder) {
         dispatch_main_async_safe(^{
-            [self setImage:PLACEHOLDER];
+            [self setImageInternal:PLACEHOLDER];
         });
     }
     if (!shouldSkipLoading) {

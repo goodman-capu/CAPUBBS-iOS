@@ -11,7 +11,6 @@
 
 @interface IndexViewController : CustomViewController<UICollectionViewDelegate> {
     MBProgressHUD *hud;
-    BOOL shouldVibrate;
     CGFloat cellWidth;
     CGFloat cellHeight;
     CGFloat cellSpace;
