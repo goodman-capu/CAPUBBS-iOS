@@ -41,12 +41,6 @@
     // Do any additional setup after loading the view.
 }
 
-- (void)viewDidDisappear:(BOOL)animated {
-    [super viewDidDisappear:animated];
-    [self.webViewContainer.webView stopLoading];
-    [self.webViewContainer.webView setNavigationDelegate:nil];
-}
-
 - (IBAction)done:(id)sender {
     [NOTIFICATION postNotificationName:@"publishContent" object:nil];
     [self.navigationController popViewControllerAnimated:YES];

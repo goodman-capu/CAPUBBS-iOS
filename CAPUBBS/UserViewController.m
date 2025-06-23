@@ -88,17 +88,6 @@
     }
 }
 
-- (void)viewDidDisappear:(BOOL)animated {
-    [super viewDidDisappear:animated];
-    if (heightCheckTimer.isValid) {
-        [heightCheckTimer invalidate];
-    }
-    for (CustomWebViewContainer *webviewContainer in webViewContainers) {
-        [webviewContainer.webView stopLoading];
-        [webviewContainer.webView setNavigationDelegate:nil];
-    }
-}
-
 - (void)refresh:(NSNotification *)noti {
     dispatch_main_async_safe(^{
         if (self.iconData.length == 0) {
