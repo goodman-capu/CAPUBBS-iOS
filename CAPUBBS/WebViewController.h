@@ -11,6 +11,7 @@
 #import "CustomWebViewContainer.h"
 
 @interface WebViewController : CustomViewController<WKNavigationDelegate, UIScrollViewDelegate> {
+    MBProgressHUD *hud;
     CGFloat contentOffsetY;
     BOOL isAtEnd;
     NSUserActivity *activity;

@@ -22,12 +22,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
-// 防止循环引用的delegate
-@interface WeakScriptMessageDelegate : NSObject <WKScriptMessageHandler>
+@interface WKWebView (Custom)
 
-- (instancetype)initWithDelegate:(id<WKScriptMessageHandler>)delegate;
-
-@property (nonatomic, weak, readonly) id<WKScriptMessageHandler> delegate;
+/// Replaces current script message handler with the new delegate, wrapped in WeakScriptMessageDelegate
+- (void)setWeakScriptMessageHandler:(id<WKScriptMessageHandler>)delegate forName:(NSString *)handlerName;
 
 @end
 

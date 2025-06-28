@@ -64,6 +64,7 @@
         }
         [self.textBody becomeFirstResponder];
     }
+    [self updateAttachments];
     
     self.textTitle.delegate = self;
     self.textBody.delegate = self;
@@ -153,6 +154,25 @@
     }
 }
 
+- (void)updateAttachments {
+    if (self.isEdit && self.attachments && self.attachments.count > 0) {
+        [self.buttonAttachments setTitle:[NSString stringWithFormat:@"📎%ld", self.attachments.count] forState:UIControlStateNormal];
+    } else {
+        self.buttonAttachments.hidden = YES;
+    }
+}
+
+- (NSString *)shortenFileName:(NSString *)name {
+    NSString *fileName = [name stringByDeletingPathExtension];
+    if (fileName.length > 15) {
+        NSString *extension = [name pathExtension];
+        NSString *prefix = [fileName substringToIndex:8];
+        NSString *suffix = [fileName substringFromIndex:fileName.length - 4];
+        name = [NSString stringWithFormat:@"%@...%@.%@", prefix, suffix, extension];
+    }
+    return name;
+}
+
 - (void)textViewDidChange:(UITextView *)textView {
     [self updateActivity];
     [self updateDismissable];
@@ -226,6 +246,17 @@
     [self.view endEditing:YES];
 }
 
+- (NSString *)getAttachsString {
+    if (!self.attachments || self.attachments.count == 0) {
+        return @"";
+    }
+    NSMutableArray *attachmentIds = [NSMutableArray array];
+    for (NSDictionary *attachment in self.attachments) {
+        [attachmentIds addObject:attachment[@"id"]];
+    }
+    return [attachmentIds componentsJoinedByString:@" "];
+}
+
 - (IBAction)done:(id)sender {
     if (self.textTitle.text.length==0) {
         [self showAlertWithTitle:@"错误" message:@"请输入标题！" cancelAction:^(UIAlertAction *action) {
@@ -254,7 +285,8 @@
         @"title" : self.textTitle.text,
         @"text" : content,
         @"sig" : [NSString stringWithFormat:@"%ld", (long)self.segmentedControl.selectedSegmentIndex],
-        @"pid" : self.floor
+        @"pid" : self.floor,
+        @"attachs": [self getAttachsString]
     }: @{
         @"bid" : self.bid,
         @"tid" : self.tid,
@@ -268,14 +300,14 @@
             [hud hideWithFailureMessage:@"发表失败"];
             return;
         }
-        NSInteger back = [result[0][@"code"] integerValue];
-        if (back == 0) {
+        NSInteger code = [result[0][@"code"] integerValue];
+        if (code == 0) {
             [hud hideWithSuccessMessage:@"发表成功"];
             [SKStoreReviewController requestReview];
         } else {
             [hud hideWithFailureMessage:@"发表失败"];
         }
-        switch (back) {
+        switch (code) {
             case 0:{
                 [NOTIFICATION postNotificationName:@"refreshContent" object:nil userInfo:@{
                     @"isEdit" : @(self.isEdit),
@@ -391,7 +423,7 @@
         [self presentViewControllerSafe:alert];
     }]];
     [action addAction:[UIAlertAction actionWithTitle:@"照片图库" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        if (@available(iOS 14, *)) {
+        if (@available(iOS 14.0, *)) {
             PHPickerConfiguration *config = [[PHPickerConfiguration alloc] init];
             config.selectionLimit = 20; // 最多一次选20张
             config.filter = [PHPickerFilter imagesFilter];
@@ -662,21 +694,21 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
     }];
     [alert addAction:[UIAlertAction actionWithTitle:@"取消"
                                               style:UIAlertActionStyleCancel
-                                            handler:^(UIAlertAction * _Nonnull action) {
-        [self.textBody becomeFirstResponder];
-    }]];
+                                            handler:nil]];
     [alert addAction:[UIAlertAction actionWithTitle:@"插入"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
         NSString *user = alert.textFields[0].text;
         NSString *body = alert.textFields[1].text;
+        if (user.length == 0) {
+            [self showAlertWithTitle:@"错误" message:@"用户不能为空"];
+            return;
+        }
         if (body.length == 0) {
             [self.textBody insertText:[NSString stringWithFormat:@"[at]%@[/at]", user]];
         } else {
             [self.textBody insertText:[NSString stringWithFormat:@"[quote=%@]%@[/quote]\n", user, body]];
         }
-        [self.textBody becomeFirstResponder];
-        
     }]];
     [self presentViewControllerSafe:alert];
 }
@@ -688,34 +720,31 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
         return;
     }
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"插入链接"
-                                                                   message:@"请输入链接的标题和地址"
+                                                                   message:@"请输入链接的标题和网址"
                                                             preferredStyle:UIAlertControllerStyleAlert];
     [alert addTextFieldWithConfigurationHandler:^(UITextField *textField) {
         textField.placeholder = @"标题";
     }];
     [alert addTextFieldWithConfigurationHandler:^(UITextField *textField) {
-        textField.placeholder = @"地址";
+        textField.placeholder = @"网址";
         textField.keyboardType = UIKeyboardTypeURL;
     }];
     [alert addAction:[UIAlertAction actionWithTitle:@"取消"
                                               style:UIAlertActionStyleCancel
-                                            handler:^(UIAlertAction * _Nonnull action) {
-        [self.textBody becomeFirstResponder];
-    }]];
+                                            handler:nil]];
     [alert addAction:[UIAlertAction actionWithTitle:@"插入"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
         NSString *title = alert.textFields[0].text;
         NSString *url = alert.textFields[1].text;
+        if (url.length == 0) {
+            [self showAlertWithTitle:@"错误" message:@"网址不能为空"];
+            return;
+        }
         if (title.length == 0) {
             title = url;
         }
-        if (!([url hasPrefix:@"http://"] || [url hasPrefix:@"https://"] || [url hasPrefix:@"ftp://"])) {
-            url = [@"https://" stringByAppendingString:url];
-        }
         [self.textBody insertText:[NSString stringWithFormat:@"[url=%@]%@[/url]", url, title]];
-        [self.textBody becomeFirstResponder];
-        
     }]];
     [self presentViewControllerSafe:alert];
 }
@@ -738,6 +767,44 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
     [hud showAndHideWithSuccessMessage:@"清除成功"];
 }
 
+- (IBAction)seeAttachment:(id)sender {
+    if (!self.isEdit || !self.attachments || self.attachments.count == 0) {
+        return;
+    }
+    UIAlertController *action = [UIAlertController alertControllerWithTitle:@"请选择对附件的操作" message:@"暂不支持上传附件。如果您需要上传附件，请前往网页版。" preferredStyle:UIAlertControllerStyleActionSheet];
+    NSMutableArray *infos = [NSMutableArray array];
+    for (NSDictionary *attachment in self.attachments) {
+        NSString *shortName = [self shortenFileName:attachment[@"name"]];
+        NSString *info = [NSString stringWithFormat:@"%@ (%@)", shortName, [ActionPerformer fileSize:[attachment[@"size"] intValue]]];
+        [infos addObject:info];
+        [action addAction:[UIAlertAction actionWithTitle:[NSString stringWithFormat:@"删除：%@", shortName]
+                                                   style:UIAlertActionStyleDefault
+                                                 handler:^(UIAlertAction * _Nonnull action) {
+            [self showAlertWithTitle:@"确认删除附件" message:info confirmTitle:@"删除" confirmAction:^(UIAlertAction *action) {
+                NSMutableArray *newAttachments = [self.attachments mutableCopy];
+                [newAttachments removeObject:attachment];
+                self.attachments = [newAttachments copy];
+                [self updateAttachments];
+            }];
+        }]];
+    }
+    if (self.attachments.count > 1) {
+        [action addAction:[UIAlertAction actionWithTitle:@"删除所有附件"
+                                                   style:UIAlertActionStyleDefault
+                                                 handler:^(UIAlertAction * _Nonnull action) {
+            [self showAlertWithTitle:@"确认删除所有附件" message:[infos componentsJoinedByString:@"\n"] confirmTitle:@"删除" confirmAction:^(UIAlertAction *action) {
+                self.attachments = @[];
+                [self updateAttachments];
+            }];
+        }]];
+    }
+    [action addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
+    UIButton *button = sender;
+    action.popoverPresentationController.sourceView = button;
+    action.popoverPresentationController.sourceRect = button.bounds;
+    [self presentViewControllerSafe:action];
+}
+
 - (IBAction)clearFormat:(id)sender {
     NSString *hint = self.textBody.selectedRange.length > 0 ? @"选定范围" : @"所有";
     [self.textTitle resignFirstResponder];
@@ -749,7 +816,7 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
                                              handler:^(UIAlertAction * _Nonnull action) {
         [self showAlertWithTitle:@"提示" message:[NSString stringWithFormat:@"确认要清除%@的HTML标签吗？\n图片、链接、字体、颜色等会被尽量保留", hint] confirmTitle:@"清除" confirmAction:^(UIAlertAction *action) {
             [self clearWithFunction:^NSString *(NSString *text) {
-                return [ActionPerformer removeHTML:[ActionPerformer restoreFormat:text]];
+                return [ActionPerformer removeHTML:text restoreFormat:YES];
             }];
         }];
     }]];
@@ -838,6 +905,7 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
         PreviewViewController *dest = [segue destinationViewController];
         dest.textTitle = self.textTitle.text;
         dest.textBody = self.textBody.text;
+        dest.attachments = self.attachments;
         dest.sig = (int)self.segmentedControl.selectedSegmentIndex;
     }
     if ([segue.identifier isEqualToString:@"addText"]) {

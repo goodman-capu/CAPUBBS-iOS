@@ -14,6 +14,7 @@
     NSArray *news;
     NSString *title;
     UIRefreshControl *control;
+    BOOL enterLogin;
     BOOL userInfoRefreshing;
     NSString *lastUserName;
     NSTimeInterval vibrateTime;

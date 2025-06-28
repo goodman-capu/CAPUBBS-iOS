@@ -13,23 +13,6 @@
 // Just a random UUID
 #define UUID @"1ff24b67-2a92-41d9-9139-18be48987f3a"
 
-@interface WKWebView (Extension)
-
-- (NSString *)getAlertTitle;
-
-@end
-
-@implementation WKWebView (Extension)
-
-- (NSString *)getAlertTitle {
-    if (self.URL && self.URL.host) {
-        return [NSString stringWithFormat:@"来自%@的消息", self.URL.host];
-    }
-    return @"来自网页的消息";
-}
-
-@end
-
 @implementation CustomWebViewContainer
 
 static NSMutableDictionary *sharedProcessPools = nil;
@@ -53,6 +36,13 @@ static dispatch_once_t onceSharedDataSource;
 //
 //    return [[NSUUID alloc] initWithUUIDBytes:uuidBytes];
 //}
+
++ (NSString *)getAlertTitle:(WKFrameInfo *)frame {
+    if (frame.request && frame.request.URL) {
+        return [NSString stringWithFormat:@"来自%@的消息", frame.request.URL.host];
+    }
+    return @"来自网页的消息";
+}
 
 + (void)clearAllDataStores:(void (^)(void))completionHandler {
     dispatch_main_sync_safe(^{
@@ -127,6 +117,18 @@ static dispatch_once_t onceSharedDataSource;
     }
 }
 
+- (void)dealloc {
+    if (_webView) {
+        [_webView stopLoading];
+        [_webView setNavigationDelegate:nil];
+        [_webView setUIDelegate:nil];
+        // Before iOS 14, WeakScriptMessageDelegate will be retained forever
+        if (@available(iOS 14.0, *)) {
+            [_webView.configuration.userContentController removeAllScriptMessageHandlers];
+        }
+    }
+}
+
 - (void)initiateWebViewWithToken:(BOOL)hasToken {
     WKProcessPool *processPool = [CustomWebViewContainer sharedProcessPoolWithToken:hasToken];
     WKWebsiteDataStore *dataStore = [CustomWebViewContainer sharedDataSourceWithToken:hasToken];
@@ -195,11 +197,7 @@ static dispatch_once_t onceSharedDataSource;
 }
 
 - (void)showTimeoutMessage {
-    UIViewController *viewController = [AppDelegate getTopViewController];
-    if (!viewController) {
-        return;
-    }
-    [viewController showAlertWithTitle:@"错误" message:@"您太久未选择操作，已帮您自动取消对话"];
+    [[AppDelegate getTopViewController] showAlertWithTitle:@"错误" message:@"您太久未选择操作，已超时自动取消对话"];
 }
 
 - (void)webView:(WKWebView *)webView runJavaScriptAlertPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(WK_SWIFT_UI_ACTOR void (^)(void))completionHandler {
@@ -209,7 +207,7 @@ static dispatch_once_t onceSharedDataSource;
     if (!viewController) {
         return;
     }
-    [viewController showAlertWithTitle:[webView getAlertTitle] message:message];
+    [viewController showAlertWithTitle:[CustomWebViewContainer getAlertTitle:frame] message:message];
 }
 
 - (void)webView:(WKWebView *)webView runJavaScriptConfirmPanelWithMessage:(nonnull NSString *)message initiatedByFrame:(nonnull WKFrameInfo *)frame completionHandler:(nonnull WK_SWIFT_UI_ACTOR void (^)(BOOL))completionHandler {
@@ -218,19 +216,23 @@ static dispatch_once_t onceSharedDataSource;
         completionHandler(NO);
         return;
     }
+    
     __block BOOL handlerCalled = NO;
-    [viewController showAlertWithTitle:[webView getAlertTitle] message:message confirmTitle:@"确定" confirmAction:^(UIAlertAction *action) {
-        if (!handlerCalled) {
-            completionHandler(YES);
-            handlerCalled = YES;
-        } else {
+    BOOL (^safeHandler)(BOOL) = ^(BOOL result) {
+        if (handlerCalled) {
+            return NO;
+        }
+        handlerCalled = YES;
+        completionHandler(result);
+        return YES;
+    };
+    
+    [viewController showAlertWithTitle:[CustomWebViewContainer getAlertTitle:frame] message:message confirmTitle:@"确定" confirmAction:^(UIAlertAction *action) {
+        if (!safeHandler(YES)) {
             [self showTimeoutMessage];
         }
     } cancelTitle:@"取消" cancelAction:^(UIAlertAction *action) {
-        if (!handlerCalled) {
-            completionHandler(NO);
-            handlerCalled = YES;
-        } else {
+        if (!safeHandler(NO)) {
             [self showTimeoutMessage];
         }
     }];
@@ -238,10 +240,8 @@ static dispatch_once_t onceSharedDataSource;
     // 延迟兜底调用 handler，注意这会保持对 completionHandler 的引用，VC会在计时结束后才dealloc
     // 考虑到此类型弹窗很罕见，可以接受
     dispatch_main_after(60, ^{
-        if (!handlerCalled) {
+        if (safeHandler(NO)) {
             NSLog(@"completionHandler not called by user, fallback to call handler");
-            completionHandler(NO);
-            handlerCalled = YES;
         }
     });
 }
@@ -252,29 +252,33 @@ static dispatch_once_t onceSharedDataSource;
         completionHandler(nil);
         return;
     }
+    
     __block BOOL handlerCalled = NO;
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:[webView getAlertTitle] message:prompt preferredStyle:UIAlertControllerStyleAlert];
+    BOOL (^safeHandler)(NSString *) = ^(NSString *result) {
+        if (handlerCalled) {
+            return NO;
+        }
+        handlerCalled = YES;
+        completionHandler(result);
+        return YES;
+    };
+    
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:[CustomWebViewContainer getAlertTitle:frame] message:prompt preferredStyle:UIAlertControllerStyleAlert];
     [alert addTextFieldWithConfigurationHandler:^(UITextField * textField) {
         textField.text = defaultText;
     }];
-    [alert addAction:[UIAlertAction actionWithTitle:@"取消"
-                                              style:UIAlertActionStyleCancel
-                                            handler:^(UIAlertAction * action) {
-        if (!handlerCalled) {
-            completionHandler(nil);
-            handlerCalled = YES;
-        } else {
-            [self showTimeoutMessage];
-        }
-    }]];
     [alert addAction:[UIAlertAction actionWithTitle:@"确定"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * action) {
         NSString *input = alert.textFields.firstObject.text;
-        if (!handlerCalled) {
-            completionHandler(input);
-            handlerCalled = YES;
-        } else {
+        if (!safeHandler(input)) {
+            [self showTimeoutMessage];
+        }
+    }]];
+    [alert addAction:[UIAlertAction actionWithTitle:@"取消"
+                                              style:UIAlertActionStyleCancel
+                                            handler:^(UIAlertAction * action) {
+        if (!safeHandler(nil)) {
             [self showTimeoutMessage];
         }
     }]];
@@ -283,10 +287,8 @@ static dispatch_once_t onceSharedDataSource;
     // 延迟兜底调用 handler，注意这会保持对 completionHandler 的引用，VC会在计时结束后才dealloc
     // 考虑到此类型弹窗很罕见，可以接受
     dispatch_main_after(60, ^{
-        if (!handlerCalled) {
+        if (safeHandler(nil)) {
             NSLog(@"completionHandler not called by user, fallback to call handler");
-            completionHandler(nil);
-            handlerCalled = YES;
         }
     });
 }
@@ -294,23 +296,36 @@ static dispatch_once_t onceSharedDataSource;
 - (WKWebView *)webView:(WKWebView *)webView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures {
     // Open in new page request (like target='_blank')
     if (!navigationAction.targetFrame.isMainFrame && navigationAction.request.URL) {
-        const NSURL *currentUrl = webView.URL;
-        const NSURL *newUrl = navigationAction.request.URL;
+        NSURL *currentUrl = webView.URL;
+        NSURL *newUrl = navigationAction.request.URL;
         if ([currentUrl.host isEqualToString:newUrl.host]) {
             // Same host, navigate directly
             [webView loadRequest:navigationAction.request];
         } else {
             // Ask for user confirmation
-            UIViewController *viewController = [AppDelegate getTopViewController];
-            if (viewController) {
-                [viewController showAlertWithTitle:@"是否跳转至" message:newUrl.absoluteString confirmTitle:@"确定" confirmAction:^(UIAlertAction *action) {
+            [[AppDelegate getTopViewController] showAlertWithTitle:@"是否跳转至" message:newUrl.absoluteString confirmTitle:@"确定" confirmAction:^(UIAlertAction *action) {
+                NSString *scheme = newUrl.scheme.lowercaseString;
+                if ([scheme isEqualToString:@"http"] || [scheme isEqualToString:@"https"]) {
                     [webView loadRequest:navigationAction.request];
-                }];
-            }
+                } else if ([[UIApplication sharedApplication] canOpenURL:newUrl]) {
+                    [[UIApplication sharedApplication] openURL:newUrl options:@{} completionHandler:nil];
+                } else {
+                    [[AppDelegate getTopViewController] showAlertWithTitle:@"加载错误" message:@"不支持该链接，可能未安装相应App"];
+                }
+            }];
         }
     }
     return nil; // 不创建新 webView，防止空白页
 }
+
+@end
+
+/// A delegate to avoid strong reference cycle
+@interface WeakScriptMessageDelegate : NSObject <WKScriptMessageHandler>
+
+- (instancetype)initWithDelegate:(id<WKScriptMessageHandler>)delegate;
+
+@property (nonatomic, weak, readonly) id<WKScriptMessageHandler> delegate;
 
 @end
 
@@ -329,6 +344,16 @@ static dispatch_once_t onceSharedDataSource;
     if ([self.delegate respondsToSelector:@selector(userContentController:didReceiveScriptMessage:)]) {
         [self.delegate userContentController:userContentController didReceiveScriptMessage:message];
     }
+}
+
+@end
+
+@implementation WKWebView (Custom)
+
+- (void)setWeakScriptMessageHandler:(id<WKScriptMessageHandler>)delegate forName:(NSString *)handlerName {
+    [self.configuration.userContentController removeScriptMessageHandlerForName:handlerName];
+    WeakScriptMessageDelegate *weakDelegate = [delegate isKindOfClass:[WeakScriptMessageDelegate class]] ? delegate : [[WeakScriptMessageDelegate alloc] initWithDelegate:delegate];
+    [self.configuration.userContentController addScriptMessageHandler:weakDelegate name:handlerName];
 }
 
 @end

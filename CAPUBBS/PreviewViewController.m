@@ -27,16 +27,17 @@
     [self.webViewContainer.layer setCornerRadius:10.0];
     [self.webViewContainer.webView setNavigationDelegate:self];
     self.labelTitle.text = self.textTitle;
-    NSDictionary *dict = USERINFO;
     NSString *sig = nil;
     if (self.sig > 0) {
-        if ([dict isEqual:@""] || [dict[[NSString stringWithFormat:@"sig%d", self.sig]] length] == 0) {
+        NSDictionary *dict = USERINFO;
+        NSString *sigKey = [NSString stringWithFormat:@"sig%d", self.sig];
+        if ([dict isEqual:@""] || [dict[sigKey] length] == 0 || [dict[sigKey] isEqualToString:@"Array"]) {
             sig = [NSString stringWithFormat:@"[您选择了第%d个签名档]", self.sig];
         } else {
-            sig = dict[[NSString stringWithFormat:@"sig%d", self.sig]];
+            sig = [ActionPerformer transToHTML:dict[sigKey]];
         }
     }
-    NSString *html = [ActionPerformer htmlStringWithText:[ActionPerformer transToHTML:self.textBody] sig:sig textSize:[[DEFAULTS objectForKey:@"textSize"] intValue]];
+    NSString *html = [ActionPerformer htmlStringWithText:[ActionPerformer transToHTML:self.textBody] attachments:self.attachments sig:sig textSize:[[DEFAULTS objectForKey:@"textSize"] intValue]];
     [self.webViewContainer.webView loadHTMLString:html baseURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/bbs/content/?", CHEXIE]]];
     // Do any additional setup after loading the view.
 }
@@ -71,6 +72,12 @@
     if ([path hasPrefix:@"tel:"]) {
         // Directly open
         [[UIApplication sharedApplication] openURL:[NSURL URLWithString:path] options:@{} completionHandler:nil];
+        decisionHandler(WKNavigationActionPolicyCancel);
+        return;
+    }
+    
+    if ([path hasPrefix:@"capubbs-attach:"]) {
+        [self showAlertWithTitle:@"提示" message:@"预览模式中不会下载附件"];
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     }

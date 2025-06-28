@@ -7,6 +7,7 @@
 //
 
 #import "WebViewController.h"
+#import <Foundation/NSURLError.h>
 
 @interface WebViewController ()
 
@@ -21,22 +22,25 @@
     [self.webViewContainer.webView.scrollView setDelegate:self];
     [self.webViewContainer.webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionNew context:nil];
     
+    UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
+    hud = [[MBProgressHUD alloc] initWithView:targetView];
+    [targetView addSubview:hud];
     self.buttonBack.enabled = NO;
     self.buttonForward.enabled = NO;
     NSURL *url = [NSURL URLWithString:self.URL];
-    if (!url || !url.host) {
+    if (!url || !url.host || !url.scheme) {
         self.URL = [@"https://" stringByAppendingString:self.URL];
+        url = [NSURL URLWithString:self.URL];
     }
     
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:self.URL]];
-    [self.webViewContainer.webView loadRequest:request];
+    [self.webViewContainer.webView loadRequest:[NSURLRequest requestWithURL:url]];
     // Do any additional setup after loading the view.
 }
 
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     activity = [[NSUserActivity alloc] initWithActivityType:[BUNDLE_IDENTIFIER stringByAppendingString:@".web"]];
-    activity.webpageURL = [NSURL URLWithString:self.URL];
+    [self setSafeActivityUrl:[NSURL URLWithString:self.URL]];
     [activity becomeCurrent];
 }
 
@@ -47,6 +51,15 @@
 
 - (void)dealloc {
     [self.webViewContainer.webView removeObserver:self forKeyPath:@"estimatedProgress"];
+}
+
+- (void)setSafeActivityUrl:(NSURL *)url {
+    NSString *scheme = url.scheme.lowercaseString;
+    if (url && ([scheme isEqualToString:@"http"] || [scheme isEqualToString:@"https"])) {
+        activity.webpageURL = url;
+    } else {
+        activity.webpageURL = nil;
+    }
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath
@@ -103,14 +116,13 @@
     self.title = @"加载中";
     self.navigationItem.rightBarButtonItems = @[self.buttonStop];
     [self.navigationController setToolbarHidden:NO animated:YES];
-    
-    NSURL *url = webView.URL;
-    if (url.absoluteString.length > 0) {
-        activity.webpageURL = url;
-    }
+    [self setSafeActivityUrl:webView.URL];
+
     if (titleCheckTimer && titleCheckTimer.isValid) {
         [titleCheckTimer invalidate];
     }
+    
+    // 使用 weakSelf 防止循环引用导致不能 dealloc
     __weak typeof(self) weakSelf = self;
     titleCheckTimer = [NSTimer scheduledTimerWithTimeInterval:0.1 repeats:YES block:^(NSTimer * _Nonnull timer) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
@@ -133,23 +145,116 @@
 }
 
 - (void)webView:(WKWebView *)webView didFailNavigation:(WKNavigation *)navigation withError:(NSError *)error {
-    NSLog(@"WebView 加载失败: %@", error);
-    
+    NSLog(@"⚠️ WebView 加载失败: %@", error);
+    [self handleWebView:webView error:error];
+}
+
+- (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error {
+    NSLog(@"⚠️ WebView 导航失败: %@", error);
+    [self handleWebView:webView error:error];
+}
+
+- (void)handleWebView:(WKWebView *)webView error:(NSError *)error {
     self.buttonBack.enabled = [webView canGoBack];
     self.buttonForward.enabled = [webView canGoForward];
-    if (webView.URL.absoluteString.length > 0) {
-        self.URL = webView.URL.absoluteString;
-    }
     self.navigationItem.rightBarButtonItems = @[self.buttonRefresh];
+    [self.progressView setProgress:0 animated:YES];
+    self.progressView.hidden = YES;
+        
+    if (!error || ![error.domain isEqualToString:NSURLErrorDomain] || error.code == NSURLErrorCancelled) {
+        return;
+    }
     
-//    if (error.code == -1022) { // http不安全链接 尝试使用https重连
-//        NSString *httpUrl = error.userInfo[NSURLErrorFailingURLStringErrorKey];
-//        self.URL = [httpUrl stringByReplacingOccurrencesOfString:@"http://" withString:@"https://"];
-//        [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:self.URL]]];
+    NSURL *failingUrl = error.userInfo[NSURLErrorFailingURLErrorKey];
+    
+//    if (error.code == NSURLErrorAppTransportSecurityRequiresSecureConnection && [failingUrl.scheme isEqualToString:@"http"]) { // http不安全链接 尝试使用https重连
+//        NSString *httpsUrl = [failingUrl.absoluteString stringByReplacingOccurrencesOfString:@"http://" withString:@"https://"];
+//        [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:httpsUrl]]];
 //        return;
 //    }
-    if (error.code != -999) { // 999:主动终止加载
-        [self showAlertWithTitle:@"加载错误" message:[error localizedDescription]];
+    
+    NSString *errorMessage = [error localizedDescription];
+    switch (error.code) {
+        case NSURLErrorTimedOut:
+            errorMessage = @"请求超时";
+            break;
+        case NSURLErrorNotConnectedToInternet:
+            errorMessage = @"无网络连接";
+            break;
+        case NSURLErrorNetworkConnectionLost:
+            errorMessage = @"网络连接中断";
+            break;
+        case NSURLErrorCannotFindHost:
+            errorMessage = @"无法找到服务器";
+            break;
+        case NSURLErrorCannotConnectToHost:
+            errorMessage = @"无法连接到服务器";
+            break;
+        case NSURLErrorBadServerResponse:
+            errorMessage = @"服务器响应异常";
+            break;
+        case NSURLErrorDataNotAllowed:
+            errorMessage = @"数据访问受限，检查是否开启了网络访问权限";
+            break;
+        case NSURLErrorAppTransportSecurityRequiresSecureConnection:
+            errorMessage = @"安全连接失败：不安全的 HTTP 网址被系统拒绝";
+            break;
+        case NSURLErrorSecureConnectionFailed:
+            errorMessage = @"安全连接失败：可能为 HTTPS 证书问题";
+            break;
+        case NSURLErrorServerCertificateHasBadDate:
+        case NSURLErrorServerCertificateUntrusted:
+        case NSURLErrorServerCertificateHasUnknownRoot:
+        case NSURLErrorServerCertificateNotYetValid:
+        case NSURLErrorClientCertificateRejected:
+        case NSURLErrorClientCertificateRequired:
+            errorMessage = @"安全连接失败：HTTPS 证书异常";
+            break;
+        case NSURLErrorBadURL:
+            errorMessage = @"无效的链接";
+            break;
+        case NSURLErrorUnsupportedURL: {
+            NSString *scheme = failingUrl.scheme.lowercaseString;
+            if (scheme && ![scheme isEqualToString:@"http"] && ![scheme isEqualToString:@"https"]) {
+                errorMessage = @"不支持该链接，可能未安装相应App";
+            } else {
+                errorMessage = @"不支持该链接";
+            }
+            break;
+        }
+        default:
+            break;
+    }
+    if (failingUrl.absoluteString) {
+        NSString *urlString = failingUrl.absoluteString;
+        NSString *displayURL = urlString;
+        if (urlString.length > 200) {
+            NSString *head = [urlString substringToIndex:100];
+            NSString *tail = [urlString substringFromIndex:urlString.length - 100];
+            displayURL = [NSString stringWithFormat:@"%@\n...\n%@", head, tail];
+        }
+        
+        
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"加载错误" message:[NSString stringWithFormat:@"%@ (%ld)\n\n%@", errorMessage, error.code, displayURL] preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:@"复制链接"
+                                                  style:UIAlertActionStyleDefault
+                                                handler:^(UIAlertAction * action) {
+            [[UIPasteboard generalPasteboard] setString:urlString];
+            [hud showAndHideWithSuccessMessage:@"复制成功"];
+        }]];
+        [alert addAction:[UIAlertAction actionWithTitle:@"重新加载"
+                                                  style:UIAlertActionStyleDefault
+                                                handler:^(UIAlertAction * action) {
+            dispatch_main_after(0.25, ^{
+                [webView loadRequest:[NSURLRequest requestWithURL:failingUrl]];
+            });
+        }]];
+        [alert addAction:[UIAlertAction actionWithTitle:@"好"
+                                                  style:UIAlertActionStyleCancel
+                                                handler:nil]];
+        [self presentViewControllerSafe:alert];
+    } else {
+        [self showAlertWithTitle:@"加载错误" message:errorMessage];
     }
 }
 
@@ -191,6 +296,12 @@
 - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {
     contentOffsetY = scrollView.contentOffset.y;
     isAtEnd = NO;
+}
+
+// 点击系统状态栏回到顶部
+- (BOOL)scrollViewShouldScrollToTop:(UIScrollView *)scrollView {
+    [self.navigationController setToolbarHidden:NO animated:YES];
+    return YES;
 }
 
 // 滚动时调用此方法

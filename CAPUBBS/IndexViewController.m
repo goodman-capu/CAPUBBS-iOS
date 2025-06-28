@@ -224,9 +224,9 @@
         NSString *childPath = [NSString stringWithFormat:@"%@/%@", rootFolder, path];
         NSArray *testPaths = [MANAGER subpathsAtPath:childPath];
         if (testPaths.count > 0) { // Folder
-            result = [NSString stringWithFormat:@"%@%@: %.2fKB\n", result, path, (float)[SettingViewController folderSizeAtPath:childPath] / (1024)];
+            result = [NSString stringWithFormat:@"%@%@: %@\n", result, path, [ActionPerformer fileSize:[SettingViewController folderSizeAtPath:childPath]]];
         } else if (all) { // File
-            result = [NSString stringWithFormat:@"%@%@: %.2fKB\n", result, path, (float)[SettingViewController fileSizeAtPath:childPath] / (1024)];
+            result = [NSString stringWithFormat:@"%@%@: %@\n", result, path, [ActionPerformer fileSize:[SettingViewController fileSizeAtPath:childPath]]];
         }
     }
     return result;

@@ -28,7 +28,7 @@
 @property (strong, nonatomic) NSTimer *webviewUpdateTimer;
 @property (strong, nonatomic) NSArray *lzlDetail;
 
-- (void)invalidateTimerAndHandlers;
+- (void)invalidateTimer;
 
 @end
 

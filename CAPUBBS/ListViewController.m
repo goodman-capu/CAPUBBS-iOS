@@ -219,7 +219,7 @@
 - (void)checkRobSofa {
     if (isRobbingSofa) {
         if (failCount > 10) {
-            [self showAlertWithTitle:@"抢沙发失败" message:@"错误次数过多，请检查原因！"];
+            [self showAlertWithTitle:@"抢沙发失败" message:@"错误次数过多，请检查您的网络连接！"];
             isRobbingSofa = NO;
             [hudSofa hideWithFailureMessage:@"错误次数过多"];
             return;

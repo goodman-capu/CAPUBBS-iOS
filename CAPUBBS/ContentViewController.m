@@ -40,7 +40,7 @@ static const CGFloat kWebViewMinHeight = 40;
     }
     selectedIndex = -1;
     isEdit = NO;
-    scrollTargetRow = -1;
+    [self cancelScroll];
     heights = [[NSMutableArray alloc] init];
     tempHeights = [[NSMutableArray alloc] init];
     HTMLStrings = [[NSMutableArray alloc] init];
@@ -153,11 +153,13 @@ static const CGFloat kWebViewMinHeight = 40;
         data = [NSMutableArray array];
         for (NSDictionary *entry in result) {
             NSMutableDictionary *fixedEntry = [NSMutableDictionary dictionaryWithDictionary:entry];
-            id lzlDetail = fixedEntry[@"lzldetail"];
-            if (!lzlDetail) {
-                fixedEntry[@"lzldetail"] = @[];
-            } else if (![lzlDetail isKindOfClass:[NSArray class]]) {
-                fixedEntry[@"lzldetail"] = @[lzlDetail];
+            for (NSString *key in @[@"lzldetail", @"attach"]) {
+                id value = fixedEntry[key];
+                if (!value) {
+                    fixedEntry[key] = @[];
+                } else if (![value isKindOfClass:[NSArray class]]) {
+                    fixedEntry[key] = @[value];
+                }
             }
             // text
             NSString *textraw = fixedEntry[@"textraw"];
@@ -193,7 +195,7 @@ static const CGFloat kWebViewMinHeight = 40;
 
         NSString *titleText = data.firstObject[@"title"];
         self.title = [ActionPerformer restoreTitle:titleText];
-        isLast = [data[0][@"nextpage"] isEqualToString:@"false"];
+        BOOL isLast = [data[0][@"nextpage"] isEqualToString:@"false"];
         self.buttonForward.enabled = !isLast;
         self.buttonLatest.enabled = !isLast;
         self.buttonJump.enabled = ([[data lastObject][@"pages"] integerValue] > 1);
@@ -206,7 +208,7 @@ static const CGFloat kWebViewMinHeight = 40;
                     if (cell.webViewContainer.webView.isLoading) {
                         [cell.webViewContainer.webView stopLoading];
                     }
-                    [cell invalidateTimerAndHandlers];
+                    [cell invalidateTimer];
                     // 加载空HTML以快速清空，防止reuse后还短暂显示之前的内容
                     [cell.webViewContainer.webView loadHTMLString:EMPTY_HTML baseURL:[NSURL URLWithString:CHEXIE]];
                 }
@@ -222,13 +224,14 @@ static const CGFloat kWebViewMinHeight = 40;
                 for (int i = 0; i < data.count; i++) {
                     NSDictionary *dict = data[i];
                     if (self.destinationFloor.length > 0 && [dict[@"floor"] isEqualToString:self.destinationFloor]) {
-                        [self tryScrollTo:i animated:NO];
                         if (self.openDestinationLzl) {
+                            scrollTargetPosition = UITableViewScrollPositionBottom;
                             dispatch_main_after(0.5, ^{
                                 selectedIndex = [data indexOfObject:dict];
                                 [self performSegueWithIdentifier:@"lzl" sender:nil];
                             });
                         }
+                        [self tryScrollTo:i animated:NO];
                     }
                 }
                 self.openDestinationLzl = NO;
@@ -258,7 +261,7 @@ static const CGFloat kWebViewMinHeight = 40;
                     }
                 }
                 // Remove unnecessary fields to save storage
-                for (NSString *keyword in @[@"lzldetail", @"sig"]) {
+                for (NSString *keyword in @[@"lzldetail", @"sig", @"attach"]) {
                     [tmp removeObjectForKey:keyword];
                 }
                 
@@ -291,7 +294,7 @@ static const CGFloat kWebViewMinHeight = 40;
             NSDictionary *dict = data[i];
             NSString *text = [ActionPerformer transToHTML:dict[@"text"]];
             NSString *sig = [ActionPerformer transToHTML:dict[@"sig"]];
-            NSString *html = [ActionPerformer htmlStringWithText:text sig:sig textSize:textSize];
+            NSString *html = [ActionPerformer htmlStringWithText:text attachments:dict[@"attach"] sig:sig textSize:textSize];
             // NSLog(@"%@", html);
             [newHTMLStrings addObject:html];
             if ([tempHeights[i] floatValue] == 0) {
@@ -334,7 +337,7 @@ static const CGFloat kWebViewMinHeight = 40;
 
 - (void)doRefresh:(NSNotification *)notification {
     NSDictionary *userInfo = notification.userInfo;
-    if ([userInfo[@"isEdit"] boolValue] == YES) {
+    if ([userInfo[@"isEdit"] boolValue]) {
         self.destinationFloor = userInfo[@"floor"];
         [self jumpTo:page];
     } else {
@@ -495,8 +498,8 @@ static const CGFloat kWebViewMinHeight = 40;
     if (!cell || [self.tableView indexPathForCell:cell].row != row) {
         return;
     }
-    [cell invalidateTimerAndHandlers];
-    // 使用 weakSelf 防止循环引用
+    [cell invalidateTimer];
+    // 使用 weakSelf 防止循环引用导致不能 dealloc
     __weak typeof(self) weakSelf = self;
     // Do not trigger immediately, the webview might still be showing the previous content.
     cell.webviewUpdateTimer = [NSTimer scheduledTimerWithTimeInterval:0.2 repeats:YES block:^(NSTimer * _Nonnull timer) {
@@ -507,9 +510,9 @@ static const CGFloat kWebViewMinHeight = 40;
         }
         [strongSelf updateWebView:webView];
     }];
-    WeakScriptMessageDelegate *weakDelegate = [[WeakScriptMessageDelegate alloc] initWithDelegate:self];
-    [webView.configuration.userContentController addScriptMessageHandler:weakDelegate name:@"imageClickHandler"];
-    [webView evaluateJavaScript:@"window._imageClickHandlerAvailable = true;" completionHandler:nil];
+    [webView evaluateJavaScript:@"window._imageClickHandlerAvailable = true;" completionHandler:^(id _Nullable result, NSError * _Nullable error) {
+        [webView setWeakScriptMessageHandler:self forName:@"imageClickHandler"];
+    }];
 }
 
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
@@ -644,13 +647,14 @@ static const CGFloat kWebViewMinHeight = 40;
         if ([self.tableView numberOfRowsInSection:0] < scrollTargetRow) {
             return;
         }
-        [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:scrollTargetRow inSection:0] atScrollPosition:UITableViewScrollPositionTop animated:animated];
+        [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:scrollTargetRow inSection:0] atScrollPosition:scrollTargetPosition animated:animated];
     });
 }
 
 - (void)cancelScroll {
     // 用户有任何操作都取消scroll
     scrollTargetRow = -1;
+    scrollTargetPosition = UITableViewScrollPositionTop;
 }
 
 // 开始拖拽视图
@@ -663,6 +667,7 @@ static const CGFloat kWebViewMinHeight = 40;
 // 点击系统状态栏回到顶部
 - (BOOL)scrollViewShouldScrollToTop:(UIScrollView *)scrollView {
     [self cancelScroll];
+    [self.navigationController setToolbarHidden:NO animated:YES];
     return YES;
 }
 
@@ -719,7 +724,7 @@ static const CGFloat kWebViewMinHeight = 40;
     NSURL *imageUrl = [NSURL URLWithString:imgSrc];
     if (imageUrl) {
         [hud showWithProgressMessage:@"图片加载中"];
-        NSURLRequest *request = [NSURLRequest requestWithURL:imageUrl cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10.0];
+        NSURLRequest *request = [NSURLRequest requestWithURL:imageUrl cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:30.0];
         NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable idata, NSURLResponse * _Nullable response, NSError * _Nullable error) {
             ImageFileType type = [AnimatedImageView fileType:idata];
             if (error || type == ImageFileTypeUnknown) {
@@ -741,6 +746,102 @@ static const CGFloat kWebViewMinHeight = 40;
         @"fileData": imageData,
         @"fileName": fileName,
         @"fileTitle": alt.length > 0 ? alt : @"查看帖子图片"
+    }];
+}
+
+- (void)askForDownloadAttachment:(NSString *)path {
+    NSDictionary *userInfo = USERINFO;
+    if (![ActionPerformer checkLogin:NO] || [USERINFO isEqual:@""]) {
+        [self showAlertWithTitle:@"错误" message:@"您未登录，无法下载附件"];
+        return;
+    }
+    
+    NSString *base64Payload = [path stringByReplacingOccurrencesOfString:@"capubbs-attach://" withString:@""];
+    NSData *decodedData = [[NSData alloc] initWithBase64EncodedString:base64Payload options:0];
+    if (!decodedData) {
+        return;
+    }
+    NSDictionary *attach = [NSJSONSerialization JSONObjectWithData:decodedData options:0 error:nil];
+    NSString *fileSize = [ActionPerformer fileSize:[attach[@"size"] intValue]];
+    NSString *generalInfo = [NSString stringWithFormat:@"%@\n下载后请及时保存", attach[@"name"]];
+    if ([attach[@"price"] intValue] == 0 || [attach[@"free"] isEqualToString:@"YES"]) {
+        [self showAlertWithTitle:[NSString stringWithFormat:@"确认下载附件 (%@)", fileSize] message:generalInfo confirmTitle:@"确认" confirmAction:^(UIAlertAction *action) {
+            [self downloadAttachment:attach];
+        }];
+        return;
+    }
+    int userScore = [userInfo[@"score"] intValue];
+    int minScore = [attach[@"minscore"] intValue];
+    if (minScore > userScore) {
+        [self showAlertWithTitle:@"无法购买该附件" message:[NSString stringWithFormat:@"您的权限不足：\n附件要求至少有%d积分，您当前有%d积分", minScore, userScore]];
+        return;
+    }
+    int price = [attach[@"price"] intValue];
+    if (price > userScore) {
+        [self showAlertWithTitle:@"无法购买该附件" message:[NSString stringWithFormat:@"您的积分不足：\n附件售价为%d积分，您当前有%d积分", price, userScore]];
+        return;
+    }
+    [self showAlertWithTitle:[NSString stringWithFormat:@"确认购买附件 (%@)", fileSize] message:[NSString stringWithFormat:@"附件售价为%d积分，您当前有%d积分，购买后将剩余%d积分\n\n%@", price, userScore, userScore - price, generalInfo] confirmTitle:@"确认" confirmAction:^(UIAlertAction *action) {
+        [self downloadAttachment:attach];
+    }];
+}
+
+- (void)downloadAttachment:(NSDictionary *)attach {
+    [hud showWithProgressMessage:@"正在下载"];
+    NSDictionary *params = @{
+        @"method": @"download",
+        @"id": attach[@"id"]
+    };
+    [ActionPerformer callApiWithParams:params toURL:@"attach" callback:^(NSArray *result, NSError *err) {
+        if (err || result.count == 0) {
+            [hud hideWithFailureMessage:@"下载失败"];
+            [self showAlertWithTitle:@"错误" message:err.localizedDescription];
+            return;
+        }
+        NSInteger code = [result[0][@"code"] integerValue];
+        if (code != 0 || [result[0][@"path"] length] == 0) {
+            [hud hideWithFailureMessage:@"下载失败"];
+            NSString *errorMessage = @"未知错误";
+            switch (code) {
+                case 1:
+                    errorMessage = @"非法请求";
+                    break;
+                case 2:
+                    errorMessage = @"服务器错误";
+                    break;
+                case 3:
+                    errorMessage = @"您未登录";
+                    break;
+                case 4:
+                    errorMessage = @"权限不足";
+                    break;
+                case 5:
+                    errorMessage = @"积分不足";
+                    break;
+                default:
+                    break;
+            }
+            [self showAlertWithTitle:@"错误" message:errorMessage];
+            return;
+        }
+        
+        NSString *filePath = [NSString stringWithFormat:@"%@/bbs/attachment/%@", CHEXIE, result[0][@"path"]];
+        NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:filePath] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:30.0];
+        NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable idata, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+            if (error || !idata || idata.length == 0) {
+                [hud hideWithFailureMessage:@"下载失败"];
+                [self showAlertWithTitle:@"错误" message:error ? error.localizedDescription : @"文件下载失败，请检查您的网络连接！"];
+                return;
+            }
+            [hud hideWithSuccessMessage:@"下载成功"];
+            NSString *fileName = attach[@"name"];
+            [NOTIFICATION postNotificationName:@"previewFile" object:nil userInfo:@{
+                @"fileData": idata,
+                @"fileName": fileName,
+                @"fileTitle": [NSString stringWithFormat:@"附件：%@", fileName]
+            }];
+        }];
+        [task resume];
     }];
 }
 
@@ -773,9 +874,13 @@ static const CGFloat kWebViewMinHeight = 40;
         return;
     }
     
-    NSRegularExpression *regular = [NSRegularExpression regularExpressionWithPattern:@"((http://|https://)?/bbs/user)" options:0 error:nil];
-    NSArray *matches = [regular matchesInString:path options:0 range:NSMakeRange(0, path.length)];
-    if (matches.count != 0) {
+    if ([path hasPrefix:@"capubbs-attach:"]) {
+        [self askForDownloadAttachment:path];
+        decisionHandler(WKNavigationActionPolicyCancel);
+        return;
+    }
+    
+    if ([path containsString:@"/bbs/user"]) {
         NSRange range = [path rangeOfString:@"name="];
         if (range.location != NSNotFound) {
             NSString *uid = [path substringFromIndex:range.location + range.length];
@@ -790,22 +895,18 @@ static const CGFloat kWebViewMinHeight = 40;
     if (dict.count > 0 && [dict[@"tid"] length] > 0) {
         int p = [dict[@"p"] intValue];
         int floor = [dict[@"floor"] intValue];
-        if ([dict[@"bid"] isEqualToString:self.bid] && [dict[@"tid"] isEqualToString:self.tid] && p > 0) {
-            if (p == page) {
-                BOOL hasScrolled = NO;
-                if (floor > 0) {
-                    for (int i = 0; i < data.count; i++) {
-                        if ([data[i][@"floor"] intValue] == floor) {
-                            hasScrolled = YES;
-                            [self tryScrollTo:i animated:NO];
-                        }
+        if ([dict[@"bid"] isEqualToString:self.bid] && [dict[@"tid"] isEqualToString:self.tid] && p == page) {
+            BOOL hasScrolled = NO;
+            if (floor > 0) {
+                for (int i = 0; i < data.count; i++) {
+                    if ([data[i][@"floor"] intValue] == floor) {
+                        hasScrolled = YES;
+                        [self tryScrollTo:i animated:NO];
                     }
                 }
-                if (!hasScrolled) {
-                    [self showAlertWithTitle:@"提示" message:floor > 0 ? [NSString stringWithFormat:@"该链接指向本页第%d楼", floor] : @"该链接指向本页"];
-                }
-            } else {
-                [self jumpTo:p];
+            }
+            if (!hasScrolled) {
+                [self showAlertWithTitle:@"提示" message:floor > 0 ? [NSString stringWithFormat:@"该链接指向本页第%d楼", floor] : @"该链接指向本页"];
             }
         } else {
             ContentViewController *next = [self.storyboard instantiateViewControllerWithIdentifier:@"content"];
@@ -846,13 +947,13 @@ static const CGFloat kWebViewMinHeight = 40;
             [self showAlertWithTitle:@"错误" message:err.localizedDescription];
             return;
         }
-        NSInteger back=[result[0][@"code"] integerValue];
-        if (back == 0) {
+        NSInteger code = [result[0][@"code"] integerValue];
+        if (code == 0) {
             [hud hideWithSuccessMessage:@"删除成功"];
         } else {
             [hud hideWithFailureMessage:@"删除失败"];
         }
-        switch (back) {
+        switch (code) {
             case 0:{
                 [self.tableView setEditing:NO];
                 [data removeObjectAtIndex:selectedIndex];
@@ -1059,7 +1160,7 @@ static const CGFloat kWebViewMinHeight = 40;
 }
 
 - (void)triggerBackgroundChange:(WKWebView *)webView {
-    [webView evaluateJavaScript:@"(()=>{const bodyMask=document.getElementById('body-mask');if(bodyMask&&bodyMask.style.backgroundColor){ bodyMask.style.backgroundColor='';}else{bodyMask.style.backgroundColor='rgba(127,127,127,0.5)';}})()" completionHandler:nil];
+    [webView evaluateJavaScript:@"(()=>{const bodyMask=document.getElementById('body-mask');if(!bodyMask){return;}if(bodyMask.style.backgroundColor){ bodyMask.style.backgroundColor='';}else{bodyMask.style.backgroundColor='rgba(127,127,127,0.5)';}})()" completionHandler:nil];
 }
 
 - (void)doubleTapWeb:(UITapGestureRecognizer *)sender {
@@ -1131,7 +1232,7 @@ static const CGFloat kWebViewMinHeight = 40;
     }]];
     [action addAction:[UIAlertAction actionWithTitle:@"复制" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         NSString *content = text;
-        content = [ActionPerformer removeHTML:content];
+        content = [ActionPerformer removeHTML:content restoreFormat:NO];
         [[UIPasteboard generalPasteboard] setString:content];
         [hud showAndHideWithSuccessMessage:@"复制完成"];
     }]];
@@ -1170,7 +1271,7 @@ static const CGFloat kWebViewMinHeight = 40;
         return @"";
     }
     NSString *content = [ActionPerformer transToHTML:text];
-    content = [ActionPerformer removeHTML:content];
+    content = [ActionPerformer removeHTML:content restoreFormat:NO];
     content = [content stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
     while ([content hasPrefix:@" "] || [content hasPrefix:@"\t"]) {
         content = [content substringFromIndex:@" ".length];
@@ -1282,6 +1383,7 @@ static const CGFloat kWebViewMinHeight = 40;
         
         if (isEdit) {
             dest.floor = [NSString stringWithFormat:@"%d",[data[selectedIndex][@"floor"] intValue]];
+            dest.attachments = data[selectedIndex][@"attach"];
             dest.showEditOthersAlert = ![data[selectedIndex][@"author"] isEqualToString:UID];
         }
         

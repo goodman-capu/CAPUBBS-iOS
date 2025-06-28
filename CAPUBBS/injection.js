@@ -90,7 +90,9 @@
 
         img.dataset._originalSrc = img.src;
         img.removeAttribute('src');
-        img.alt = '🚫';
+        if (!img.alt) {
+            img.alt = '🚫';
+        }
         img.classList.add('image-hidden');
     }
     

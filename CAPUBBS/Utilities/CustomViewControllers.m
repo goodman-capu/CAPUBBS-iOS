@@ -9,11 +9,20 @@
 #import "CustomViewControllers.h"
 #import <objc/runtime.h>
 
+@implementation CustomNavigationController
+
+- (UIViewController *)childViewControllerForStatusBarStyle {
+    // 让状态栏样式跟随当前 topViewController
+    return self.topViewController;
+}
+
+@end
+
 @implementation CustomViewController
 
 #ifdef DEBUG
 - (void)dealloc {
-    NSLog(@"dealloc VC: %@", self);
+    NSLog(@"✅ dealloc VC: %@", self);
 }
 #endif
 
@@ -23,7 +32,7 @@
 
 #ifdef DEBUG
 - (void)dealloc {
-    NSLog(@"dealloc VC: %@", self);
+    NSLog(@"✅ dealloc VC: %@", self);
 }
 #endif
 
@@ -33,7 +42,7 @@
 
 #ifdef DEBUG
 - (void)dealloc {
-    NSLog(@"dealloc VC: %@", self);
+    NSLog(@"✅ dealloc VC: %@", self);
 }
 #endif
 
@@ -113,8 +122,9 @@ static char kIsAttemptingToPresentKey;
         return;
     }
     if (![self _getPresentTimer]) {
+        // 使用 weakSelf 防止循环引用导致不能 dealloc
         __weak typeof(self) weakSelf = self;
-        NSTimer *timer = [NSTimer scheduledTimerWithTimeInterval:0.2 repeats:YES block:^(NSTimer * _Nonnull timer) {
+        NSTimer *timer = [NSTimer scheduledTimerWithTimeInterval:0.1 repeats:YES block:^(NSTimer * _Nonnull timer) {
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (strongSelf) {
                 [strongSelf _timerCheck];

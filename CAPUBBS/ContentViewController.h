@@ -14,10 +14,8 @@
     NSUserActivity *activity;
     NSString *URL;
     NSMutableArray *data;
-    UIDocumentInteractionController *dic;
     int page;
     int textSize;
-    BOOL isLast;
     BOOL isEdit;
     NSString *defaultTitle;
     NSString *defaultContent;
@@ -29,6 +27,7 @@
     CGFloat contentOffsetY;
     BOOL isAtEnd;
     NSInteger scrollTargetRow;
+    UITableViewScrollPosition scrollTargetPosition;
     NSIndexPath *longPressIndexPath;
 }
 

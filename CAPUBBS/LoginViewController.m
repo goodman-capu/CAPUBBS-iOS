@@ -32,6 +32,7 @@
     [NOTIFICATION addObserver:self selector:@selector(userChanged) name:@"userChanged" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(refreshUserInfo) name:@"infoRefreshed" object:nil];
     
+    enterLogin = YES;
     userInfoRefreshing = NO;
     news = [NSArray arrayWithArray:[DEFAULTS objectForKey:@"newsCache"]];
     control = [[UIRefreshControl alloc] init];
@@ -302,10 +303,10 @@
     self.textPass.userInteractionEnabled = YES;
     self.textPass.secureTextEntry = YES;
     if (username.length > 0) {
-        if (![ActionPerformer checkLogin:NO] && [[DEFAULTS objectForKey:@"enterLogin"] boolValue] == YES && [[DEFAULTS objectForKey:@"autoLogin"] boolValue] == YES) {
-            NSLog(@"Autolog in Login Page");
+        if (![ActionPerformer checkLogin:NO] && enterLogin && [[DEFAULTS objectForKey:@"autoLogin"] boolValue]) {
+            NSLog(@"Auto Login");
             [self login:nil];
-            [DEFAULTS setObject:@(NO) forKey:@"enterLogin"];
+            enterLogin = NO;
         } else {
             [self getNewsAndInfo];
             if ([ActionPerformer checkLogin:NO]) {
@@ -357,36 +358,33 @@
 //            [self showAlertWithTitle:@"登录失败" message:[err localizedDescription]];
             return ;
         }
-        if ([result[0][@"code"] isEqualToString:@"0"]) {
+        int code = [result[0][@"code"] intValue];
+        if (code == 0) {
             [hud hideWithSuccessMessage:@"登录成功"];
         } else {
             [hud hideWithFailureMessage:@"登录失败"];
         }
-        if ([result[0][@"code"] isEqualToString:@"1"]) {
-            [self showAlertWithTitle:@"登录失败" message:@"密码错误！" cancelAction:^(UIAlertAction *action) {
-                [self.textPass becomeFirstResponder];
-            }];
-            [self getNewsAndInfo];
-            return ;
-        } else if ([result[0][@"code"] isEqualToString:@"2"]) {
-            [self showAlertWithTitle:@"登录失败" message:@"用户名不存在！" cancelAction:^(UIAlertAction *action) {
-                [self.textUid becomeFirstResponder];
-            }];
-            [self getNewsAndInfo];
-            return ;
-        } else if ([result[0][@"code"] isEqualToString:@"0"]) {
+        if (code == 0) {
             [GROUP_DEFAULTS setObject:uid forKey:@"uid"];
             [GROUP_DEFAULTS setObject:pass forKey:@"pass"];
             [GROUP_DEFAULTS setObject:result[0][@"token"] forKey:@"token"];
             [LoginViewController updateIDSaves];
             NSLog(@"Login - %@", uid);
             [NOTIFICATION postNotificationName:@"userChanged" object:nil userInfo:nil];
-            [ActionPerformer checkPasswordLength];
+            return;
+        }
+        if (code == 1) {
+            [self showAlertWithTitle:@"登录失败" message:@"密码错误！" cancelAction:^(UIAlertAction *action) {
+                [self.textPass becomeFirstResponder];
+            }];
+        } else if (code == 2) {
+            [self showAlertWithTitle:@"登录失败" message:@"用户名不存在！" cancelAction:^(UIAlertAction *action) {
+                [self.textUid becomeFirstResponder];
+            }];
         } else {
             [self showAlertWithTitle:@"登录失败" message:@"发生未知错误！"];
-            [self getNewsAndInfo];
-            return ;
         }
+        [self getNewsAndInfo];
     }];
 }
 
@@ -466,6 +464,7 @@
         WebViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
         NSDictionary *dict = news[[self.tableview indexPathForCell:(UITableViewCell *)sender].row];
         dest.URL = dict[@"url"];
+        dest.title = dict[@"text"];
     }
     if ([segue.identifier isEqualToString:@"account"]) {
         UIViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];

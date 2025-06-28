@@ -49,7 +49,7 @@
     }
     labels = @[self.rights, self.sign, self.hobby, self.qq, self.mailBtn, self.from, self.regDate, self.lastDate, self.post, self.reply, self.water, self.extr];
     webViewContainers = @[self.intro, self.sig1, self.sig2, self.sig3];
-    heights = [[NSMutableArray alloc] initWithArray:@[@0, @0, @0, @0]];
+    heights = [@[@0, @0, @0, @0] mutableCopy];
     for (int i = 0; i < webViewContainers.count; i++) {
         CustomWebViewContainer *webViewContainer = webViewContainers[i];
         [webViewContainer initiateWebViewWithToken:NO];
@@ -218,7 +218,7 @@
                     content = @"<font color='gray'>暂无</font>";
                 }
                 content = [ActionPerformer transToHTML:content];
-                NSString *html = [ActionPerformer htmlStringWithText:nil sig:content textSize:textSize];
+                NSString *html = [ActionPerformer htmlStringWithText:nil attachments:nil sig:content textSize:textSize];
                 if (webViewContainer.webView.isLoading) {
                     [webViewContainer.webView stopLoading];
                 }
@@ -228,6 +228,7 @@
                 [heightCheckTimer invalidate];
             }
 
+            // 使用 weakSelf 防止循环引用导致不能 dealloc
             __weak typeof(self) weakSelf = self;
             // Do not trigger immediately, the webview might still be showing the previous content.
             heightCheckTimer = [NSTimer scheduledTimerWithTimeInterval:0.2 repeats:YES block:^(NSTimer * _Nonnull timer) {
@@ -386,7 +387,7 @@
         }
     }
     [hud showWithProgressMessage:@"正在载入"];
-    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:url] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10.0];
+    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:url] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:30.0];
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable idata, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         ImageFileType type = [AnimatedImageView fileType:idata];
         if (error || type == ImageFileTypeUnknown) {
@@ -400,14 +401,16 @@
 }
 
 - (void)presentImage:(NSData *)imageData fileName:(NSString *)fileName {
-    UIImage *iconImage = [self.icon.image getCenterSquareImage];
-    [NOTIFICATION postNotificationName:@"previewFile" object:nil userInfo:@{
-        @"fileData": imageData,
-        @"fileName": fileName,
-        @"fileTitle": [NSString stringWithFormat:@"%@的头像", self.ID],
-        @"frame": self.icon,
-        @"transitionImage": [iconImage imageByApplyingCornerRadius:iconImage.size.width / 2]
-    }];
+    dispatch_main_async_safe((^{
+        UIImage *iconImage = [self.icon.image getCenterSquareImage];
+        [NOTIFICATION postNotificationName:@"previewFile" object:nil userInfo:@{
+            @"fileData": imageData,
+            @"fileName": fileName,
+            @"fileTitle": [NSString stringWithFormat:@"%@的头像", self.ID],
+            @"frame": self.icon,
+            @"transitionImage": [iconImage imageByApplyingCornerRadius:iconImage.size.width / 2]
+        }];
+    }));
 }
 
 - (IBAction)back:(id)sender {

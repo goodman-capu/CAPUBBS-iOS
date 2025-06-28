@@ -109,8 +109,8 @@
         unsigned long long iconCacheSize = [SettingViewController folderSizeAtPath:IMAGE_CACHE_PATH];
         isCalculatingCache = NO;
         dispatch_main_async_safe((^{
-            self.appCacheSize.text = [NSString stringWithFormat:@"%.2fMB", (float)(cacheSize - iconCacheSize) / (1024 * 1024)];
-            self.iconCacheSize.text = [NSString stringWithFormat:@"%.2fMB", (float)iconCacheSize / (1024 * 1024)];
+            self.appCacheSize.text = [ActionPerformer fileSize:cacheSize - iconCacheSize];
+            self.iconCacheSize.text = [ActionPerformer fileSize:iconCacheSize];
         }));
     });
 }
@@ -141,7 +141,7 @@
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     if (indexPath.section == 1) {
         if (indexPath.row == 0) {
-            [self showAlertWithTitle:@"确认清除软件缓存？" message:@"这将着重清除网络缓存\n不会清除头像缓存\n少数系统关键缓存无法彻底清除" confirmTitle:@"确认" confirmAction:^(UIAlertAction *action) {
+            [self showAlertWithTitle:@"确认清除软件缓存？" message:@"将重点清除网络缓存\n不会清除头像缓存\n少数系统关键缓存无法彻底清除" confirmTitle:@"确认" confirmAction:^(UIAlertAction *action) {
                 [hud showWithProgressMessage:@"清除中"];
                 // Don't delete cache / tmp folder directly, otherwise will throw many db error
                 // NSURLCache
@@ -194,7 +194,7 @@
 - (IBAction)picChanged:(id)sender {
     [DEFAULTS setObject:@(self.switchPic.isOn) forKey:@"picOnlyInWifi"];
     if (self.switchPic.isOn) {
-        [self showAlertWithTitle:@"图片显示已关闭" message:@"使用流量时\n帖子图片将以🚫代替\n点击🚫可以加载图片"];
+        [self showAlertWithTitle:@"图片显示已关闭" message:@"使用流量时\n帖子图片将以文字或🚫代替\n点击文字或🚫可以加载图片"];
     }
 }
 

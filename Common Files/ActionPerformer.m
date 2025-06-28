@@ -15,10 +15,21 @@
 
 #pragma mark Web Request
 
++ (NSString *)getFileImage:(NSString *)fileName {
+    static NSSet *extensions;
+    static dispatch_once_t onceExtToken;
+    dispatch_once(&onceExtToken, ^{
+        extensions = [NSSet setWithObjects:@"3g2", @"3ga", @"3gp", @"7z", @"aa", @"aac", @"ac", @"accdb", @"accdt", @"ace", @"adn", @"ai", @"aif", @"aifc", @"aiff", @"ait", @"amr", @"ani", @"apk", @"app", @"applescript", @"asax", @"asc", @"ascx", @"asf", @"ash", @"ashx", @"asm", @"asmx", @"asp", @"aspx", @"asx", @"au", @"aup", @"avi", @"axd", @"aze", @"bak", @"bash", @"bat", @"bin", @"blank", @"bmp", @"bowerrc", @"bpg", @"browser", @"bz2", @"bzempty", @"c", @"cab", @"cad", @"caf", @"cal", @"cd", @"cdda", @"cer", @"cfg", @"cfm", @"cfml", @"cgi", @"chm", @"class", @"cmd", @"code-workspace", @"codekit", @"coffee", @"coffeelintignore", @"com", @"compile", @"conf", @"config", @"cpp", @"cptx", @"cr2", @"crdownload", @"crt", @"crypt", @"cs", @"csh", @"cson", @"csproj", @"css", @"csv", @"cue", @"cur", @"dart", @"dat", @"data", @"db", @"dbf", @"deb", @"default", @"dgn", @"dist", @"diz", @"dll", @"dmg", @"dng", @"doc", @"docb", @"docm", @"docx", @"dot", @"dotm", @"dotx", @"download", @"dpj", @"ds_store", @"dsn", @"dtd", @"dwg", @"dxf", @"editorconfig", @"el", @"elf", @"eml", @"enc", @"eot", @"eps", @"epub", @"eslintignore", @"exe", @"f4v", @"fax", @"fb2", @"fla", @"flac", @"flv", @"fnt", @"fon", @"gadget", @"gdp", @"gem", @"gif", @"gitattributes", @"gitignore", @"go", @"gpg", @"gpl", @"gradle", @"gz", @"h", @"handlebars", @"hbs", @"heic", @"hlp", @"hs", @"hsl", @"htm", @"html", @"ibooks", @"icns", @"ico", @"ics", @"idx", @"iff", @"ifo", @"image", @"img", @"iml", @"in", @"inc", @"indd", @"inf", @"info", @"ini", @"inv", @"iso", @"j2", @"jar", @"java", @"jpe", @"jpeg", @"jpg", @"js", @"json", @"jsp", @"jsx", @"key", @"kf8", @"kmk", @"ksh", @"kt", @"kts", @"kup", @"less", @"lex", @"licx", @"lisp", @"lit", @"lnk", @"lock", @"log", @"lua", @"m", @"m2v", @"m3u", @"m3u8", @"m4", @"m4a", @"m4r", @"m4v", @"map", @"master", @"mc", @"md", @"mdb", @"mdf", @"me", @"mi", @"mid", @"midi", @"mk", @"mkv", @"mm", @"mng", @"mo", @"mobi", @"mod", @"mov", @"mp2", @"mp3", @"mp4", @"mpa", @"mpd", @"mpe", @"mpeg", @"mpg", @"mpga", @"mpp", @"mpt", @"msg", @"msi", @"msu", @"nef", @"nes", @"nfo", @"nix", @"npmignore", @"ocx", @"odb", @"ods", @"odt", @"ogg", @"ogv", @"ost", @"otf", @"ott", @"ova", @"ovf", @"p12", @"p7b", @"pages", @"part", @"pcd", @"pdb", @"pdf", @"pem", @"pfx", @"pgp", @"ph", @"phar", @"php", @"pid", @"pkg", @"pl", @"plist", @"pm", @"png", @"po", @"pom", @"pot", @"potx", @"pps", @"ppsx", @"ppt", @"pptm", @"pptx", @"prop", @"ps", @"ps1", @"psd", @"psp", @"pst", @"pub", @"py", @"pyc", @"qt", @"ra", @"ram", @"rar", @"raw", @"rb", @"rdf", @"rdl", @"reg", @"resx", @"retry", @"rm", @"rom", @"rpm", @"rpt", @"rsa", @"rss", @"rst", @"rtf", @"ru", @"rub", @"sass", @"scss", @"sdf", @"sed", @"sh", @"sit", @"sitemap", @"skin", @"sldm", @"sldx", @"sln", @"sol", @"sphinx", @"sql", @"sqlite", @"step", @"stl", @"svg", @"swd", @"swf", @"swift", @"swp", @"sys", @"tar", @"tax", @"tcsh", @"tex", @"tfignore", @"tga", @"tgz", @"tif", @"tiff", @"tmp", @"tmx", @"torrent", @"tpl", @"ts", @"tsv", @"ttf", @"twig", @"txt", @"udf", @"vb", @"vbproj", @"vbs", @"vcd", @"vcf", @"vcs", @"vdi", @"vdx", @"vmdk", @"vob", @"vox", @"vscodeignore", @"vsd", @"vss", @"vst", @"vsx", @"vtx", @"war", @"wav", @"wbk", @"webinfo", @"webm", @"webp", @"wma", @"wmf", @"wmv", @"woff", @"woff2", @"wps", @"wsf", @"xaml", @"xcf", @"xfl", @"xlm", @"xls", @"xlsm", @"xlsx", @"xlt", @"xltm", @"xltx", @"xml", @"xpi", @"xps", @"xrb", @"xsd", @"xsl", @"xspf", @"xz", @"yaml", @"yml", @"z", @"zip", @"zsh", nil];
+    });
+    NSString *extension = [[fileName pathExtension] lowercaseString];
+    NSString *name = [extensions containsObject:extension] ? extension : @"folder";
+    return [NSString stringWithFormat:@"/bbs/assets/fileicons-svg/%@.svg", name];
+}
+
 + (NSString *)encodeURIComponent:(NSString *)string {
     static NSCharacterSet *allowedCharacters = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
+    static dispatch_once_t onceCharsToken;
+    dispatch_once(&onceCharsToken, ^{
         allowedCharacters = [NSCharacterSet characterSetWithCharactersInString:@"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._* "];
     });
     NSString *encoded = [string stringByAddingPercentEncodingWithAllowedCharacters:allowedCharacters];
@@ -97,9 +108,10 @@
 }
 
 + (void)callApiWithParams:(NSDictionary *)params toURL:(NSString*)url callback:(ActionPerformerResultBlock)block {
-    NSLog(@"🌐 Calling API: %@", url);
     NSString *postUrl = [NSString stringWithFormat:@"%@/api/client.php?ask=%@",CHEXIE, url];
-    
+#ifdef DEBUG
+    NSLog(@"🌐 Calling API: %@", url);
+#endif
     NSMutableDictionary *requestParams = [@{
         @"os": @"ios",
         @"device": [ActionPerformer doDevicePlatform],
@@ -108,13 +120,7 @@
         @"clientbuild": APP_BUILD,
         @"token": TOKEN
     } mutableCopy];
-    for (NSString *key in [params allKeys]) {
-        NSString *data = params[key];
-        if ([data hasPrefix:@"@"]) { // 修复字符串首带有@时的错误
-            data = [@" " stringByAppendingString:data];
-        }
-        requestParams[key] = data;
-    }
+    [requestParams addEntriesFromDictionary:params];
     
     NSMutableURLRequest *request = [NSMutableURLRequest
                                     requestWithURL:[NSURL URLWithString:postUrl]];
@@ -177,8 +183,27 @@
             } else {
                 result = @[info];
             }
+            
+            NSString *errorMessage;
+            if (result && result.count > 0 && result[0][@"code"]) {
+                int code = [result[0][@"code"] intValue];
+                if (code == -999) {
+                    errorMessage = @"客户端版本过低，请前往App Store更新版本！";
+                }
+#ifdef DEBUG
+                // Should never happen in production
+                if (code == 14) {
+                    errorMessage = @"API ask错误";
+                }
+#endif
+            }
             dispatch_main_async_safe(^{
-                block(result, nil);
+                if (errorMessage) {
+                    [NOTIFICATION postNotificationName:@"showAlert" object:nil userInfo:@{@"title": @"加载失败", @"message": errorMessage}];
+                    block(nil, [NSError errorWithDomain:@"APIError" code:0 userInfo:@{NSLocalizedDescriptionKey: errorMessage}]);
+                } else {
+                    block(result, nil);
+                }
             });
         }
     }];
@@ -200,25 +225,9 @@
 
 + (int)checkRight {
     if ([self checkLogin:NO] && ![USERINFO isEqual:@""]) {
-        return [[USERINFO objectForKey:@"rights"] intValue];
+        return [USERINFO[@"rights"] intValue];
     } else {
         return -1;
-    }
-}
-
-+ (void)checkPasswordLength {
-    if ([PASS length] < 6) {
-        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-        [formatter setDateFormat:@"yyyy-MM-dd"];
-        NSTimeZone *beijingTimeZone = [NSTimeZone timeZoneWithName:@"Asia/Shanghai"];
-        [formatter setTimeZone:beijingTimeZone];
-        NSDate *currentDate = [NSDate date];
-        NSDate *lastDate =[formatter dateFromString:[DEFAULTS objectForKey:@"checkPass"]];
-        NSTimeInterval time = [currentDate timeIntervalSinceDate:lastDate];
-        if ((int)time > 3600 * 24) { // 每天提醒一次
-            [NOTIFICATION postNotificationName:@"showAlert" object:nil userInfo:@{@"title": @"提醒", @"message": @"您的密码过于简单！\n建议在个人信息中修改密码", @"cancelTitle": @"今日不再提醒"}];
-            [DEFAULTS setObject:[formatter stringFromDate:currentDate] forKey:@"checkPass"];
-        }
     }
 }
 
@@ -273,10 +282,37 @@
     return @"未知版面";
 }
 
-+ (NSString *)htmlStringWithText:(NSString *)text sig:(NSString *)sig textSize:(int)textSize {
++ (NSString *)htmlStringWithText:(NSString *)text attachments:(NSArray *)attachements sig:(NSString *)sig textSize:(int)textSize {
     NSString *body = @"";
     if (text) {
         body = [NSString stringWithFormat:@"<div class='textblock'>%@</div>", text];
+    }
+    if (attachements && attachements.count > 0) {
+        NSMutableArray *attachEls = [NSMutableArray array];
+        for (NSDictionary *attach in attachements) {
+            NSError *error;
+            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:attach options:0 error:&error];
+            if (!error) {
+                NSString *fileName = attach[@"name"];
+                NSString *imageUrl = [self getFileImage:fileName];
+                NSString *price = [attach[@"price"] intValue] == 0 ? @"免费" : ([attach[@"free"] isEqualToString:@"YES"] ? @"您可以免费下载" : [NSString stringWithFormat:@"售价：%@", attach[@"price"]]);
+                NSString *size = [self fileSize:[attach[@"size"] intValue]];
+                int count = [attach[@"count"] intValue];
+                NSString *downloadCount = count > 0 ? [NSString stringWithFormat:@"下载次数：%d", count] : @"暂时无人下载";
+                NSString *attachEl =
+                [NSString stringWithFormat:
+                 @"<a class='attachdark' href='capubbs-attach://%@'>"
+                 "<img class='fileicon' src='%@' alt='文件图标'>"
+                 "<div class='fileinfo'><div class='filename'>%@</div><div class='sub'>%@ • %@ • %@</div></div>"
+                 "</a>", [jsonData base64EncodedStringWithOptions:0], imageUrl, fileName, price, size, downloadCount];
+                [attachEls addObject:attachEl];
+            } else {
+                NSLog(@"Failed to encode attachment: %@", attach);
+            }
+        }
+        if (attachEls.count > 0) {
+            body = [NSString stringWithFormat:@"%@<div class='attachblock'><span id='attachtipdark'>本帖包含以下%ld个附件：</span><div class='attachsdark'>%@</div></div>", body, attachEls.count, [attachEls componentsJoinedByString:@""]];
+        }
     }
     if (sig && sig.length > 0) {
         body = [NSString stringWithFormat:@"%@<div class='sigblock'>%@"
@@ -300,7 +336,7 @@
     "</style>"
     "<script>window._hideAllImages=true</script>"
     : @"";
-    NSString *sigBlockStyle = text ? @".sigblock{color:gray;font-size:small;margin-top:1em;}" : @"";
+    NSString *sigBlockStyle = text ? @".sigblock{color:gray;font-size:0.85em;margin-top:1em;}" : @"";
     NSString *bodyBackground = text ? @"rgba(255,255,255,0.75)" : @"transparent";
     
     return [NSString stringWithFormat:@"<html>"
@@ -312,13 +348,20 @@
             "img{max-width:min(100%%,700px);}"
             "body{font-size:16px;word-wrap:break-word;zoom:%d%%;}"
             "#body-wrapper{padding:0 0.25em;}"
-            "#body-mask{position:absolute;top:0;bottom:0;left:0;right:0;z-index:-1;background-color:%@;transition:background-color 0.2s linear;}"
-            ".quoteblock{background-color:rgba(235,235,235,0.5);color:gray;font-size:small;padding:0.6em 2em 0;margin:0.6em 0;border-radius:0.5em;border:1px solid #ddd;position:relative;}"
+            "#body-mask{position:absolute;top:0;bottom:0;left:0;right:0;z-index:-1;background-color:%@;transition:background-color 0.1s linear;}"
+            ".quoteblock{background-color:rgba(235,235,235,0.5);color:gray;font-size:0.85em;padding:0.6em 2em 0;margin:0.6em 0;border-radius:0.5em;border:1px solid #ddd;position:relative;}"
             ".quoteblock::before,.quoteblock::after{position:absolute;font-size:4em;color:#d8e7f1;font-family:sans-serif;pointer-events:none;line-height:1;}"
             ".quoteblock::before{content:'“';top:0.05em;left:0.1em;}"
             ".quoteblock::after{content:'”';bottom:-0.5em;right:0.15em;}"
             ".textblock,.sig{overflow-x:scroll;}"
             ".textblock{min-height:3em;}"
+            ".attachblock{font-size:0.85em; padding:1em 0 0.5em;}"
+            "#attachtipdark{color:gray;}"
+            ".attachsdark{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px, 1fr));margin-top:0.5em;gap:0.65em;padding:0.65em;border-radius:0.75em;border:1px dashed #ddd;}"
+            ".attachdark{display:flex;flex-direction:row;align-items:center;overflow:hidden;text-decoration:none;font-family:'SF Mono','Menlo','Consolas',monospace;padding:0.5em;background-color:rgba(235,235,235,0.5);border-radius:0.5em;}"
+            ".attachdark .fileicon{width:2.5em;max-height:2.5em;object-fit:contain;margin-right:0.5em;pointer-events:none;}"
+            ".attachdark .fileinfo .filename{color:black;margin-bottom:0.1em;text-overflow:ellipsis;}"
+            ".attachdark .fileinfo .sub{color:gray;font-size:0.85em;}"
             "%@"
             ".sig{max-height:400px;overflow-y:scroll;}"
             "</style>"
@@ -377,6 +420,7 @@
     return @{@"bid" : bid, @"tid" : tid, @"p" : p, @"floor" : floor};
 }
 
+/// 从论坛转义过的 HTML 恢复成正确的格式，例如 \<font>xxx\</font> 恢复成 [font=][/font]
 + (NSString *)restoreFormat:(NSString *)text {
     if (!text || text.length == 0) {
         return text;
@@ -556,9 +600,12 @@
     return text;
 }
 
-+ (NSString *)removeHTML:(NSString *)text {
++ (NSString *)removeHTML:(NSString *)text restoreFormat:(BOOL)restoreFormat {
     if (!text || text.length == 0) {
         return text;
+    }
+    if (restoreFormat) {
+        text = [self restoreFormat:text];
     }
     text = [self simpleEscapeHTML:text processLtGt:NO];
     
@@ -566,28 +613,37 @@
 
     // 去除注释
     NSString *expression = @"<!--.*?-->";
-    NSRegularExpression *regexp = [NSRegularExpression regularExpressionWithPattern:expression options:options error:nil];
+    NSRegularExpression * regexp = [NSRegularExpression regularExpressionWithPattern:expression options:options error:nil];
     text = [regexp stringByReplacingMatchesInString:text options:0 range:NSMakeRange(0, text.length) withTemplate:@""];
     
-    // 去除style内容
-    expression = @"<style[^>]*>.*?</style>";
+    // 去除 script / iframe / style 内容
+    for (NSString *tag in @[@"script", @"iframe", @"style"]) {
+        expression = [NSString stringWithFormat:@"<%@[^>]*>.*?</%@>", tag, tag];
+        regexp = [NSRegularExpression regularExpressionWithPattern:expression options:options error:nil];
+        text = [regexp stringByReplacingMatchesInString:text options:0 range:NSMakeRange(0, text.length) withTemplate:@""];
+    }
+    
+    // 处理 div / p / tr 为换行
+    for (NSString *tag in @[@"div", @"p", @"tr"]) {
+        expression = [NSString stringWithFormat:@"<%@[^>]*>(.*?)</%@>", tag, tag];
+        regexp = [NSRegularExpression regularExpressionWithPattern:expression options:options error:nil];
+        text = [regexp stringByReplacingMatchesInString:text options:0 range:NSMakeRange(0, text.length) withTemplate:@"$1\n"];
+    }
+    
+    // 处理 td 为tab
+    expression = @"<td[^>]*>(.*?)</td>";
     regexp = [NSRegularExpression regularExpressionWithPattern:expression options:options error:nil];
-    text = [regexp stringByReplacingMatchesInString:text options:0 range:NSMakeRange(0, text.length) withTemplate:@""];
+    text = [regexp stringByReplacingMatchesInString:text options:0 range:NSMakeRange(0, text.length) withTemplate:@"$1\t"];
 
-    // 处理 <div> 为换行
-    expression = @"<div[^>]*>(.*?)</div>";
-    regexp = [NSRegularExpression regularExpressionWithPattern:expression options:options error:nil];
-    text = [regexp stringByReplacingMatchesInString:text options:0 range:NSMakeRange(0, text.length) withTemplate:@"$1\n"];
-
-    // 处理 <p> 为换行
-    expression = @"<p[^>]*>(.*?)</p>";
-    regexp = [NSRegularExpression regularExpressionWithPattern:expression options:options error:nil];
-    text = [regexp stringByReplacingMatchesInString:text options:0 range:NSMakeRange(0, text.length) withTemplate:@"$1\n"];
-
-    // 处理 <span> 为不换行
+    // 处理 span 为不换行
     expression = @"<span[^>]*>(.*?)</span>";
     regexp = [NSRegularExpression regularExpressionWithPattern:expression options:options error:nil];
     text = [regexp stringByReplacingMatchesInString:text options:0 range:NSMakeRange(0, text.length) withTemplate:@"$1"];
+    
+    if (restoreFormat) {
+        // 再尝试恢复一次格式，之前可能有漏掉的
+        text = [self restoreFormat:text];
+    }
     
     // 去除所有HTML标签
     expression = @"<[^>]+>";
@@ -598,6 +654,18 @@
     text = [text stringByReplacingOccurrencesOfString:@"&gt;" withString:@">"];
     // NSLog(@"%@", text);
     return text;
+}
+
++ (NSString *)fileSize:(NSInteger)size {
+    if (size >= 1024 * 1024) {
+        float num = size * 1.0 / (1024 * 1024);
+        return [NSString stringWithFormat:num >= 10 ? @"%.1fMB" : @"%.2fMB", num];
+    } else if (size >= 1024 / 10) {
+        float num = size * 1.0 / 1024;
+        return [NSString stringWithFormat:num >= 10 ? @"%.1fKB" : @"%.2fKB", num];
+    } else {
+        return [NSString stringWithFormat:@"%ldB", size];
+    }
 }
 
 + (NSString *)md5:(NSString *)str { // 字符串MD5值算法

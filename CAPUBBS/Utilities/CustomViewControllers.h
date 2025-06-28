@@ -9,6 +9,9 @@
 #import <UIKit/UIKit.h>
 #import <MessageUI/MessageUI.h>
 
+@interface CustomNavigationController : UINavigationController
+@end
+
 @interface CustomViewController : UIViewController
 @end
 

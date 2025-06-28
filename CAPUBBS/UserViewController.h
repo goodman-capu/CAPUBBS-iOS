@@ -24,7 +24,6 @@
     NSString *iconURL;
     NSArray *property;
     NSMutableArray *heights;
-    UIDocumentInteractionController *dic;
     NSTimer *heightCheckTimer;
 }
 

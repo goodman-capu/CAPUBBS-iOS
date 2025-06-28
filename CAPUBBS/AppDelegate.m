@@ -17,14 +17,7 @@
 #import <CoreSpotlight/CoreSpotlight.h>
 #import <MobileCoreServices/MobileCoreServices.h>
 
-@interface PreviewItemWithName : NSObject <QLPreviewItem>
-
-@property (nonatomic, strong) NSURL *previewItemURL;
-@property (nonatomic, strong) NSString *previewItemTitle;
-
-@end
-
-@implementation PreviewItemWithName
+@implementation PreviewItem
 @end
 
 @implementation AppDelegate
@@ -85,8 +78,6 @@
     NSDictionary *dict = @{
         // @"proxy" : @2,
         @"autoLogin" : @YES,
-        @"enterLogin" : @YES,
-        @"wakeLogin" : @NO,
         @"vibrate" : @YES,
         @"picOnlyInWifi" : @NO,
         @"changeBackground" : @YES,
@@ -98,7 +89,6 @@
         @"IDNum" : @(MAX_ID_NUM / 2),
         @"hotNum" : @(MAX_HOT_NUM / 2),
         @"checkUpdate" : @"2025-01-01",
-        @"checkPass" : @"2025-01-01"
     };
     NSDictionary *group = @{
         @"URL" : DEFAULT_SERVER_URL,
@@ -108,10 +98,9 @@
         @"simpleView" : @NO
     };
     [DEFAULTS registerDefaults:dict];
-    [DEFAULTS removeObjectForKey:@"enterLogin"];
-    [DEFAULTS removeObjectForKey:@"wakeLogin"];
     [GROUP_DEFAULTS registerDefaults:group];
     [self transferDefaults];
+    wakeLogin = NO;
     
     [[NSURLCache sharedURLCache] setMemoryCapacity:128.0 * 1024 * 1024];
     [[NSURLCache sharedURLCache] setDiskCapacity:512.0 * 1024 * 1024];
@@ -122,7 +111,7 @@
     [NOTIFICATION addObserver:self selector:@selector(collectionChanged) name:@"collectionChanged" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(sendEmail:) name:@"sendEmail" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(previewFile:) name:@"previewFile" object:nil];
-    if ([ActionPerformer checkLogin:NO] && [[DEFAULTS objectForKey:@"autoLogin"] boolValue] == YES) {
+    if ([ActionPerformer checkLogin:NO] && [[DEFAULTS objectForKey:@"autoLogin"] boolValue]) {
         [self login:nil];
     }
     return YES;
@@ -147,10 +136,10 @@
     NSLog(@"Become Active");
     // 返回后自动登录
     // 条件为 已登录 或 不是第一次打开软件且开启了自动登录
-    if (([ActionPerformer checkLogin:NO] || [[DEFAULTS objectForKey:@"autoLogin"] boolValue] == YES) && [[DEFAULTS objectForKey:@"wakeLogin"] boolValue] == YES) {
+    if (([ActionPerformer checkLogin:NO] || [[DEFAULTS objectForKey:@"autoLogin"] boolValue]) && wakeLogin) {
         [self login:nil];
     }
-    [DEFAULTS setObject:@(YES) forKey:@"wakeLogin"];
+    wakeLogin = YES;
     [[ReachabilityManager sharedManager] startMonitoring];
     [self maybeCheckUpdate];
     
@@ -171,7 +160,7 @@
 
 - (void)transferDefaults {
     NSUserDefaults *appGroup = GROUP_DEFAULTS;
-    if ([[appGroup objectForKey:@"activated"] boolValue] == NO) {
+    if (![[appGroup objectForKey:@"activated"] boolValue]) {
         for (NSString *key in @[@"URL", @"uid", @"pass", @"token", @"userInfo", @"iconOnlyInWifi", @"simpleView"]) {
             id obj = [DEFAULTS objectForKey:key];
             if (obj) {
@@ -232,7 +221,7 @@
 - (void)_previewFile:(NSNotification *)noti attempt:(int)attempt {
     NSDictionary *dict = noti.userInfo;
     // Already previewing a file
-    if (previewFilePath) {
+    if (previewItem) {
         if (attempt <= 10) {
             dispatch_global_after(0.2, ^{
                 [self _previewFile:noti attempt:attempt + 1];
@@ -250,20 +239,24 @@
         return;
     }
     
-    previewFilePath = path;
-    previewFileTitle = dict[@"fileTitle"];
+    previewItem = [[PreviewItem alloc] init];
+    previewItem.previewItemURL = [NSURL fileURLWithPath:path];
+    previewItem.previewItemTitle = dict[@"fileTitle"];
     if (dict[@"frame"] && [dict[@"frame"] isKindOfClass:[UIView class]]) {
-        previewFrame = dict[@"frame"];
+        previewItem.previewFrame = dict[@"frame"];
     } else {
-        previewFrame = nil;
+        previewItem.previewFrame = nil;
     }
     if (dict[@"transitionImage"] && [dict[@"transitionImage"] isKindOfClass:[UIImage class]]) {
-        previewTransitionImage = dict[@"transitionImage"];
+        previewItem.previewTransitionImage = dict[@"transitionImage"];
     } else {
-        previewTransitionImage = nil;
+        previewItem.previewTransitionImage = nil;
     }
     
     dispatch_main_sync_safe(^{
+        if (![QLPreviewController canPreviewItem:previewItem]) {
+            [[AppDelegate getTopViewController] showAlertWithTitle:@"系统无法预览该文件" message:@"可以保存文件或使用其它App打开"];
+        }
         QLPreviewController *previewController = [[QLPreviewController alloc] init];
         previewController.dataSource = self;
         previewController.delegate = self;
@@ -276,45 +269,40 @@
 }
 
 - (id<QLPreviewItem>)previewController:(QLPreviewController *)controller previewItemAtIndex:(NSInteger)index {
-    PreviewItemWithName *item = [[PreviewItemWithName alloc] init];
-    item.previewItemURL = [NSURL fileURLWithPath:previewFilePath];
-    item.previewItemTitle = previewFileTitle;
-    return item;
+    return previewItem;
 }
 
 - (void)previewControllerDidDismiss:(QLPreviewController *)controller {
-    if (!previewFilePath) {
+    if (!previewItem) {
         return;
     }
-    [MANAGER removeItemAtPath:previewFilePath error:nil];
-    previewFilePath = nil;
-    previewFileTitle = nil;
-    previewFrame = nil;
-    previewTransitionImage = nil;
+    [MANAGER removeItemAtURL:previewItem.previewItemURL error:nil];
+    previewItem = nil;
 }
 
 - (UIImage *)previewController:(QLPreviewController *)controller transitionImageForPreviewItem:(id<QLPreviewItem>)item contentRect:(CGRect *)contentRect {
-    if (!previewFrame) {
+    if (!previewItem || !previewItem.previewFrame) {
         *contentRect = CGRectZero;
         return nil;
     }
-    *contentRect = previewFrame.bounds;
-    if (previewTransitionImage) {
-        return previewTransitionImage;
-    } else if ([previewFrame isKindOfClass:[UIImageView class]]) {
-        return ((UIImageView *)previewFrame).image;
-    } else {
-        return [UIImage imageWithContentsOfFile:previewFilePath];
+    if (previewItem.previewTransitionImage) {
+        *contentRect = previewItem.previewFrame.bounds;
+        return previewItem.previewTransitionImage;
+    } else if ([previewItem.previewFrame isKindOfClass:[UIImageView class]]) {
+        *contentRect = previewItem.previewFrame.bounds;
+        return ((UIImageView *)previewItem.previewFrame).image;
     }
+    *contentRect = CGRectZero;
+    return nil;
 }
 
 - (CGRect)previewController:(QLPreviewController *)controller frameForPreviewItem:(id<QLPreviewItem>)item inSourceView:(UIView * _Nullable * _Nonnull)view {
-    if (!previewFrame) {
+    if (!previewItem || !previewItem.previewFrame) {
         *view = nil;
         return CGRectZero;
     }
-    *view = previewFrame;
-    return previewFrame.bounds;
+    *view = previewItem.previewFrame;
+    return previewItem.previewFrame.bounds;
 }
 
 - (void)openLink:(NSDictionary *)linkInfo postTitle:(NSString *)title {
@@ -525,7 +513,7 @@
             if (!success) {
                 return;
             }
-            [DEFAULTS setObject:@(NO) forKey:@"wakeLogin"];
+            wakeLogin = NO;
             
             dispatch_main_sync_safe(^{
                 MessageViewController *dest = [self.window.rootViewController.storyboard instantiateViewControllerWithIdentifier:@"message"];
@@ -562,7 +550,7 @@
             if (!success) {
                 return;
             }
-            [DEFAULTS setObject:@(NO) forKey:@"wakeLogin"];
+            wakeLogin = NO;
             
             dispatch_main_sync_safe(^{
                 ComposeViewController *dest = [self.window.rootViewController.storyboard instantiateViewControllerWithIdentifier:@"compose"];
@@ -681,7 +669,7 @@
 }
 
 - (void)transport {
-    if ([[DEFAULTS objectForKey:@"clearDirtyData3.2"] boolValue] == NO) { // 3.2之前版本采用NSUserDefaults储存头像 文件夹里面有许多垃圾数据
+    if (![[DEFAULTS objectForKey:@"clearDirtyData3.2"] boolValue]) { // 3.2之前版本采用NSUserDefaults储存头像 文件夹里面有许多垃圾数据
         NSString *rootFolder = NSHomeDirectory();
         NSArray *childPaths = [MANAGER subpathsAtPath:rootFolder];
         for (NSString *path in childPaths) {
@@ -692,20 +680,13 @@
             }
         }
         
-        // 转移头像缓存
-        [AnimatedImageView checkPath];
-        NSDictionary *cache = [DEFAULTS objectForKey:@"iconCache"];
-        for (NSString *key in cache) {
-            [MANAGER createFileAtPath:[NSString stringWithFormat:@"%@/%@", IMAGE_CACHE_PATH, [ActionPerformer md5:key]] contents:[cache objectForKey:key] attributes:nil];
-        }
-        
         // 清除旧缓存
         [DEFAULTS removeObjectForKey:@"iconCache"];
         [DEFAULTS removeObjectForKey:@"iconSize"];
         [DEFAULTS setObject:@(YES) forKey:@"clearDirtyData3.2"];
     }
     
-    if ([[DEFAULTS objectForKey:@"transportID3.3"] boolValue] == NO) { // 3.3之后版本ID储存采用一个Dictionary
+    if (![[DEFAULTS objectForKey:@"transportID3.3"] boolValue]) { // 3.3之后版本ID储存采用一个Dictionary
         NSMutableArray *IDs = [[NSMutableArray alloc] init];
         for (int i = 0; i < MAX_ID_NUM; i++) {
             NSString *uid = [DEFAULTS objectForKey:[NSString stringWithFormat:@"id%d", i]];
@@ -722,7 +703,7 @@
         [DEFAULTS setObject:@(YES) forKey:@"transportID3.3"];
     }
     
-    if ([[DEFAULTS objectForKey:@"clearIconCache3.5"] boolValue] == NO) { // 3.5之后链接全更改为https 缓存失效
+    if (![[DEFAULTS objectForKey:@"clearIconCache3.5"] boolValue]) { // 3.5之后链接全更改为https 缓存失效
         [MANAGER removeItemAtPath:IMAGE_CACHE_PATH error:nil];
         [DEFAULTS setObject:@(YES) forKey:@"clearIconCache3.5"];
     }
@@ -749,7 +730,7 @@
         if (!success) {
             if ([UIApplication sharedApplication].applicationState == UIApplicationStateActive) {
                 [GROUP_DEFAULTS removeObjectForKey:@"token"];
-                [[AppDelegate getTopViewController] showAlertWithTitle:@"警告" message:@"后台登录失败,您现在处于未登录状态，请检查原因！"];
+                [[AppDelegate getTopViewController] showAlertWithTitle:@"警告" message:@"后台登录失败,您现在处于未登录状态，请检查您的网络连接！"];
             }
         } else {
             [GROUP_DEFAULTS setObject:result[0][@"token"] forKey:@"token"];

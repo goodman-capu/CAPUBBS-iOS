@@ -2871,9 +2871,7 @@ Cg
                             </view>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="eeR-j8-dCy">
                                 <rect key="frame" x="326" y="724" width="60" height="30"/>
-                                <state key="normal" title="清除样式">
-                                    <color key="titleShadowColor" red="0.5" green="0.5" blue="0.5" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                </state>
+                                <state key="normal" title="清除样式"/>
                                 <connections>
                                     <action selector="clearFormat:" destination="Vc0-tw-U0V" eventType="touchUpInside" id="Vxy-fe-hIU"/>
                                 </connections>
@@ -2891,7 +2889,7 @@ Cg
                                 </connections>
                             </button>
                             <segmentedControl opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="top" segmentControlStyle="plain" selectedSegmentIndex="1" translatesAutoresizingMaskIntoConstraints="NO" id="cmD-6r-d5I">
-                                <rect key="frame" x="131" y="725" width="140" height="29"/>
+                                <rect key="frame" x="77" y="725" width="140" height="29"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="28" id="kHp-c3-Fm1"/>
                                     <constraint firstAttribute="width" constant="140" id="poE-lr-uf3"/>
@@ -2903,8 +2901,8 @@ Cg
                                     <segment title="3"/>
                                 </segments>
                             </segmentedControl>
-                            <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="签名档" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="hsx-Qf-0Jh">
-                                <rect key="frame" x="66" y="730" width="45" height="18"/>
+                            <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="签名档：" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="hsx-Qf-0Jh">
+                                <rect key="frame" x="16" y="730" width="53" height="18"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="15"/>
                                 <nil key="highlightedColor"/>
                             </label>
@@ -2914,17 +2912,26 @@ Cg
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
                             </textView>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Gbc-AI-4rx">
+                                <rect key="frame" x="279" y="724" width="31" height="30"/>
+                                <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                <state key="normal" title="📎3"/>
+                                <connections>
+                                    <action selector="seeAttachment:" destination="Vc0-tw-U0V" eventType="touchUpInside" id="c27-YV-GjH"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <gestureRecognizers/>
                         <constraints>
+                            <constraint firstItem="Gbc-AI-4rx" firstAttribute="centerY" secondItem="eeR-j8-dCy" secondAttribute="centerY" id="0db-yo-Djm"/>
                             <constraint firstItem="uOc-TE-ebG" firstAttribute="centerY" secondItem="dRr-cq-NTR" secondAttribute="centerY" id="2Wd-Im-r06"/>
                             <constraint firstItem="yxZ-Cf-euI" firstAttribute="top" secondItem="dRr-cq-NTR" secondAttribute="bottom" constant="66" id="4FX-oF-v9p"/>
                             <constraint firstItem="yxZ-Cf-euI" firstAttribute="leading" secondItem="dRr-cq-NTR" secondAttribute="leading" id="6xl-wP-I8I"/>
-                            <constraint firstItem="hsx-Qf-0Jh" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="yTF-fV-w50" secondAttribute="leadingMargin" id="7bx-6D-Qnm"/>
+                            <constraint firstItem="eeR-j8-dCy" firstAttribute="leading" secondItem="Gbc-AI-4rx" secondAttribute="trailing" constant="16" id="7Gw-jS-pwm"/>
+                            <constraint firstItem="hsx-Qf-0Jh" firstAttribute="leading" secondItem="yTF-fV-w50" secondAttribute="leadingMargin" id="7bx-6D-Qnm"/>
                             <constraint firstItem="LiE-LG-Gzz" firstAttribute="leading" secondItem="dRr-cq-NTR" secondAttribute="leading" id="E7D-kD-Bvn"/>
                             <constraint firstItem="uOc-TE-ebG" firstAttribute="leading" secondItem="dRr-cq-NTR" secondAttribute="trailing" constant="5" id="Ebh-OE-w8g"/>
-                            <constraint firstItem="cmD-6r-d5I" firstAttribute="centerX" secondItem="yTF-fV-w50" secondAttribute="centerX" id="FGl-aY-28s"/>
                             <constraint firstItem="dRr-cq-NTR" firstAttribute="top" secondItem="PAL-qn-ptW" secondAttribute="bottom" constant="15" id="HUb-yu-L5z"/>
                             <constraint firstAttribute="trailingMargin" secondItem="eeR-j8-dCy" secondAttribute="trailing" id="Q0I-yO-7FU"/>
                             <constraint firstItem="cmD-6r-d5I" firstAttribute="top" secondItem="yxZ-Cf-euI" secondAttribute="bottom" constant="15" id="Q0j-XX-tXG"/>
@@ -2933,7 +2940,7 @@ Cg
                             <constraint firstItem="yxZ-Cf-euI" firstAttribute="top" secondItem="LiE-LG-Gzz" secondAttribute="bottom" priority="750" constant="4" id="hKR-UT-pJk"/>
                             <constraint firstItem="LiE-LG-Gzz" firstAttribute="trailing" secondItem="uOc-TE-ebG" secondAttribute="trailing" id="l7P-f0-jFF"/>
                             <constraint firstItem="0zZ-wh-QjN" firstAttribute="top" secondItem="cmD-6r-d5I" secondAttribute="bottom" constant="15" id="ori-Ov-koi"/>
-                            <constraint firstItem="cmD-6r-d5I" firstAttribute="leading" secondItem="hsx-Qf-0Jh" secondAttribute="trailing" constant="20" id="pq7-KD-ZWw"/>
+                            <constraint firstItem="cmD-6r-d5I" firstAttribute="leading" secondItem="hsx-Qf-0Jh" secondAttribute="trailing" constant="8" id="pq7-KD-ZWw"/>
                             <constraint firstItem="dRr-cq-NTR" firstAttribute="leading" secondItem="yTF-fV-w50" secondAttribute="leadingMargin" id="qPd-PP-QcM"/>
                             <constraint firstAttribute="trailingMargin" secondItem="uOc-TE-ebG" secondAttribute="trailing" id="uZn-jE-dcd"/>
                             <constraint firstItem="hsx-Qf-0Jh" firstAttribute="centerY" secondItem="cmD-6r-d5I" secondAttribute="centerY" id="xHe-ez-o3B"/>
@@ -2963,6 +2970,7 @@ Cg
                         </rightBarButtonItems>
                     </navigationItem>
                     <connections>
+                        <outlet property="buttonAttachments" destination="Gbc-AI-4rx" id="Ccz-3y-bth"/>
                         <outlet property="buttonPic" destination="pjg-bX-oJp" id="96z-9q-0JZ"/>
                         <outlet property="buttonTools" destination="uOc-TE-ebG" id="SkB-os-j9U"/>
                         <outlet property="constraintBottom" destination="ori-Ov-koi" id="Riu-tX-reO"/>
@@ -4644,7 +4652,7 @@ Cg
                                         <rect key="frame" x="0.0" y="790" width="402" height="55"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="EtI-3v-vZu" id="ele-WB-5N3">
-                                            <rect key="frame" x="0.0" y="0.0" width="371.66666666666669" height="55"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="383.66666666666669" height="55"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="recentpost" translatesAutoresizingMaskIntoConstraints="NO" id="DRc-GT-H0J">
@@ -4673,7 +4681,7 @@ Cg
                                             <rect key="frame" x="0.0" y="0.0" width="383.66666666666669" height="55"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="recentreply" translatesAutoresizingMaskIntoConstraints="NO" id="4TR-3A-94U">
+                                                <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" image="recentreply" translatesAutoresizingMaskIntoConstraints="NO" id="4TR-3A-94U">
                                                     <rect key="frame" x="126" y="10" width="120" height="35"/>
                                                     <constraints>
                                                         <constraint firstAttribute="width" constant="120" id="Vu0-DA-IIL"/>
@@ -4699,7 +4707,7 @@ Cg
                                             <rect key="frame" x="0.0" y="0.0" width="402" height="55"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="举报该用户" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ENe-75-aBJ">
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" text="举报该用户" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ENe-75-aBJ">
                                                     <rect key="frame" x="158.66666666666666" y="17.333333333333336" width="84.666666666666657" height="20.333333333333336"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <color key="textColor" red="1" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>

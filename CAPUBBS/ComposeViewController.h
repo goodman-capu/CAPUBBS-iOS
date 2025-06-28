@@ -22,6 +22,7 @@
 @property (weak, nonatomic) IBOutlet UIButton *restoreDraft;
 @property (weak, nonatomic) IBOutlet UIButton *buttonPic;
 @property (weak, nonatomic) IBOutlet UIButton *buttonTools;
+@property (weak, nonatomic) IBOutlet UIButton *buttonAttachments;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *segmentedControl;
 @property (weak, nonatomic) IBOutlet UIView *viewTools;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *constraintTop;
@@ -29,6 +30,7 @@
 
 @property NSString *bid;
 @property NSString *tid;
+@property NSArray *attachments;
 @property NSString *defaultTitle;
 @property NSString *defaultContent;
 @property NSString *floor;

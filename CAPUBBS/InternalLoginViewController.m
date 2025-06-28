@@ -79,22 +79,13 @@
 //            [self showAlertWithTitle:@"登录失败" message:[err localizedDescription]];
             return ;
         }
-        if ([result[0][@"code"] isEqualToString:@"0"]) {
+        int code = [result[0][@"code"] intValue];
+        if (code == 0) {
             [hud hideWithSuccessMessage:@"登录成功"];
         } else {
             [hud hideWithFailureMessage:@"登录失败"];
         }
-        if ([result[0][@"code"] isEqualToString:@"1"]) {
-            [self showAlertWithTitle:@"登录失败" message:@"密码错误！" cancelAction:^(UIAlertAction *action) {
-                [self.textPass becomeFirstResponder];
-            }];
-            return ;
-        } else if ([result[0][@"code"] isEqualToString:@"2"]) {
-            [self showAlertWithTitle:@"登录失败" message:@"用户名不存在！" cancelAction:^(UIAlertAction *action) {
-                [self.textUid becomeFirstResponder];
-            }];
-            return ;
-        } else if ([result[0][@"code"] isEqualToString:@"0"]) {
+        if (code == 0) {
             if ([UID length] > 0 && ![uid isEqualToString:UID]) { // 注销之前的账号
                 [ActionPerformer callApiWithParams:nil toURL:@"logout" callback:^(NSArray *result, NSError *err) {}];
                 NSLog(@"Logout - %@", UID);
@@ -105,11 +96,20 @@
             [LoginViewController updateIDSaves];
             NSLog(@"Login - %@", uid);
             [NOTIFICATION postNotificationName:@"userChanged" object:nil userInfo:nil];
-            [ActionPerformer checkPasswordLength];
             shouldPop = YES;
             dispatch_main_after(0.5, ^{
                 [self.navigationController popViewControllerAnimated:YES];
             });
+            return;
+        }
+        if (code == 1) {
+            [self showAlertWithTitle:@"登录失败" message:@"密码错误！" cancelAction:^(UIAlertAction *action) {
+                [self.textPass becomeFirstResponder];
+            }];
+        } else if (code == 2) {
+            [self showAlertWithTitle:@"登录失败" message:@"用户名不存在！" cancelAction:^(UIAlertAction *action) {
+                [self.textUid becomeFirstResponder];
+            }];
         } else {
             [self showAlertWithTitle:@"登录失败" message:@"发生未知错误！"];
         }
