@@ -70,7 +70,7 @@ static const CGFloat kWebViewMinHeight = 40;
     [self.navigationController setToolbarHidden:NO animated:YES];
     
     activity = [[NSUserActivity alloc] initWithActivityType:[BUNDLE_IDENTIFIER stringByAppendingString:@".content"]];
-    activity.webpageURL = [NSURL URLWithString:URL];
+    activity.webpageURL = [self getCurrentUrl];
     activity.title = self.title;
     [activity becomeCurrent];
     
@@ -98,10 +98,15 @@ static const CGFloat kWebViewMinHeight = 40;
 
 #pragma mark - Web request
 
+- (NSURL *)getCurrentUrl {
+    return [NSURL URLWithString:[NSString stringWithFormat:@"%@/bbs/content/?tid=%@&bid=%@&p=%d", CHEXIE, self.tid, self.bid, page]];
+}
+
 - (void)jumpTo:(int)pageNum {
     [hud showWithProgressMessage:@"加载中"];
     int oldPage = page;
-    if ((page = pageNum) == 1) {
+    page = pageNum;
+    if (page == 1) {
         self.toolbarItems = @[self.buttonCollection, self.barFreeSpace, self.buttonJump, self.barFreeSpace, self.buttonAction, self.barFreeSpace, self.buttonCompose, self.barFreeSpace, self.buttonForward];
     } else {
         self.toolbarItems = @[self.buttonBack, self.barFreeSpace, self.buttonJump, self.barFreeSpace, self.buttonAction, self.barFreeSpace, self.buttonCompose, self.barFreeSpace, self.buttonForward];
@@ -111,11 +116,10 @@ static const CGFloat kWebViewMinHeight = 40;
     self.buttonLatest.enabled = NO;
     self.buttonJump.enabled = NO;
     self.buttonCompose.enabled = NO;
-    URL = [NSString stringWithFormat:@"%@/bbs/content/?tid=%@&bid=%@&p=%ld", CHEXIE, self.tid, self.bid, (long)page];
-    activity.webpageURL = [NSURL URLWithString:URL];
+    activity.webpageURL = [self getCurrentUrl];
     activity.title = self.title;
     NSDictionary *dict = @{
-        @"p" : [NSString stringWithFormat:@"%ld", (long)pageNum],
+        @"p" : [NSString stringWithFormat:@"%d", page],
         @"bid" : self.bid,
         @"tid" : self.tid,
         @"raw" : @"YES",
@@ -210,7 +214,7 @@ static const CGFloat kWebViewMinHeight = 40;
                     }
                     [cell invalidateTimer];
                     // 加载空HTML以快速清空，防止reuse后还短暂显示之前的内容
-                    [cell.webViewContainer.webView loadHTMLString:EMPTY_HTML baseURL:[NSURL URLWithString:CHEXIE]];
+                    [cell.webViewContainer.webView loadHTMLString:EMPTY_HTML baseURL:nil];
                 }
             }
             [self.tableView reloadData];
@@ -606,7 +610,7 @@ static const CGFloat kWebViewMinHeight = 40;
     [cell.icon setUrl:dict[@"icon"]];
     
     [cell.webViewContainer.webView setNavigationDelegate:self];
-    [cell.webViewContainer.webView loadHTMLString:HTMLStrings[indexPath.row] baseURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/bbs/content/?", CHEXIE]]];
+    [cell.webViewContainer.webView loadHTMLString:HTMLStrings[indexPath.row] baseURL:[self getCurrentUrl]];
     [cell.webviewHeight setConstant:[self getWebViewHeightForRow:indexPath.row]];
     
     
@@ -703,6 +707,7 @@ static const CGFloat kWebViewMinHeight = 40;
     }
     NSString *base64Data = payload[@"data"] ?: @"";
     NSString *imgSrc = payload[@"src"] ?: @"";
+    NSURL *imageUrl = [NSURL URLWithString:imgSrc];
     NSString *alt = payload[@"alt"] ?: @"";
     // 去掉前缀
     NSRange range = [base64Data rangeOfString:@","];
@@ -713,15 +718,14 @@ static const CGFloat kWebViewMinHeight = 40;
         ImageFileType type = [AnimatedImageView fileType:imageData];
         if (type != ImageFileTypeUnknown) {
             [hud hideWithSuccessMessage:@"图片加载成功"];
-            NSString *fileName = [NSString stringWithFormat:@"%@.%@", [ActionPerformer md5:imgSrc], [AnimatedImageView fileExtension:type]];
-            [self presentImage:imageData fileName:fileName alt:alt];
+            NSString *fileName = [ActionPerformer fileNameFromURL:imageUrl] ?: [[ActionPerformer md5:imgSrc] stringByAppendingPathExtension:[AnimatedImageView fileExtension:type]];
+            [self presentImage:imageData fileName:fileName title:alt];
             return;
         }
     }
     
     NSString *errorMessage = payload[@"error"] ?: @"图片加载失败";
     // Try reload in app to overcome CORS. (Most external sites will fail the fetch request)
-    NSURL *imageUrl = [NSURL URLWithString:imgSrc];
     if (imageUrl) {
         [hud showWithProgressMessage:@"图片加载中"];
         NSURLRequest *request = [NSURLRequest requestWithURL:imageUrl cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:30.0];
@@ -732,8 +736,13 @@ static const CGFloat kWebViewMinHeight = 40;
                 return;
             }
             [hud hideWithSuccessMessage:@"图片加载成功"];
-            NSString *fileName = [NSString stringWithFormat:@"%@.%@", [ActionPerformer md5:imgSrc], [AnimatedImageView fileExtension:type]];
-            [self presentImage:idata fileName:fileName alt:alt];
+            NSString *fileName;
+            if (response.suggestedFilename && response.suggestedFilename.pathExtension.length > 0) {
+                fileName = response.suggestedFilename;
+            } else {
+                fileName = [ActionPerformer fileNameFromURL:imageUrl] ?: [[ActionPerformer md5:imgSrc] stringByAppendingPathExtension:[AnimatedImageView fileExtension:type]];
+            }
+            [self presentImage:idata fileName:fileName title:alt];
         }];
         [task resume];
     } else {
@@ -741,7 +750,7 @@ static const CGFloat kWebViewMinHeight = 40;
     }
 }
 
-- (void)presentImage:(NSData *)imageData fileName:(NSString *)fileName alt:(NSString *)alt {
+- (void)presentImage:(NSData *)imageData fileName:(NSString *)fileName title:(NSString *)alt {
     [NOTIFICATION postNotificationName:@"previewFile" object:nil userInfo:@{
         @"fileData": imageData,
         @"fileName": fileName,
@@ -766,7 +775,7 @@ static const CGFloat kWebViewMinHeight = 40;
     NSString *generalInfo = [NSString stringWithFormat:@"%@\n下载后请及时保存", attach[@"name"]];
     if ([attach[@"price"] intValue] == 0 || [attach[@"free"] isEqualToString:@"YES"]) {
         [self showAlertWithTitle:[NSString stringWithFormat:@"确认下载附件 (%@)", fileSize] message:generalInfo confirmTitle:@"确认" confirmAction:^(UIAlertAction *action) {
-            [self downloadAttachment:attach];
+            [self getInfoAndDownloadAttachment:attach];
         }];
         return;
     }
@@ -782,11 +791,11 @@ static const CGFloat kWebViewMinHeight = 40;
         return;
     }
     [self showAlertWithTitle:[NSString stringWithFormat:@"确认购买附件 (%@)", fileSize] message:[NSString stringWithFormat:@"附件售价为%d积分，您当前有%d积分，购买后将剩余%d积分\n\n%@", price, userScore, userScore - price, generalInfo] confirmTitle:@"确认" confirmAction:^(UIAlertAction *action) {
-        [self downloadAttachment:attach];
+        [self getInfoAndDownloadAttachment:attach];
     }];
 }
 
-- (void)downloadAttachment:(NSDictionary *)attach {
+- (void)getInfoAndDownloadAttachment:(NSDictionary *)attach {
     [hud showWithProgressMessage:@"正在下载"];
     NSDictionary *params = @{
         @"method": @"download",
@@ -825,34 +834,46 @@ static const CGFloat kWebViewMinHeight = 40;
             return;
         }
         
-        NSString *filePath = [NSString stringWithFormat:@"%@/bbs/attachment/%@", CHEXIE, result[0][@"path"]];
-        NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:filePath] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:30.0];
-        NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable idata, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-            if (error || !idata || idata.length == 0) {
-                [hud hideWithFailureMessage:@"下载失败"];
-                [self showAlertWithTitle:@"错误" message:error ? error.localizedDescription : @"文件下载失败，请检查您的网络连接！"];
-                return;
-            }
-            [hud hideWithSuccessMessage:@"下载成功"];
-            NSString *fileName = attach[@"name"];
-            [NOTIFICATION postNotificationName:@"previewFile" object:nil userInfo:@{
-                @"fileData": idata,
-                @"fileName": fileName,
-                @"fileTitle": [NSString stringWithFormat:@"附件：%@", fileName]
-            }];
-        }];
-        [task resume];
+        [self downloadAttachment:attach[@"name"] path:result[0][@"path"]];
     }];
 }
 
+- (void)downloadAttachment:(NSString *)fileName path:(NSString *)path {
+    if (hud.isHidden) {
+        [hud showWithProgressMessage:@"正在下载"];
+    }
+    NSString *filePath = [NSString stringWithFormat:@"%@/bbs/attachment/%@", CHEXIE, path];
+    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:filePath] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:30.0];
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable idata, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+        if (error || !idata || idata.length == 0) {
+            [hud hideWithFailureMessage:@"下载失败"];
+            [self showAlertWithTitle:@"错误" message:error ? error.localizedDescription : @"文件下载失败，请检查您的网络连接！" confirmTitle:@"重试" confirmAction:^(UIAlertAction *action) {
+                dispatch_global_after(0.5, ^{
+                    [self downloadAttachment:fileName path:path];
+                });
+            }];
+            return;
+        }
+        [hud hideWithSuccessMessage:@"下载成功"];
+        [NOTIFICATION postNotificationName:@"previewFile" object:nil userInfo:@{
+            @"fileData": idata,
+            @"fileName": fileName,
+            @"fileTitle": [NSString stringWithFormat:@"附件：%@", fileName]
+        }];
+    }];
+    [task resume];
+}
+
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
+    NSURL *url = navigationAction.request.URL;
+    NSString *path = url.absoluteString;
+    
     // 允许其他类型加载（如 form submit、reload）
     if (navigationAction.navigationType != WKNavigationTypeLinkActivated) {
         decisionHandler(WKNavigationActionPolicyAllow);
         return;
     }
     
-    NSString *path = navigationAction.request.URL.absoluteString;
     if ([path hasPrefix:@"x-apple"]) {
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
@@ -867,9 +888,11 @@ static const CGFloat kWebViewMinHeight = 40;
         return;
     }
     
-    if ([path hasPrefix:@"tel:"]) {
+    if ([path hasPrefix:@"tel:"] || [path hasPrefix:@"sms:"] || [path hasPrefix:@"facetime:"] || [path hasPrefix:@"maps:"]) {
         // Directly open
-        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:path] options:@{} completionHandler:nil];
+        if ([[UIApplication sharedApplication] canOpenURL:url]) {
+            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+        }
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     }
@@ -1073,7 +1096,7 @@ static const CGFloat kWebViewMinHeight = 40;
         [NOTIFICATION postNotificationName:@"sendEmail" object:nil userInfo:@{
             @"recipients": REPORT_EMAIL,
             @"subject": @"CAPUBBS 举报违规帖子",
-            @"body": [NSString stringWithFormat:@"您好，我是%@，我在帖子 <a href=\"%@\">%@</a> 中发现了违规内容，希望尽快处理，谢谢！", ([UID length] > 0) ? UID : @"匿名用户", URL, self.title],
+            @"body": [NSString stringWithFormat:@"您好，我是%@，我在帖子 <a href=\"%@\">%@</a> 中发现了违规内容，希望尽快处理，谢谢！", ([UID length] > 0) ? UID : @"匿名用户", [[self getCurrentUrl] absoluteString], self.title],
             @"isHTML": @(YES),
             @"fallbackMessage": @"请前往网络维护板块反馈"
         }];
@@ -1082,17 +1105,16 @@ static const CGFloat kWebViewMinHeight = 40;
         [self changeCollection:nil];
     }]];
     [action addAction:[UIAlertAction actionWithTitle:@"分享" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        NSURL *shareURL = [[NSURL alloc] initWithString:URL];
         NSString *title = self.title;
         UIActivityViewController *activityViewController =
-        [[UIActivityViewController alloc] initWithActivityItems:@[title, shareURL] applicationActivities:nil];
+        [[UIActivityViewController alloc] initWithActivityItems:@[title, [self getCurrentUrl]] applicationActivities:nil];
         activityViewController.popoverPresentationController.barButtonItem = self.buttonAction;
         [self presentViewControllerSafe:activityViewController];
     }]];
     [action addAction:[UIAlertAction actionWithTitle:@"打开网页版" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         WebViewController *dest = [self.storyboard instantiateViewControllerWithIdentifier:@"webview"];
         CustomNavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
-        dest.URL = URL;
+        dest.URL = [[self getCurrentUrl] absoluteString];
         [navi setToolbarHidden:NO];
         navi.modalPresentationStyle = UIModalPresentationFullScreen;
         [self presentViewControllerSafe:navi];
@@ -1409,7 +1431,7 @@ static const CGFloat kWebViewMinHeight = 40;
             dest.navigationController.popoverPresentationController.sourceRect = origin.bounds;
         }
         dest.fid = data[selectedIndex][@"fid"];
-        dest.URL = [NSURL URLWithString:[NSString stringWithFormat:@"%@#%@", URL, data[selectedIndex][@"floor"]]];
+        dest.URL = [NSURL URLWithString:[NSString stringWithFormat:@"%@#%@", [[self getCurrentUrl] absoluteString], data[selectedIndex][@"floor"]]];
         if (data[selectedIndex][@"lzldetail"]) {
             dest.defaultData = data[selectedIndex][@"lzldetail"];
         } else {

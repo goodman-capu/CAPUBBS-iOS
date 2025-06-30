@@ -38,7 +38,7 @@
         }
     }
     NSString *html = [ActionPerformer htmlStringWithText:[ActionPerformer transToHTML:self.textBody] attachments:self.attachments sig:sig textSize:[[DEFAULTS objectForKey:@"textSize"] intValue]];
-    [self.webViewContainer.webView loadHTMLString:html baseURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/bbs/content/?", CHEXIE]]];
+    [self.webViewContainer.webView loadHTMLString:html baseURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/bbs/content/", CHEXIE]]];
     // Do any additional setup after loading the view.
 }
 
@@ -48,13 +48,15 @@
 }
 
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
+    NSURL *url = navigationAction.request.URL;
+    NSString *path = url.absoluteString;
+    
     // 允许其他类型加载（如 form submit、reload）
     if (navigationAction.navigationType != WKNavigationTypeLinkActivated) {
         decisionHandler(WKNavigationActionPolicyAllow);
         return;
     }
     
-    NSString *path = navigationAction.request.URL.absoluteString;
     if ([path hasPrefix:@"x-apple"]) {
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
@@ -69,9 +71,11 @@
         return;
     }
     
-    if ([path hasPrefix:@"tel:"]) {
+    if ([path hasPrefix:@"tel:"] || [path hasPrefix:@"sms:"] || [path hasPrefix:@"facetime:"] || [path hasPrefix:@"maps:"]) {
         // Directly open
-        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:path] options:@{} completionHandler:nil];
+        if ([[UIApplication sharedApplication] canOpenURL:url]) {
+            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+        }
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     }

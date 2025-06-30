@@ -668,6 +668,26 @@
     }
 }
 
++ (NSString *)fileNameFromURL:(NSURL *)url {
+    if (!url) {
+        return nil;
+    }
+    
+    // 使用 components 提取纯净的 path，避免 query 和 fragment 干扰
+    NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+    NSString *path = components.path;
+    if (!path.length) {
+        return nil;
+    }
+    
+    NSString *fileName = path.lastPathComponent;
+    if (!fileName.length || !fileName.pathExtension.length) {
+        return nil;
+    }
+
+    return fileName;
+}
+
 + (NSString *)md5:(NSString *)str { // 字符串MD5值算法
     if (!str) {
         return @"";

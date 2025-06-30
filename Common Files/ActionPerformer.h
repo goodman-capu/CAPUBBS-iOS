@@ -35,6 +35,7 @@ typedef void (^ActionPerformerResultBlock)(NSArray* result, NSError* err);
 + (NSDictionary *)getLink:(NSString *)path;
 
 + (NSString *)fileSize:(NSInteger)size;
++ (NSString *)fileNameFromURL:(NSURL *)url;
 + (NSString *)md5:(NSString *)str;
 + (NSString *)getSigForData:(id)data;
 + (NSString *)doDevicePlatform;

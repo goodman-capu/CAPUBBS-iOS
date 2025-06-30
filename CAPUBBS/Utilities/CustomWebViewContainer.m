@@ -310,7 +310,7 @@ static dispatch_once_t onceSharedDataSource;
                 } else if ([[UIApplication sharedApplication] canOpenURL:newUrl]) {
                     [[UIApplication sharedApplication] openURL:newUrl options:@{} completionHandler:nil];
                 } else {
-                    [[AppDelegate getTopViewController] showAlertWithTitle:@"加载错误" message:@"不支持该链接，可能未安装相应App"];
+                    [[AppDelegate getTopViewController] showAlertWithTitle:@"加载错误" message:@"可能未安装相应App"];
                 }
             }];
         }

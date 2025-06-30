@@ -222,7 +222,7 @@
                 if (webViewContainer.webView.isLoading) {
                     [webViewContainer.webView stopLoading];
                 }
-                [webViewContainer.webView loadHTMLString:html baseURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/bbs/content/?", CHEXIE]]];
+                [webViewContainer.webView loadHTMLString:html baseURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/bbs/content/", CHEXIE]]];
             }
             if (heightCheckTimer && [heightCheckTimer isValid]) {
                 [heightCheckTimer invalidate];
@@ -301,13 +301,15 @@
 }
 
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
+    NSURL *url = navigationAction.request.URL;
+    NSString *path = url.absoluteString;
+    
     // 允许其他类型加载（如 form submit、reload）
     if (navigationAction.navigationType != WKNavigationTypeLinkActivated) {
         decisionHandler(WKNavigationActionPolicyAllow);
         return;
     }
     
-    NSString *path = navigationAction.request.URL.absoluteString;
     if ([path hasPrefix:@"x-apple"]) {
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
@@ -322,9 +324,11 @@
         return;
     }
     
-    if ([path hasPrefix:@"tel:"]) {
+    if ([path hasPrefix:@"tel:"] || [path hasPrefix:@"sms:"] || [path hasPrefix:@"facetime:"] || [path hasPrefix:@"maps:"]) {
         // Directly open
-        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:path] options:@{} completionHandler:nil];
+        if ([[UIApplication sharedApplication] canOpenURL:url]) {
+            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+        }
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     }
@@ -375,6 +379,7 @@
     }
 }
 - (void)showPic:(NSString *)url {
+    NSURL *imageUrl = [NSURL URLWithString:url];
     NSString *md5Url = [ActionPerformer md5:url];
     NSString *cachePath = [NSString stringWithFormat:@"%@/%@", IMAGE_CACHE_PATH, md5Url];
     if ([MANAGER fileExistsAtPath:cachePath]) {
@@ -382,12 +387,12 @@
         // 动图是未压缩的格式 可直接调取
         if ([AnimatedImageView isAnimated:imageData]) {
             ImageFileType type = [AnimatedImageView fileType:imageData];
-            [self presentImage:imageData fileName:[NSString stringWithFormat:@"%@.%@", md5Url, [AnimatedImageView fileExtension:type]]];
+            [self presentImage:imageData fileName:[md5Url stringByAppendingPathExtension:[AnimatedImageView fileExtension:type]]];
             return;
         }
     }
     [hud showWithProgressMessage:@"正在载入"];
-    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:url] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:30.0];
+    NSURLRequest *request = [NSURLRequest requestWithURL:imageUrl cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:30.0];
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable idata, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         ImageFileType type = [AnimatedImageView fileType:idata];
         if (error || type == ImageFileTypeUnknown) {
@@ -395,7 +400,13 @@
             return;
         }
         [hud hideWithSuccessMessage:@"载入成功"];
-        [self presentImage:idata fileName:[NSString stringWithFormat:@"%@.%@", md5Url, [AnimatedImageView fileExtension:type]]];
+        NSString *fileName;
+        if (response.suggestedFilename && response.suggestedFilename.pathExtension.length > 0) {
+            fileName = response.suggestedFilename;
+        } else {
+            fileName = [ActionPerformer fileNameFromURL:imageUrl] ?: [md5Url stringByAppendingPathExtension:[AnimatedImageView fileExtension:type]];
+        }
+        [self presentImage:idata fileName:fileName];
     }];
     [task resume];
 }

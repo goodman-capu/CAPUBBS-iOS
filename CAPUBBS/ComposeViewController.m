@@ -741,10 +741,7 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
             [self showAlertWithTitle:@"错误" message:@"网址不能为空"];
             return;
         }
-        if (title.length == 0) {
-            title = url;
-        }
-        [self.textBody insertText:[NSString stringWithFormat:@"[url=%@]%@[/url]", url, title]];
+        [self.textBody insertText:title.length > 0 ? [NSString stringWithFormat:@"[url=%@]%@[/url]", url, title] : [NSString stringWithFormat:@"[url]%@[/url]", url]];
     }]];
     [self presentViewControllerSafe:alert];
 }

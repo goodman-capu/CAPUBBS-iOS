@@ -25,6 +25,7 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
     
+    UINavigationBar *navBarAppearance = [UINavigationBar appearance];
     if (@available(iOS 13.0, *)) {
         UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
         [appearance configureWithOpaqueBackground]; // solid background (no transparency)
@@ -32,7 +33,6 @@
         appearance.titleTextAttributes = @{NSForegroundColorAttributeName: [UIColor whiteColor]};
         appearance.largeTitleTextAttributes = @{NSForegroundColorAttributeName: [UIColor whiteColor]};
         
-        UINavigationBar *navBarAppearance = [UINavigationBar appearance];
         navBarAppearance.standardAppearance = appearance;
         navBarAppearance.scrollEdgeAppearance = appearance;
         navBarAppearance.compactAppearance = appearance;
@@ -41,18 +41,18 @@
         }
         navBarAppearance.tintColor = [UIColor whiteColor]; // buttons color
     } else {
-        [[UINavigationBar appearance] setBarTintColor:GREEN_DARK];
-        [[UINavigationBar appearance] setBarStyle:UIBarStyleBlack];
-        [[UINavigationBar appearance] setTintColor:[UIColor whiteColor]];
-        [[UINavigationBar appearance] setTranslucent:NO];
+        [navBarAppearance setBarTintColor:GREEN_DARK];
+        [navBarAppearance setBarStyle:UIBarStyleBlack];
+        [navBarAppearance setTintColor:[UIColor whiteColor]];
+        [navBarAppearance setTranslucent:NO];
     }
     
+    UIToolbar *toolbarAppearance = [UIToolbar appearance];
     if (@available(iOS 13.0, *)) {
         UIToolbarAppearance *appearance = [[UIToolbarAppearance alloc] init];
         [appearance configureWithOpaqueBackground];
         appearance.backgroundColor = [UIColor whiteColor];
         
-        UIToolbar *toolbarAppearance = [UIToolbar appearance];
         toolbarAppearance.tintColor = BLUE;
         toolbarAppearance.standardAppearance = appearance;
         toolbarAppearance.compactAppearance = appearance;
@@ -61,8 +61,8 @@
             toolbarAppearance.compactScrollEdgeAppearance = appearance;
         }
     } else {
-        [[UIToolbar appearance] setTintColor:BLUE];
-        [[UIToolbar appearance] setTranslucent:NO];
+        [toolbarAppearance setTintColor:BLUE];
+        [toolbarAppearance setTranslucent:NO];
     }
     
     
@@ -151,6 +151,10 @@
         [keyWindow addGestureRecognizer:globalTapGesture];
     });
     
+#ifdef DEBUG
+//    [self openLink:[ActionPerformer getLink:@"https://www.chexie.net/bbs/content/?p=25&bid=4&tid=19837#293"] postTitle:nil];
+#endif
+    
     // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
 }
 
@@ -221,7 +225,7 @@
 - (void)_previewFile:(NSNotification *)noti attempt:(int)attempt {
     NSDictionary *dict = noti.userInfo;
     // Already previewing a file
-    if (previewItem) {
+    if (previewItems) {
         if (attempt <= 10) {
             dispatch_global_after(0.2, ^{
                 [self _previewFile:noti attempt:attempt + 1];
@@ -239,7 +243,7 @@
         return;
     }
     
-    previewItem = [[PreviewItem alloc] init];
+    PreviewItem *previewItem = [[PreviewItem alloc] init];
     previewItem.previewItemURL = [NSURL fileURLWithPath:path];
     previewItem.previewItemTitle = dict[@"fileTitle"];
     if (dict[@"frame"] && [dict[@"frame"] isKindOfClass:[UIView class]]) {
@@ -252,6 +256,7 @@
     } else {
         previewItem.previewTransitionImage = nil;
     }
+    previewItems = @[previewItem];
     
     dispatch_main_sync_safe(^{
         if (![QLPreviewController canPreviewItem:previewItem]) {
@@ -265,22 +270,25 @@
 }
 
 - (NSInteger)numberOfPreviewItemsInPreviewController:(QLPreviewController *)controller {
-    return 1;
+    return previewItems.count;
 }
 
 - (id<QLPreviewItem>)previewController:(QLPreviewController *)controller previewItemAtIndex:(NSInteger)index {
-    return previewItem;
+    return previewItems[index];
 }
 
 - (void)previewControllerDidDismiss:(QLPreviewController *)controller {
-    if (!previewItem) {
+    if (!previewItems) {
         return;
     }
-    [MANAGER removeItemAtURL:previewItem.previewItemURL error:nil];
-    previewItem = nil;
+    for (PreviewItem *previewItem in previewItems) {
+        [MANAGER removeItemAtURL:previewItem.previewItemURL error:nil];
+    }
+    previewItems = nil;
 }
 
 - (UIImage *)previewController:(QLPreviewController *)controller transitionImageForPreviewItem:(id<QLPreviewItem>)item contentRect:(CGRect *)contentRect {
+    PreviewItem *previewItem = (PreviewItem *)item;
     if (!previewItem || !previewItem.previewFrame) {
         *contentRect = CGRectZero;
         return nil;
@@ -297,6 +305,7 @@
 }
 
 - (CGRect)previewController:(QLPreviewController *)controller frameForPreviewItem:(id<QLPreviewItem>)item inSourceView:(UIView * _Nullable * _Nonnull)view {
+    PreviewItem *previewItem = (PreviewItem *)item;
     if (!previewItem || !previewItem.previewFrame) {
         *view = nil;
         return CGRectZero;

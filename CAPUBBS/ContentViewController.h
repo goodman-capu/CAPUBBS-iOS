@@ -12,7 +12,6 @@
 @interface ContentViewController : CustomTableViewController<WKNavigationDelegate, WKScriptMessageHandler> {
     MBProgressHUD *hud;
     NSUserActivity *activity;
-    NSString *URL;
     NSMutableArray *data;
     int page;
     int textSize;

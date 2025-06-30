@@ -20,7 +20,7 @@
 @end
 
 @interface AppDelegate : UIResponder <UIApplicationDelegate, MFMailComposeViewControllerDelegate, QLPreviewControllerDelegate, QLPreviewControllerDataSource> {
-    PreviewItem *previewItem;
+    NSArray<PreviewItem *> *previewItems;
     BOOL wakeLogin;
 }
 
