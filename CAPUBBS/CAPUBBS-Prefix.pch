@@ -5,9 +5,10 @@
 //
 
 #import <Availability.h>
-#import "ActionPerformer.h"
 #import "CommonDefinitions.h"
 #import "CustomProgressHUD.h"
 #import "CustomViewControllers.h"
+#import "Downloader.h"
+#import "Helper.h"
+#import "ReachabilityManager.h"
 #import "UIImageEffects.h"
-

@@ -7,8 +7,9 @@
 //
 
 #import "IDViewController.h"
-#import "AnimatedImageView.h"
 #import "IDCell.h"
+#import "InternalLoginViewController.h"
+#import "AnimatedImageView.h"
 
 @interface IDViewController ()
 
@@ -54,7 +55,7 @@
         NSDictionary *info = data[indexPath.row];
         cell = [tableView dequeueReusableCellWithIdentifier:@"id" forIndexPath:indexPath];
         cell.labelText.text = info[@"id"];
-        if ([info[@"id"] isEqualToString:UID] && [ActionPerformer checkLogin:NO]) {
+        if ([info[@"id"] isEqualToString:UID] && [Helper checkLogin:NO]) {
             cell.accessoryType = UITableViewCellAccessoryCheckmark;
             cell.userInteractionEnabled = NO;
         } else {
@@ -126,7 +127,7 @@
 
 - (IBAction)logOut:(id)sender {
     [self showAlertWithTitle:@"警告" message:@"您确定要注销当前账号吗？" confirmTitle:@"确定" confirmAction:^(UIAlertAction *action) {
-        [ActionPerformer callApiWithParams:nil toURL:@"logout" callback:^(NSArray *result, NSError *err) {}];
+        [Helper callApiWithParams:nil toURL:@"logout" callback:^(NSArray *result, NSError *err) {}];
         NSLog(@"Logout - %@", UID);
         [GROUP_DEFAULTS removeObjectForKey:@"uid"];
         [GROUP_DEFAULTS removeObjectForKey:@"pass"];

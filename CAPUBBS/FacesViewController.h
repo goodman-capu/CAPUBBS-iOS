@@ -7,7 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "FacesViewCell.h"
+#import "AnimatedImageView.h"
 
 @interface FacesViewController : CustomCollectionViewController {
     AnimatedImageView *previewImageView;

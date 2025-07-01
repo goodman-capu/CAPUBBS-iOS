@@ -8,6 +8,7 @@
 
 #import "LoginViewController.h"
 #import <AudioToolbox/AudioToolbox.h>
+#import "AppDelegate.h"
 #import "ContentViewController.h"
 #import "WebViewController.h"
 
@@ -135,7 +136,7 @@
 // Override to support conditional editing of the table view.
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
     // Return NO if you do not want the specified item to be editable.
-    return ([ActionPerformer checkRight] > 0);
+    return ([Helper checkRight] > 0);
 }
 
 // Override to support editing the table view.
@@ -149,7 +150,7 @@
                 @"method" : @"delete",
                 @"time" : item[@"time"]
             };
-            [ActionPerformer callApiWithParams:dict toURL:@"news" callback:^(NSArray *result, NSError *err) {
+            [Helper callApiWithParams:dict toURL:@"news" callback:^(NSArray *result, NSError *err) {
                 if (err || result.count == 0) {
                     [hud hideWithFailureMessage:@"操作失败"];
                 } else {
@@ -173,24 +174,24 @@
 }
 
 - (IBAction)addNews:(id)sender {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"添加公告"
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"添加公告"
                                                                    message:@"请填写公告的标题和链接\n链接可以为空"
                                                             preferredStyle:UIAlertControllerStyleAlert];
-    [alert addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+    [alertController addTextFieldWithConfigurationHandler:^(UITextField *textField) {
         textField.placeholder = @"标题";
     }];
-    [alert addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+    [alertController addTextFieldWithConfigurationHandler:^(UITextField *textField) {
         textField.placeholder = @"链接";
         textField.keyboardType = UIKeyboardTypeURL;
     }];
-    [alert addAction:[UIAlertAction actionWithTitle:@"取消"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"取消"
                                               style:UIAlertActionStyleCancel
                                             handler:nil]];
-    [alert addAction:[UIAlertAction actionWithTitle:@"添加"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"添加"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        NSString *text = alert.textFields[0].text;
-        NSString *url = alert.textFields[1].text;
+        NSString *text = alertController.textFields[0].text;
+        NSString *url = alertController.textFields[1].text;
         if (text.length == 0) {
             [self showAlertWithTitle:@"错误" message:@"您未填写公告的内容"];
             return;
@@ -202,7 +203,7 @@
             @"text" : text,
             @"url" : url
         };
-        [ActionPerformer callApiWithParams:dict toURL:@"news" callback:^(NSArray *result, NSError *err) {
+        [Helper callApiWithParams:dict toURL:@"news" callback:^(NSArray *result, NSError *err) {
             if (err || result.count == 0) {
                 [hud hideWithFailureMessage:@"操作失败"];
             } else {
@@ -218,7 +219,7 @@
             });
         }];
     }]];
-    [self presentViewControllerSafe:alert];
+    [self presentViewControllerSafe:alertController];
 }
 
 - (void)userChanged {
@@ -234,10 +235,10 @@
             [self refreshUserInfo];
             if (userInfoRefreshing == NO) {
                 userInfoRefreshing = YES;
-                [ActionPerformer callApiWithParams:@{@"uid": UID} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
+                [Helper callApiWithParams:@{@"uid": UID} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
                     userInfoRefreshing = NO;
                     if (!err && result.count > 0) {
-                        [ActionPerformer updateUserInfo:result[0]];
+                        [Helper updateUserInfo:result[0]];
                         if (shouldResetVibrate) {
                             vibrateTime = 0;
                         }
@@ -281,7 +282,7 @@
         if (![infoDict isEqual:@""]) {
             [self.iconUser setUrl:infoDict[@"icon"]];
             NSInteger newMsg = [infoDict[@"newmsg"] integerValue];
-            if ([ActionPerformer checkLogin:NO] && newMsg > 0) {
+            if ([Helper checkLogin:NO] && newMsg > 0) {
                 dispatch_global_after(0.5, ^{
                     [self tryVibrate:newMsg];
                 });
@@ -289,7 +290,7 @@
         } else {
             [self.iconUser setImage:PLACEHOLDER];
         }
-        [self.buttonAddNews setHidden:([ActionPerformer checkRight] < 1)];
+        [self.buttonAddNews setHidden:([Helper checkRight] < 1)];
     }));
 }
 
@@ -303,13 +304,13 @@
     self.textPass.userInteractionEnabled = YES;
     self.textPass.secureTextEntry = YES;
     if (username.length > 0) {
-        if (![ActionPerformer checkLogin:NO] && enterLogin && [[DEFAULTS objectForKey:@"autoLogin"] boolValue]) {
+        if (![Helper checkLogin:NO] && enterLogin && [[DEFAULTS objectForKey:@"autoLogin"] boolValue]) {
             NSLog(@"Auto Login");
             [self login:nil];
             enterLogin = NO;
         } else {
             [self getNewsAndInfo];
-            if ([ActionPerformer checkLogin:NO]) {
+            if ([Helper checkLogin:NO]) {
                 self.textUid.text = [username stringByAppendingString:@" ✅"];
                 NSMutableAttributedString *attr = [[NSMutableAttributedString alloc] initWithString:@"已登录"];
                 [attr addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithWhite:0 alpha:0.5] range:NSMakeRange(0, attr.length)];
@@ -346,11 +347,11 @@
     [hud showWithProgressMessage:@"正在登录"];
     NSDictionary *dict = @{
         @"username" : uid,
-        @"password" : [ActionPerformer md5:pass],
-        @"device" : [ActionPerformer doDevicePlatform],
+        @"password" : [Helper md5:pass],
+        @"device" : [Helper doDevicePlatform],
         @"version" : [[UIDevice currentDevice] systemVersion]
     };
-    [ActionPerformer callApiWithParams:dict toURL:@"login" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:dict toURL:@"login" callback:^(NSArray *result, NSError *err) {
         //NSLog(@"%@",result);
         if (err || result.count == 0) {
             [hud hideWithFailureMessage:@"登录失败"];
@@ -419,7 +420,7 @@
     }
     NSLog(@"Fetch News");
     newsRefreshTime = currentTime;
-    [ActionPerformer callApiWithParams:@{@"more":@"YES"} toURL:@"main" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:@{@"more":@"YES"} toURL:@"main" callback:^(NSArray *result, NSError *err) {
         if (control.isRefreshing) {
             [control endRefreshing];
         }
@@ -482,10 +483,10 @@
         return;
     }
     
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"最终用户许可协议"
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"最终用户许可协议"
                                                                    message:EULA
                                                             preferredStyle:UIAlertControllerStyleAlert];
-    [alert addAction:[UIAlertAction actionWithTitle:@"查看隐私政策"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"查看隐私政策"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
         WebViewController *dest = [self.storyboard instantiateViewControllerWithIdentifier:@"webview"];
@@ -498,19 +499,19 @@
         [self showEULA];
     }]];
     
-    [alert addAction:[UIAlertAction actionWithTitle:@"我同意以上协议"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"我同意以上协议"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
         [DEFAULTS setObject:@(YES) forKey:@"hasShownEULA"];
     }]];
     
-    [alert addAction:[UIAlertAction actionWithTitle:@"我拒绝以上协议"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"我拒绝以上协议"
                                               style:UIAlertActionStyleDestructive
                                             handler:^(UIAlertAction * _Nonnull action) {
         exit(0);
     }]];
     
-    [self presentViewControllerSafe:alert];
+    [self presentViewControllerSafe:alertController];
 }
 
 @end

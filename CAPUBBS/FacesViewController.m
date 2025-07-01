@@ -7,6 +7,7 @@
 //
 
 #import "FacesViewController.h"
+#import "FacesViewCell.h"
 
 @interface FacesViewController ()
 

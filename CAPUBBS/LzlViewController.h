@@ -7,7 +7,6 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "LzlCell.h"
 
 @interface LzlViewController : CustomTableViewController<UITextViewDelegate> {
     UIImageView *backgroundView;

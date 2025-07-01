@@ -124,7 +124,7 @@ static const CGFloat kWebViewMinHeight = 40;
         @"tid" : self.tid,
         @"raw" : @"YES",
     };
-    [ActionPerformer callApiWithParams:dict toURL:@"show" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:dict toURL:@"show" callback:^(NSArray *result, NSError *err) {
         if (self.refreshControl.isRefreshing) {
             [self.refreshControl endRefreshing];
         }
@@ -198,12 +198,12 @@ static const CGFloat kWebViewMinHeight = 40;
         }
 
         NSString *titleText = data.firstObject[@"title"];
-        self.title = [ActionPerformer restoreTitle:titleText];
+        self.title = [Helper restoreTitle:titleText];
         BOOL isLast = [data[0][@"nextpage"] isEqualToString:@"false"];
         self.buttonForward.enabled = !isLast;
         self.buttonLatest.enabled = !isLast;
         self.buttonJump.enabled = ([[data lastObject][@"pages"] integerValue] > 1);
-        self.buttonCompose.enabled = [ActionPerformer checkLogin:NO];
+        self.buttonCompose.enabled = [Helper checkLogin:NO];
         [self clearHeightsAndHTMLCaches:^{
             [hud hideWithSuccessMessage:@"加载成功"];
             for (int i = 0; i < data.count; i++) {
@@ -256,7 +256,7 @@ static const CGFloat kWebViewMinHeight = 40;
                 NSMutableDictionary *tmp = [NSMutableDictionary dictionaryWithDictionary:mdic];
                 [tmp addEntriesFromDictionary:data[0]];
                 tmp[@"text"] = [self getCollectionText:tmp[@"text"]];
-                tmp[@"title"] = [ActionPerformer restoreTitle:tmp[@"title"]];
+                tmp[@"title"] = [Helper restoreTitle:tmp[@"title"]];
                 
                 BOOL hasChange = NO;
                 for (NSString *keyword in @[@"title", @"text", @"author", @"icon"]) {
@@ -296,9 +296,9 @@ static const CGFloat kWebViewMinHeight = 40;
             }
             [newTempHeights addObject:@(0)];
             NSDictionary *dict = data[i];
-            NSString *text = [ActionPerformer transToHTML:dict[@"text"]];
-            NSString *sig = [ActionPerformer transToHTML:dict[@"sig"]];
-            NSString *html = [ActionPerformer htmlStringWithText:text attachments:dict[@"attach"] sig:sig textSize:textSize];
+            NSString *text = [Helper transToHTML:dict[@"text"]];
+            NSString *sig = [Helper transToHTML:dict[@"sig"]];
+            NSString *html = [Helper htmlStringWithText:text attachments:dict[@"attach"] sig:sig textSize:textSize];
             // NSLog(@"%@", html);
             [newHTMLStrings addObject:html];
             if ([tempHeights[i] floatValue] == 0) {
@@ -361,18 +361,18 @@ static const CGFloat kWebViewMinHeight = 40;
 }
 
 - (IBAction)jump:(id)sender {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"跳转页面" message:[NSString stringWithFormat:@"请输入页码(1-%@)",[data lastObject] [@"pages"]] preferredStyle:UIAlertControllerStyleAlert];
-    [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"跳转页面" message:[NSString stringWithFormat:@"请输入页码(1-%@)",[data lastObject] [@"pages"]] preferredStyle:UIAlertControllerStyleAlert];
+    [alertController addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
         textField.placeholder = @"页码";
         textField.keyboardType = UIKeyboardTypeNumberPad;
     }];
-    [alert addAction:[UIAlertAction actionWithTitle:@"取消"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"取消"
                                               style:UIAlertActionStyleCancel
                                             handler:nil]];
-    [alert addAction:[UIAlertAction actionWithTitle:@"好"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"好"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        NSString *pageip = alert.textFields.firstObject.text;
+        NSString *pageip = alertController.textFields.firstObject.text;
         int pagen = [pageip intValue];
         if (pagen <= 0 || pagen > [[data lastObject] [@"pages"] integerValue]) {
             [self showAlertWithTitle:@"错误" message:@"输入不合法"];
@@ -380,7 +380,7 @@ static const CGFloat kWebViewMinHeight = 40;
         }
         [self jumpTo:pagen];
     }]];
-    [self presentViewControllerSafe:alert];
+    [self presentViewControllerSafe:alertController];
 }
 
 - (IBAction)gotoLatest:(id)sender {
@@ -535,7 +535,7 @@ static const CGFloat kWebViewMinHeight = 40;
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     NSString *header = @"";
     if (SIMPLE_VIEW == NO && data.count > 0) {
-        header = [NSString stringWithFormat:@"%@ 第%ld/%@页", [ActionPerformer getBoardTitle:self.bid], (long)page, [data lastObject] [@"pages"]];
+        header = [NSString stringWithFormat:@"%@ 第%ld/%@页", [Helper getBoardTitle:self.bid], (long)page, [data lastObject] [@"pages"]];
         if ([data[0][@"click"] length] > 0) {
             header = [NSString stringWithFormat:@"%@ 查看：%@ 回复：%@%@", header, data[0][@"click"], data[0][@"reply"], self.isCollection ? @" 已收藏": @""];
         }
@@ -707,7 +707,7 @@ static const CGFloat kWebViewMinHeight = 40;
     }
     NSString *base64Data = payload[@"data"] ?: @"";
     NSString *imgSrc = payload[@"src"] ?: @"";
-    NSURL *imageUrl = [NSURL URLWithString:imgSrc];
+    NSURL *imageUrl = [NSURL safeURLWithString:imgSrc];
     NSString *alt = payload[@"alt"] ?: @"";
     // 去掉前缀
     NSRange range = [base64Data rangeOfString:@","];
@@ -718,7 +718,7 @@ static const CGFloat kWebViewMinHeight = 40;
         ImageFileType type = [AnimatedImageView fileType:imageData];
         if (type != ImageFileTypeUnknown) {
             [hud hideWithSuccessMessage:@"图片加载成功"];
-            NSString *fileName = [ActionPerformer fileNameFromURL:imageUrl] ?: [[ActionPerformer md5:imgSrc] stringByAppendingPathExtension:[AnimatedImageView fileExtension:type]];
+            NSString *fileName = [Helper fileNameFromURL:imageUrl] ?: [[Helper md5:imgSrc] stringByAppendingPathExtension:[AnimatedImageView fileExtension:type]];
             [self presentImage:imageData fileName:fileName title:alt];
             return;
         }
@@ -728,9 +728,10 @@ static const CGFloat kWebViewMinHeight = 40;
     // Try reload in app to overcome CORS. (Most external sites will fail the fetch request)
     if (imageUrl) {
         [hud showWithProgressMessage:@"图片加载中"];
-        NSURLRequest *request = [NSURLRequest requestWithURL:imageUrl cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:30.0];
-        NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable idata, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-            ImageFileType type = [AnimatedImageView fileType:idata];
+        [Downloader loadURL:imageUrl progress:^(float progress, NSUInteger expectedBytes) {
+            [hud updateToProgress:progress];
+        } completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+            ImageFileType type = [AnimatedImageView fileType:data];
             if (error || type == ImageFileTypeUnknown) {
                 [hud hideWithFailureMessage:!error ? errorMessage : @"未知图片格式"];
                 return;
@@ -740,11 +741,10 @@ static const CGFloat kWebViewMinHeight = 40;
             if (response.suggestedFilename && response.suggestedFilename.pathExtension.length > 0) {
                 fileName = response.suggestedFilename;
             } else {
-                fileName = [ActionPerformer fileNameFromURL:imageUrl] ?: [[ActionPerformer md5:imgSrc] stringByAppendingPathExtension:[AnimatedImageView fileExtension:type]];
+                fileName = [Helper fileNameFromURL:imageUrl] ?: [[Helper md5:imgSrc] stringByAppendingPathExtension:[AnimatedImageView fileExtension:type]];
             }
-            [self presentImage:idata fileName:fileName title:alt];
+            [self presentImage:data fileName:fileName title:alt];
         }];
-        [task resume];
     } else {
         [hud hideWithFailureMessage:errorMessage];
     }
@@ -760,7 +760,7 @@ static const CGFloat kWebViewMinHeight = 40;
 
 - (void)askForDownloadAttachment:(NSString *)path {
     NSDictionary *userInfo = USERINFO;
-    if (![ActionPerformer checkLogin:NO] || [USERINFO isEqual:@""]) {
+    if (![Helper checkLogin:NO] || [USERINFO isEqual:@""]) {
         [self showAlertWithTitle:@"错误" message:@"您未登录，无法下载附件"];
         return;
     }
@@ -771,7 +771,7 @@ static const CGFloat kWebViewMinHeight = 40;
         return;
     }
     NSDictionary *attach = [NSJSONSerialization JSONObjectWithData:decodedData options:0 error:nil];
-    NSString *fileSize = [ActionPerformer fileSize:[attach[@"size"] intValue]];
+    NSString *fileSize = [Helper fileSize:[attach[@"size"] intValue]];
     NSString *generalInfo = [NSString stringWithFormat:@"%@\n下载后请及时保存", attach[@"name"]];
     if ([attach[@"price"] intValue] == 0 || [attach[@"free"] isEqualToString:@"YES"]) {
         [self showAlertWithTitle:[NSString stringWithFormat:@"确认下载附件 (%@)", fileSize] message:generalInfo confirmTitle:@"确认" confirmAction:^(UIAlertAction *action) {
@@ -801,7 +801,7 @@ static const CGFloat kWebViewMinHeight = 40;
         @"method": @"download",
         @"id": attach[@"id"]
     };
-    [ActionPerformer callApiWithParams:params toURL:@"attach" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:params toURL:@"attach" callback:^(NSArray *result, NSError *err) {
         if (err || result.count == 0) {
             [hud hideWithFailureMessage:@"下载失败"];
             [self showAlertWithTitle:@"错误" message:err.localizedDescription];
@@ -843,9 +843,10 @@ static const CGFloat kWebViewMinHeight = 40;
         [hud showWithProgressMessage:@"正在下载"];
     }
     NSString *filePath = [NSString stringWithFormat:@"%@/bbs/attachment/%@", CHEXIE, path];
-    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:filePath] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:30.0];
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable idata, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-        if (error || !idata || idata.length == 0) {
+    [Downloader loadURLString:filePath progress:^(float progress, NSUInteger expectedBytes) {
+        [hud updateToProgress:progress];
+    } completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+        if (error || !data || data.length == 0) {
             [hud hideWithFailureMessage:@"下载失败"];
             [self showAlertWithTitle:@"错误" message:error ? error.localizedDescription : @"文件下载失败，请检查您的网络连接！" confirmTitle:@"重试" confirmAction:^(UIAlertAction *action) {
                 dispatch_global_after(0.5, ^{
@@ -856,12 +857,11 @@ static const CGFloat kWebViewMinHeight = 40;
         }
         [hud hideWithSuccessMessage:@"下载成功"];
         [NOTIFICATION postNotificationName:@"previewFile" object:nil userInfo:@{
-            @"fileData": idata,
+            @"fileData": data,
             @"fileName": fileName,
             @"fileTitle": [NSString stringWithFormat:@"附件：%@", fileName]
         }];
     }];
-    [task resume];
 }
 
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
@@ -914,7 +914,7 @@ static const CGFloat kWebViewMinHeight = 40;
         return;
     }
     
-    NSDictionary *dict = [ActionPerformer getLink:path];
+    NSDictionary *dict = [Helper getLink:path];
     if (dict.count > 0 && [dict[@"tid"] length] > 0) {
         int p = [dict[@"p"] intValue];
         int floor = [dict[@"floor"] intValue];
@@ -955,7 +955,7 @@ static const CGFloat kWebViewMinHeight = 40;
 }
 
 - (void)deletePost {
-    if (![ActionPerformer checkLogin:YES]) {
+    if (![Helper checkLogin:YES]) {
         return;
     }
     [hud showWithProgressMessage:@"正在删除"];
@@ -964,7 +964,7 @@ static const CGFloat kWebViewMinHeight = 40;
         @"tid" : self.tid,
         @"pid" : data[selectedIndex][@"floor"]
     };
-    [ActionPerformer callApiWithParams:dict toURL:@"delete" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:dict toURL:@"delete" callback:^(NSArray *result, NSError *err) {
         if (err || result.count == 0) {
             [hud hideWithFailureMessage:@"删除失败"];
             [self showAlertWithTitle:@"错误" message:err.localizedDescription];
@@ -1065,7 +1065,7 @@ static const CGFloat kWebViewMinHeight = 40;
             @"collectionTime" : [NSString stringWithFormat:@"%ld", (long)[[NSDate date] timeIntervalSince1970]],
             @"bid" : self.bid,
             @"tid" : self.tid,
-            @"title" : [ActionPerformer restoreTitle:self.title]
+            @"title" : [Helper restoreTitle:self.title]
         }];
         [array addObject:mdic];
         self.isCollection = YES;
@@ -1091,8 +1091,8 @@ static const CGFloat kWebViewMinHeight = 40;
 }
 
 - (IBAction)action:(id)sender {
-    UIAlertController *action = [UIAlertController alertControllerWithTitle:@"更多操作" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-    [action addAction:[UIAlertAction actionWithTitle:@"举报" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"更多操作" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"举报" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
         [NOTIFICATION postNotificationName:@"sendEmail" object:nil userInfo:@{
             @"recipients": REPORT_EMAIL,
             @"subject": @"CAPUBBS 举报违规帖子",
@@ -1101,17 +1101,17 @@ static const CGFloat kWebViewMinHeight = 40;
             @"fallbackMessage": @"请前往网络维护板块反馈"
         }];
     }]];
-    [action addAction:[UIAlertAction actionWithTitle:self.isCollection ? @"取消收藏" : @"收藏" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    [alertController addAction:[UIAlertAction actionWithTitle:self.isCollection ? @"取消收藏" : @"收藏" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [self changeCollection:nil];
     }]];
-    [action addAction:[UIAlertAction actionWithTitle:@"分享" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    [alertController addAction:[UIAlertAction actionWithTitle:@"分享" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         NSString *title = self.title;
         UIActivityViewController *activityViewController =
         [[UIActivityViewController alloc] initWithActivityItems:@[title, [self getCurrentUrl]] applicationActivities:nil];
         activityViewController.popoverPresentationController.barButtonItem = self.buttonAction;
         [self presentViewControllerSafe:activityViewController];
     }]];
-    [action addAction:[UIAlertAction actionWithTitle:@"打开网页版" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    [alertController addAction:[UIAlertAction actionWithTitle:@"打开网页版" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         WebViewController *dest = [self.storyboard instantiateViewControllerWithIdentifier:@"webview"];
         CustomNavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
         dest.URL = [[self getCurrentUrl] absoluteString];
@@ -1122,26 +1122,26 @@ static const CGFloat kWebViewMinHeight = 40;
     int biggerSize = textSize + 10;
     int smallerSize = textSize - 10;
     if (biggerSize!= 100 && biggerSize <= 200) {
-        [action addAction:[UIAlertAction actionWithTitle:[NSString stringWithFormat:@"增大缩放至%d%%", biggerSize] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [alertController addAction:[UIAlertAction actionWithTitle:[NSString stringWithFormat:@"增大缩放至%d%%", biggerSize] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             textSize = biggerSize;
             [self clearHeightsAndHTMLCaches:nil];
         }]];
     }
     if (smallerSize != 100 & smallerSize >= 20) {
-        [action addAction:[UIAlertAction actionWithTitle:[NSString stringWithFormat:@"减小缩放至%d%%", smallerSize] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [alertController addAction:[UIAlertAction actionWithTitle:[NSString stringWithFormat:@"减小缩放至%d%%", smallerSize] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             textSize = smallerSize;
             [self clearHeightsAndHTMLCaches:nil];
         }]];
     }
     if (textSize != 100) {
-        [action addAction:[UIAlertAction actionWithTitle:@"恢复缩放至100%" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [alertController addAction:[UIAlertAction actionWithTitle:@"恢复缩放至100%" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             textSize = 100;
             [self clearHeightsAndHTMLCaches:nil];
         }]];
     }
-    [action addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
-    action.popoverPresentationController.barButtonItem = self.buttonAction;
-    [self presentViewControllerSafe:action];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
+    alertController.popoverPresentationController.barButtonItem = self.buttonAction;
+    [self presentViewControllerSafe:alertController];
 }
 
 - (IBAction)swipeRight:(UISwipeGestureRecognizer *)sender {
@@ -1243,32 +1243,32 @@ static const CGFloat kWebViewMinHeight = 40;
 - (void)showMoreAction:(UIView *)view {
     NSDictionary *item = data[selectedIndex];
     NSString *text = item[@"text"];
-    UIAlertController *action = [UIAlertController alertControllerWithTitle:@"更多操作" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-    [action addAction:[UIAlertAction actionWithTitle:@"引用" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        if ([ActionPerformer checkLogin:YES]) {
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"更多操作" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"引用" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        if ([Helper checkLogin:YES]) {
             NSString *content = text;
             content = [self getValidQuote:content];
             defaultContent = [NSString stringWithFormat:@"[quote=%@]%@[/quote]\n", item[@"author"], content];
             [self performSegueWithIdentifier:@"compose" sender:self.buttonCompose];
         }
     }]];
-    [action addAction:[UIAlertAction actionWithTitle:@"复制" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    [alertController addAction:[UIAlertAction actionWithTitle:@"复制" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         NSString *content = text;
-        content = [ActionPerformer removeHTML:content restoreFormat:NO];
+        content = [Helper removeHTML:content restoreFormat:NO];
         [[UIPasteboard generalPasteboard] setString:content];
         [hud showAndHideWithSuccessMessage:@"复制完成"];
     }]];
-    if ([ActionPerformer checkRight] > 1 || [item[@"author"] isEqualToString:UID]) {
-        [action addAction:[UIAlertAction actionWithTitle:@"编辑" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    if ([Helper checkRight] > 1 || [item[@"author"] isEqualToString:UID]) {
+        [alertController addAction:[UIAlertAction actionWithTitle:@"编辑" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             defaultTitle = [item[@"floor"] isEqualToString:@"1"]?self.title:[NSString stringWithFormat:@"Re: %@",self.title];
             isEdit = YES;
             NSString *content = text;
-            content = [ActionPerformer simpleEscapeHTML:content processLtGt:NO];
+            content = [Helper simpleEscapeHTML:content processLtGt:NO];
             defaultContent = content;
             [self performSegueWithIdentifier:@"compose" sender:nil];
         }]];
-        [action addAction:[UIAlertAction actionWithTitle:@"删除" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
-            if ([ActionPerformer checkLogin:YES]) {
+        [alertController addAction:[UIAlertAction actionWithTitle:@"删除" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+            if ([Helper checkLogin:YES]) {
                 NSString *content = text;
                 content = [self getCollectionText:content];
                 if (content.length > 50) {
@@ -1280,10 +1280,10 @@ static const CGFloat kWebViewMinHeight = 40;
             }
         }]];
     }
-    [action addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
-    action.popoverPresentationController.sourceView = view;
-    action.popoverPresentationController.sourceRect = view.bounds;
-    [self presentViewControllerSafe:action];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
+    alertController.popoverPresentationController.sourceView = view;
+    alertController.popoverPresentationController.sourceRect = view.bounds;
+    [self presentViewControllerSafe:alertController];
 }
 
 #pragma mark - HTML processing
@@ -1292,8 +1292,8 @@ static const CGFloat kWebViewMinHeight = 40;
     if (!text || text.length == 0) {
         return @"";
     }
-    NSString *content = [ActionPerformer transToHTML:text];
-    content = [ActionPerformer removeHTML:content restoreFormat:NO];
+    NSString *content = [Helper transToHTML:text];
+    content = [Helper removeHTML:content restoreFormat:NO];
     content = [content stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
     while ([content hasPrefix:@" "] || [content hasPrefix:@"\t"]) {
         content = [content substringFromIndex:@" ".length];
@@ -1305,7 +1305,7 @@ static const CGFloat kWebViewMinHeight = 40;
     if (!text || text.length == 0) {
         return @"";
     }
-    text = [ActionPerformer simpleEscapeHTML:text processLtGt:NO];
+    text = [Helper simpleEscapeHTML:text processLtGt:NO];
     
     NSString *expression = @"<quote>((.|[\r\n])*?)</quote>"; // 去除帖子中的引用
     NSRegularExpression *regexp = [NSRegularExpression regularExpressionWithPattern:expression options:0 error:nil];
@@ -1406,7 +1406,23 @@ static const CGFloat kWebViewMinHeight = 40;
         if (isEdit) {
             dest.floor = [NSString stringWithFormat:@"%d",[data[selectedIndex][@"floor"] intValue]];
             dest.attachments = data[selectedIndex][@"attach"];
-            dest.showEditOthersAlert = ![data[selectedIndex][@"author"] isEqualToString:UID];
+            if ([data[selectedIndex][@"author"] isEqualToString:UID]) {
+                NSString *sig = data[selectedIndex][@"sig"];
+                if ([data[selectedIndex][@"sig"] length] > 0) {
+                    for (int i = 1; i <= 3; i++) {
+                        NSString *key = [NSString stringWithFormat:@"sig%d", i];
+                        if ([USERINFO[key] isEqualToString:sig]) {
+                            dest.defaultSigIndex = [NSString stringWithFormat:@"%d", i];
+                            break;
+                        }
+                    }
+                } else {
+                    dest.defaultSigIndex = @"0";
+                }
+            } else {
+                dest.showEditOthersAlert = YES;
+                dest.defaultSigIndex = @"0";
+            }
         }
         
         defaultTitle = nil;

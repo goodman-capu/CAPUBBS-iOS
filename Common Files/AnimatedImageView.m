@@ -102,7 +102,7 @@
 - (void)loadImageWithPlaceholder:(BOOL)showPlaceholder {
     [NOTIFICATION removeObserver:self];
     NSString *imageUrl = latestUrl;
-    NSString *filePath = [NSString stringWithFormat:@"%@/%@", IMAGE_CACHE_PATH, [ActionPerformer md5:imageUrl]];
+    NSString *filePath = [NSString stringWithFormat:@"%@/%@", IMAGE_CACHE_PATH, [Helper md5:imageUrl]];
     NSData *data = [MANAGER contentsAtPath:filePath];
     NSString *oldInfo = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     
@@ -145,7 +145,7 @@
 }
 
 - (void)startLoadingUrl:(NSString *)imageUrl withPlaceholder:(BOOL)hasPlaceholder {
-    NSString *filePath = [NSString stringWithFormat:@"%@/%@", IMAGE_CACHE_PATH, [ActionPerformer md5:imageUrl]];
+    NSString *filePath = [NSString stringWithFormat:@"%@/%@", IMAGE_CACHE_PATH, [Helper md5:imageUrl]];
     BOOL shouldSkipLoading = [[GROUP_DEFAULTS objectForKey:@"iconOnlyInWifi"] boolValue] && IS_CELLULAR;
     if (!shouldSkipLoading) {
         // NSLog(@"Load Img - %@", imageUrl);

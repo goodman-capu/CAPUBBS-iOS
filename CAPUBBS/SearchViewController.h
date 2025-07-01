@@ -7,7 +7,6 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "SearchViewCell.h"
 #import "AnimatedImageView.h"
 
 @interface SearchViewController : CustomViewController<UITableViewDelegate> {

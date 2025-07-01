@@ -71,9 +71,9 @@
     [hud showWithProgressMessage:@"正在登录"];
     NSDictionary *dict = @{
         @"username" : uid,
-        @"password" : [ActionPerformer md5:pass],
+        @"password" : [Helper md5:pass],
     };
-    [ActionPerformer callApiWithParams:dict toURL:@"login" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:dict toURL:@"login" callback:^(NSArray *result, NSError *err) {
         if (err || result.count == 0) {
             [hud hideWithFailureMessage:@"登录失败"];
 //            [self showAlertWithTitle:@"登录失败" message:[err localizedDescription]];
@@ -87,7 +87,7 @@
         }
         if (code == 0) {
             if ([UID length] > 0 && ![uid isEqualToString:UID]) { // 注销之前的账号
-                [ActionPerformer callApiWithParams:nil toURL:@"logout" callback:^(NSArray *result, NSError *err) {}];
+                [Helper callApiWithParams:nil toURL:@"logout" callback:^(NSArray *result, NSError *err) {}];
                 NSLog(@"Logout - %@", UID);
             }
             [GROUP_DEFAULTS setObject:uid forKey:@"uid"];

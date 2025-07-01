@@ -1,18 +1,18 @@
 //
-//  ActionPerformer.h
+//  Helper.h
 //  CAPUBBS
 //
 //  Created by 熊典 on 14-2-16.
 //  Copyright (c) 2014年 熊典. All rights reserved.
 //
 
-#import "ReachabilityManager.h"
+#import <Foundation/Foundation.h>
 
-typedef void (^ActionPerformerResultBlock)(NSArray* result, NSError* err);
+typedef void (^ApiCompletionBlock)(NSArray* result, NSError* err);
 
-@interface ActionPerformer: NSObject
+@interface Helper: NSObject
 
-+ (void)callApiWithParams:(NSDictionary*)params toURL:(NSString*)url callback:(ActionPerformerResultBlock)block;
++ (void)callApiWithParams:(NSDictionary*)params toURL:(NSString*)url callback:(ApiCompletionBlock)block;
 + (BOOL)checkLogin:(BOOL)showAlert;
 + (int)checkRight;
 + (void)updateUserInfo:(NSDictionary *)userInfo;
@@ -36,6 +36,7 @@ typedef void (^ActionPerformerResultBlock)(NSArray* result, NSError* err);
 
 + (NSString *)fileSize:(NSInteger)size;
 + (NSString *)fileNameFromURL:(NSURL *)url;
++ (BOOL)isHttpScheme:(NSString *)scheme;
 + (NSString *)md5:(NSString *)str;
 + (NSString *)getSigForData:(id)data;
 + (NSString *)doDevicePlatform;

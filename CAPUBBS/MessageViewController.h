@@ -7,7 +7,6 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "MessageCell.h"
 
 @interface MessageViewController : CustomViewController<UITableViewDelegate> {
     MBProgressHUD *hud;

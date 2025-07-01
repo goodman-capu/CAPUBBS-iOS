@@ -7,6 +7,8 @@
 //
 
 #import "IndexViewController.h"
+#import "IndexViewCell.h"
+#import "AppDelegate.h"
 #import "ListViewController.h"
 #import "ContentViewController.h"
 #import "SettingViewController.h"
@@ -61,7 +63,7 @@
 - (void)changeNoti {
     dispatch_main_async_safe(^{
         NSDictionary *infoDict = USERINFO;
-        if ([ActionPerformer checkLogin:NO] && ![infoDict isEqual:@""] && [infoDict[@"newmsg"] integerValue] > 0) {
+        if ([Helper checkLogin:NO] && ![infoDict isEqual:@""] && [infoDict[@"newmsg"] integerValue] > 0) {
             [self.buttonUser setImage:[UIImage imageNamed:@"user-noti"]];
         } else {
             [self.buttonUser setImage:[UIImage imageNamed:@"user"]];
@@ -72,7 +74,7 @@
 // In a storyboard-based application, you will often want to do a little preparation before navigation
 
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
-    return NUMBERS.count + 1;
+    return BOARDS.count + 1;
 }
 
 - (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView {
@@ -81,10 +83,11 @@
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
     IndexViewCell * cell;
-    if (indexPath.row < NUMBERS.count) {
+    if (indexPath.row < BOARDS.count) {
         cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"indexcell" forIndexPath:indexPath];
-        cell.image.image = [UIImage imageNamed:[@"b" stringByAppendingString:NUMBERS[indexPath.row]]];
-        cell.text.text = [ActionPerformer getBoardTitle:NUMBERS[indexPath.row]];
+        NSString *board = BOARDS[indexPath.row];
+        cell.image.image = [UIImage imageNamed:[@"b" stringByAppendingString:board]];
+        cell.text.text = [Helper getBoardTitle:board];
     } else {
         cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"collectioncell" forIndexPath:indexPath];
     }
@@ -151,22 +154,22 @@
 }
 
 - (IBAction)smart:(id)sender {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"快速访问" message:[NSString stringWithFormat: @"输入带有帖子链接的文本进行快速访问\n\n高级功能\n输入要连接的论坛地址\n目前地址：%@\n链接会被自动判别", CHEXIE] preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"快速访问" message:[NSString stringWithFormat: @"输入带有帖子链接的文本进行快速访问\n\n高级功能\n输入要连接的论坛地址\n目前地址：%@\n链接会被自动判别", CHEXIE] preferredStyle:UIAlertControllerStyleAlert];
     
-    [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+    [alertController addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
         textField.keyboardType = UIKeyboardTypeURL;
         textField.text = @"https://www.chexie.net";
         textField.placeholder = @"地址链接";
     }];
-    [alert addAction:[UIAlertAction actionWithTitle:@"取消"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"取消"
                                               style:UIAlertActionStyleCancel
                                             handler:nil]];
-    [alert addAction:[UIAlertAction actionWithTitle:@"确认"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"确认"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        [self multiAction:alert.textFields.firstObject.text];
+        [self multiAction:alertController.textFields.firstObject.text];
     }]];
-    [self presentViewControllerSafe:alert];
+    [self presentViewControllerSafe:alertController];
 }
 
 - (IBAction)back:(id)sender {
@@ -186,7 +189,7 @@
         return;
     }
     
-    NSDictionary *linkInfo = [ActionPerformer getLink:text];
+    NSDictionary *linkInfo = [Helper getLink:text];
     if ([linkInfo[@"bid"] length] > 0) {
         AppDelegate *appDelegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
         [appDelegate openLink:linkInfo postTitle:nil];
@@ -224,9 +227,9 @@
         NSString *childPath = [NSString stringWithFormat:@"%@/%@", rootFolder, path];
         NSArray *testPaths = [MANAGER subpathsAtPath:childPath];
         if (testPaths.count > 0) { // Folder
-            result = [NSString stringWithFormat:@"%@%@: %@\n", result, path, [ActionPerformer fileSize:[SettingViewController folderSizeAtPath:childPath]]];
+            result = [NSString stringWithFormat:@"%@%@: %@\n", result, path, [Helper fileSize:[SettingViewController folderSizeAtPath:childPath]]];
         } else if (all) { // File
-            result = [NSString stringWithFormat:@"%@%@: %@\n", result, path, [ActionPerformer fileSize:[SettingViewController fileSizeAtPath:childPath]]];
+            result = [NSString stringWithFormat:@"%@%@: %@\n", result, path, [Helper fileSize:[SettingViewController fileSizeAtPath:childPath]]];
         }
     }
     return result;
@@ -243,7 +246,7 @@
     }
     if ([segue.identifier isEqualToString:@"postlist"]) {
         int number = (int)[self.collectionView indexPathForCell:(UICollectionViewCell *)sender].row;
-        dest.bid = NUMBERS[number];
+        dest.bid = BOARDS[number];
     }
 }
 

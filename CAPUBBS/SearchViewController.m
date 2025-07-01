@@ -7,6 +7,7 @@
 //
 
 #import "SearchViewController.h"
+#import "SearchViewCell.h"
 #import "ContentViewController.h"
 
 #define MIN_DATE @"1995-10-25"
@@ -27,7 +28,7 @@
     [self refreshBackgroundViewAnimated:NO];
     [self.inputText becomeFirstResponder];
     [self setDate];
-    self.labelB.text = [ActionPerformer getBoardTitle:self.bid];
+    self.labelB.text = [Helper getBoardTitle:self.bid];
     control = [[UIRefreshControl alloc] init];
     [control addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
     [self.tableview addSubview:control];
@@ -37,6 +38,9 @@
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     [self.navigationController setToolbarHidden:YES];
+    if (![self isValidBoard:self.bid]) {
+        [self chooseBoard:nil];
+    }
 }
 
 - (void)refreshBackgroundViewAnimated:(BOOL)animated {
@@ -151,6 +155,13 @@
     }
 }
 
+- (BOOL)isValidBoard:(NSString *)board {
+    if (![Helper checkLogin:NO]) {
+        return ![board isEqualToString:@"1"] && ![board isEqualToString:@"-1"];
+    }
+    return YES;
+}
+
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
     // Return the number of sections.
     return 1;
@@ -177,11 +188,11 @@
     NSDictionary *dict = searchResult[indexPath.row];
     SearchViewCell *cell = [self.tableview dequeueReusableCellWithIdentifier:@"resultlist"];
     NSString *titleText = dict[@"title"] ? dict[@"title"] : dict[@"text"];
-    titleText = [ActionPerformer restoreTitle:titleText];
+    titleText = [Helper restoreTitle:titleText];
     cell.titleText.text = titleText;
     cell.authorText.text = dict[@"author"];
     if ([self.bid isEqualToString:@"-1"] && !SIMPLE_VIEW) {
-        cell.timeText.text = [NSString stringWithFormat:@"%@ • %@", [ActionPerformer getBoardTitle:dict[@"bid"]], dict[@"time"]];
+        cell.timeText.text = [NSString stringWithFormat:@"%@ • %@", [Helper getBoardTitle:dict[@"bid"]], dict[@"time"]];
     } else {
         cell.timeText.text = dict[@"time"];
     }
@@ -213,6 +224,12 @@
         type = @"thread";
     } else {
         type = @"post";
+    }
+    if (![self isValidBoard:self.bid]) {
+        [self showAlertWithTitle:@"错误" message:[NSString stringWithFormat:@"您未登录，不能搜索%@！", [Helper getBoardTitle:self.bid]] confirmTitle:@"选择讨论区" confirmAction:^(UIAlertAction *action) {
+            [self chooseBoard:nil];
+        }];
+        return;
     }
     if (text.length == 0 && author.length == 0) {
         [self showAlertWithTitle:@"错误" message:@"没有输入搜索内容！" cancelAction:^(UIAlertAction *action) {
@@ -248,7 +265,7 @@
         @"endtime" : endTime,
         @"username" : author
     };
-    [ActionPerformer callApiWithParams:dict toURL:@"search" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:dict toURL:@"search" callback:^(NSArray *result, NSError *err) {
         if (control.isRefreshing) {
             [control endRefreshing];
         }
@@ -269,24 +286,27 @@
     }];
 }
 
-- (IBAction)chooseB:(id)sender {
-    UIAlertController *action = [UIAlertController alertControllerWithTitle:@"请选择要搜索的讨论区" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-    for (NSString *board in [NUMBERS arrayByAddingObject:@"-1"]) {
-        NSString *boardTitle = [ActionPerformer getBoardTitle:board];
-        [action addAction:[UIAlertAction actionWithTitle:[ActionPerformer getBoardTitle:board] style:([self.bid isEqualToString:board]) ? UIAlertActionStyleDestructive : UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            if (![ActionPerformer checkLogin:NO] && ([board isEqualToString:@"1"] || [board isEqualToString:@"-1"])) {
-                [self showAlertWithTitle:@"错误" message:[NSString stringWithFormat:@"您未登录，不能搜索%@！", boardTitle]];
-            } else {
-                self.bid = board;
-                self.labelB.text = [ActionPerformer getBoardTitle:self.bid];
-                [self refreshBackgroundViewAnimated:YES];
-            }
-        }]];
+- (IBAction)chooseBoard:(id)sender {
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"请选择要搜索的讨论区" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    for (NSString *board in [BOARDS arrayByAddingObject:@"-1"]) {
+        NSString *boardTitle = [Helper getBoardTitle:board];
+        BOOL isValid = [self isValidBoard:board];
+        UIAlertAction *alertAction = [UIAlertAction actionWithTitle:isValid && [self.bid isEqualToString:board] ? [@"✅ " stringByAppendingString:boardTitle] : boardTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            self.bid = board;
+            self.labelB.text = boardTitle;
+            [self refreshBackgroundViewAnimated:YES];
+        }];
+        alertAction.enabled = isValid;
+        [alertController addAction:alertAction];
     }
-    [action addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
-    action.popoverPresentationController.sourceView = self.labelB;
-    action.popoverPresentationController.sourceRect = self.labelB.bounds;
-    [self presentViewControllerSafe:action];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        if (![self isValidBoard:self.bid]) {
+            [self.navigationController popViewControllerAnimated:YES];
+        }
+    }]];
+    alertController.popoverPresentationController.sourceView = self.labelB;
+    alertController.popoverPresentationController.sourceRect = self.labelB.bounds;
+    [self presentViewControllerSafe:alertController];
 }
 
 #pragma mark - Navigation
@@ -304,7 +324,7 @@
             dest.destinationFloor = one[@"floor"];
         }
         NSString *titleText = one[@"title"] ? one[@"title"] : one[@"text"];
-        dest.title = [ActionPerformer restoreTitle:titleText];
+        dest.title = [Helper restoreTitle:titleText];
         [self.navigationController setToolbarHidden:NO];
     }
 }

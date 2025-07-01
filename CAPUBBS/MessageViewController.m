@@ -7,6 +7,7 @@
 //
 
 #import "MessageViewController.h"
+#import "MessageCell.h"
 #import "ContentViewController.h"
 #import "ChatViewController.h"
 #import "UserViewController.h"
@@ -85,7 +86,7 @@
         } else {
             self.toolbarItems = @[self.barFreeSpace, self.buttonAdd, self.barFreeSpace];
         }
-        if ([ActionPerformer checkLogin:NO] && !messageRefreshing) {
+        if ([Helper checkLogin:NO] && !messageRefreshing) {
             messageRefreshing = YES;
             NSString *type = (self.segmentType.selectedSegmentIndex == 0) ? @"system" : @"private";
             [hud showWithProgressMessage:@"正在加载"];
@@ -93,7 +94,7 @@
                 @"type" : type,
                 @"page" : [NSString stringWithFormat:@"%ld", (long)page]
             };
-            [ActionPerformer callApiWithParams:dict toURL:@"msg" callback: ^(NSArray *result, NSError *err) {
+            [Helper callApiWithParams:dict toURL:@"msg" callback: ^(NSArray *result, NSError *err) {
                 if (control.isRefreshing) {
                     [control endRefreshing];
                 }
@@ -231,19 +232,19 @@
 }
 
 - (IBAction)add:(id)sender {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"发送私信"
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"发送私信"
                                                                    message:@"请输入对方的用户名"
                                                             preferredStyle:UIAlertControllerStyleAlert];
-    [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+    [alertController addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
         textField.placeholder = @"用户名";
     }];
-    [alert addAction:[UIAlertAction actionWithTitle:@"取消"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"取消"
                                               style:UIAlertActionStyleCancel
                                             handler:nil]];
-    [alert addAction:[UIAlertAction actionWithTitle:@"开始"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"开始"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        NSString *userName = alert.textFields.firstObject.text;
+        NSString *userName = alertController.textFields.firstObject.text;
         if (userName.length == 0) {
             [self showAlertWithTitle:@"错误" message:@"用户名不能为空"];
         } else {
@@ -251,7 +252,7 @@
             [self performSegueWithIdentifier:@"chat" sender:nil];
         }
     }]];
-    [self presentViewControllerSafe:alert];
+    [self presentViewControllerSafe:alertController];
 }
 
 - (void)backgroundRefresh {
@@ -288,7 +289,7 @@
     if (self.segmentType.selectedSegmentIndex == 0) {
         int textLenth = 0;
         NSString *titleText = dict[@"title"];
-        titleText = [ActionPerformer restoreTitle:titleText];
+        titleText = [Helper restoreTitle:titleText];
         NSString *type = dict[@"type"];
         if ([type isEqualToString:@"reply"]) {
             text = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"回复了您的帖子：%@", titleText]];
@@ -378,7 +379,7 @@
         dest.bid = dict[@"bid"];
         dest.destinationPage = dict[@"p"];
         // NSLog(@"%@", dict[@"url"]);
-        NSString *floor = [ActionPerformer getLink:dict[@"url"]][@"floor"];
+        NSString *floor = [Helper getLink:dict[@"url"]][@"floor"];
         if ([floor intValue] > 0) {
             dest.destinationFloor = floor;
             if ([dict[@"type"] hasPrefix:@"replylzl"]) {

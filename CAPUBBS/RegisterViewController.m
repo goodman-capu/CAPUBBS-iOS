@@ -223,7 +223,7 @@
     }
     NSDictionary *dict = @{
         @"username" : uid,
-        @"password" : [ActionPerformer md5:pass],
+        @"password" : [Helper md5:pass],
         @"sex" : sex,
         @"qq" : qq,
         @"mail" : email,
@@ -237,7 +237,7 @@
     };
     if (self.isEdit == NO) {
         [hud showWithProgressMessage:@"注册中"];
-        [ActionPerformer callApiWithParams:dict toURL:@"register" callback:^(NSArray *result, NSError *err) {
+        [Helper callApiWithParams:dict toURL:@"register" callback:^(NSArray *result, NSError *err) {
             if (err || result.count == 0) {
                 [self showAlertWithTitle:@"注册失败" message:[err localizedDescription]];
                 [hud hideWithFailureMessage:@"注册失败"];
@@ -283,7 +283,7 @@
         }];
     } else {
         [hud showWithProgressMessage:@"修改中"];
-        [ActionPerformer callApiWithParams:dict toURL:@"edituser" callback:^(NSArray *result, NSError *err) {
+        [Helper callApiWithParams:dict toURL:@"edituser" callback:^(NSArray *result, NSError *err) {
             if (err || result.count == 0) {
                 [self showAlertWithTitle:@"修改失败" message:[err localizedDescription]];
                 [hud hideWithFailureMessage:@"修改失败"];
@@ -298,21 +298,21 @@
             switch ([result[0][@"code"] integerValue]) {
                 case 0: {
                     if (self.textPsd.text.length > 0) {
-                        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"验证密码" message:@"您选择了修改密码\n请输入原密码以验证身份" preferredStyle:UIAlertControllerStyleAlert];
-                        [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+                        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"验证密码" message:@"您选择了修改密码\n请输入原密码以验证身份" preferredStyle:UIAlertControllerStyleAlert];
+                        [alertController addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
                             textField.placeholder = @"原密码";
                             textField.secureTextEntry = YES;
                         }];
-                        [alert addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+                        [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
                             dispatch_main_after(0.5, ^{
                                 [self back];
                             });
                         }]];
-                        [alert addAction:[UIAlertAction actionWithTitle:@"确认" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                            NSString *oldPassword = alert.textFields.firstObject.text;
+                        [alertController addAction:[UIAlertAction actionWithTitle:@"确认" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                            NSString *oldPassword = alertController.textFields.firstObject.text;
                             [self changePasswordWithOldPassword:oldPassword];
                         }]];
-                        [self presentViewControllerSafe:alert];
+                        [self presentViewControllerSafe:alertController];
                     } else {
                         dispatch_main_after(0.5, ^{
                             [self back];
@@ -342,10 +342,10 @@
 - (void)changePasswordWithOldPassword:(NSString *)oldPassword {
     [hud showWithProgressMessage:@"修改中"];
     NSDictionary *dict = @{
-        @"old" : [ActionPerformer md5:oldPassword],
-        @"new" : [ActionPerformer md5:self.textPsd.text]
+        @"old" : [Helper md5:oldPassword],
+        @"new" : [Helper md5:self.textPsd.text]
     };
-    [ActionPerformer callApiWithParams:dict toURL:@"changepsd" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:dict toURL:@"changepsd" callback:^(NSArray *result, NSError *err) {
         if (err || result.count == 0) {
             [self showAlertWithTitle:@"修改失败" message:[err localizedDescription]];
             [hud hideWithFailureMessage:@"修改失败"];
@@ -401,7 +401,7 @@
         [self.imageUidAvailable setImage:QUESTIONMARK];
         return;
     }
-    [ActionPerformer callApiWithParams:@{@"uid":sender.text} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:@{@"uid":sender.text} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
         // NSLog(@"%@", result);
         if (err || result.count == 0 || [result[0][@"username"] length] == 0) {
             [self.imageUidAvailable setImage:SUCCESSMARK];

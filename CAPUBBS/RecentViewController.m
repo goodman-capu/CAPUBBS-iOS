@@ -67,7 +67,7 @@
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell" forIndexPath:indexPath];
     if (self.data.count > 0) {
-        cell.textLabel.text = [ActionPerformer restoreTitle:self.data[indexPath.row][@"title"]];
+        cell.textLabel.text = [Helper restoreTitle:self.data[indexPath.row][@"title"]];
         cell.detailTextLabel.text = self.data[indexPath.row][@"time"];
     } else {
         cell.textLabel.text = [@"暂无" stringByAppendingString:self.title];

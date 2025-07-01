@@ -53,10 +53,6 @@
     [self.webViewContainer.webView removeObserver:self forKeyPath:@"estimatedProgress"];
 }
 
-- (BOOL)isHttpScheme:(NSString *)scheme {
-    return [scheme isEqualToString:@"http"] || [scheme isEqualToString:@"https"];
-}
-
 - (NSString *)getDisplayUrl:(NSString *)urlString {
     NSString *displayURL = urlString;
     if (urlString.length > 200) {
@@ -68,7 +64,7 @@
 }
 
 - (void)setSafeActivityUrl:(NSURL *)url {
-    if (url && [self isHttpScheme:url.scheme.lowercaseString]) {
+    if (url && [Helper isHttpScheme:url.scheme.lowercaseString]) {
         activity.webpageURL = url;
     } else {
         activity.webpageURL = nil;
@@ -132,23 +128,23 @@
     }
     
     // 非 http / https 链接：尝试用系统打开
-    if (![self isHttpScheme:url.scheme.lowercaseString]) {
+    if (![Helper isHttpScheme:url.scheme.lowercaseString]) {
         if ([[UIApplication sharedApplication] canOpenURL:url]) {
             [self showAlertWithTitle:@"是否跳转至" message:path confirmTitle:@"确定" confirmAction:^(UIAlertAction *action) {
                 [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
             }];
         } else {
-            UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"无法打开链接" message:[NSString stringWithFormat:@"可能未安装相应App\n%@", [self getDisplayUrl:path]] preferredStyle:UIAlertControllerStyleAlert];
-            [alert addAction:[UIAlertAction actionWithTitle:@"复制链接"
+            UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"无法打开链接" message:[NSString stringWithFormat:@"可能未安装相应App\n%@", [self getDisplayUrl:path]] preferredStyle:UIAlertControllerStyleAlert];
+            [alertController addAction:[UIAlertAction actionWithTitle:@"复制链接"
                                                       style:UIAlertActionStyleDefault
                                                     handler:^(UIAlertAction * action) {
                 [[UIPasteboard generalPasteboard] setString:path];
                 [hud showAndHideWithSuccessMessage:@"复制成功"];
             }]];
-            [alert addAction:[UIAlertAction actionWithTitle:@"返回"
+            [alertController addAction:[UIAlertAction actionWithTitle:@"返回"
                                                       style:UIAlertActionStyleCancel
                                                     handler:nil]];
-            [self presentViewControllerSafe:alert];
+            [self presentViewControllerSafe:alertController];
         }
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
@@ -164,7 +160,7 @@
     // Is download request or type can not be rendered in webview
     if ([contentDisposition.lowercaseString hasPrefix:@"attachment"] || !canShow) {
         NSURL *url = response.URL;
-        NSString *fileName = response.suggestedFilename ?: [ActionPerformer fileNameFromURL:url] ?: @"未知";
+        NSString *fileName = response.suggestedFilename ?: [Helper fileNameFromURL:url] ?: @"未知";
         if (fileName.pathExtension.length == 0) {
             NSString *extension = url.absoluteString.pathExtension;
             if (extension.length > 0) {
@@ -176,26 +172,26 @@
         if (url.host.length > 0) {
             description = [NSString stringWithFormat:@"%@\n来自：%@", description, url.host];
         }
-        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"是否下载文件" message:description preferredStyle:UIAlertControllerStyleAlert];
+        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"是否下载文件" message:description preferredStyle:UIAlertControllerStyleAlert];
         if (canShow) {
-            [alert addAction:[UIAlertAction actionWithTitle:@"直接查看"
+            [alertController addAction:[UIAlertAction actionWithTitle:@"直接查看"
                                                       style:UIAlertActionStyleDefault
                                                     handler:^(UIAlertAction * action) {
                 decisionHandler(WKNavigationResponsePolicyAllow);
             }]];
         }
-        [alert addAction:[UIAlertAction actionWithTitle:@"下载文件"
+        [alertController addAction:[UIAlertAction actionWithTitle:@"下载文件"
                                                   style:UIAlertActionStyleDefault
                                                 handler:^(UIAlertAction * action) {
             decisionHandler(WKNavigationResponsePolicyCancel);
             [self downloadWithUrl:url fileName:fileName webView:webView];
         }]];
-        [alert addAction:[UIAlertAction actionWithTitle:@"取消"
+        [alertController addAction:[UIAlertAction actionWithTitle:@"取消"
                                                   style:UIAlertActionStyleCancel
                                                 handler:^(UIAlertAction * _Nonnull action) {
             decisionHandler(WKNavigationResponsePolicyCancel);
         }]];
-        [self presentViewControllerSafe:alert];
+        [self presentViewControllerSafe:alertController];
         return;
     }
     
@@ -218,20 +214,25 @@
             NSString *cookieHeader = [cookieParts componentsJoinedByString:@"; "];
             [request setValue:cookieHeader forHTTPHeaderField:@"Cookie"];
         }
-
-        NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable idata, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-            if (error || !idata || idata.length == 0) {
+        
+        [Downloader loadRequest:request progress:^(float progress, NSUInteger expectedBytes) {
+            [hud updateToProgress:progress];
+        } completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+            if (error || !data || data.length == 0) {
                 [hud hideWithFailureMessage:@"下载失败"];
-                [self showAlertWithTitle:@"错误" message:error ? error.localizedDescription : @"文件下载失败，请检查您的网络连接！"];
+                [self showAlertWithTitle:@"错误" message:error ? error.localizedDescription : @"文件下载失败，请检查您的网络连接！" confirmTitle:@"重试" confirmAction:^(UIAlertAction *action) {
+                    dispatch_global_after(0.5, ^{
+                        [self downloadWithUrl:url fileName:fileName webView:webView];
+                    });
+                }];
                 return;
             }
             [hud hideWithSuccessMessage:@"下载成功"];
             [NOTIFICATION postNotificationName:@"previewFile" object:nil userInfo:@{
-                @"fileData": idata,
+                @"fileData": data,
                 @"fileName": fileName
             }];
         }];
-        [task resume];
     }];
 }
 
@@ -338,7 +339,7 @@
             break;
         case NSURLErrorUnsupportedURL: {
             NSString *scheme = failingUrl.scheme.lowercaseString;
-            if (scheme && ![self isHttpScheme:scheme]) {
+            if (scheme && ![Helper isHttpScheme:scheme]) {
                 errorMessage = @"不支持该链接，可能未安装相应App";
             } else {
                 errorMessage = @"不支持该链接";
@@ -350,24 +351,24 @@
     }
     if (failingUrl.absoluteString) {
         NSString *urlString = failingUrl.absoluteString;
-        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"加载错误" message:[NSString stringWithFormat:@"%@ (%ld)\n\n%@", errorMessage, error.code, [self getDisplayUrl:urlString]] preferredStyle:UIAlertControllerStyleAlert];
-        [alert addAction:[UIAlertAction actionWithTitle:@"复制链接"
+        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"加载错误" message:[NSString stringWithFormat:@"%@ (%ld)\n\n%@", errorMessage, error.code, [self getDisplayUrl:urlString]] preferredStyle:UIAlertControllerStyleAlert];
+        [alertController addAction:[UIAlertAction actionWithTitle:@"复制链接"
                                                   style:UIAlertActionStyleDefault
                                                 handler:^(UIAlertAction * action) {
             [[UIPasteboard generalPasteboard] setString:urlString];
             [hud showAndHideWithSuccessMessage:@"复制成功"];
         }]];
-        [alert addAction:[UIAlertAction actionWithTitle:@"重新加载"
+        [alertController addAction:[UIAlertAction actionWithTitle:@"重新加载"
                                                   style:UIAlertActionStyleDefault
                                                 handler:^(UIAlertAction * action) {
             dispatch_main_after(0.25, ^{
                 [webView loadRequest:[NSURLRequest requestWithURL:failingUrl]];
             });
         }]];
-        [alert addAction:[UIAlertAction actionWithTitle:@"返回"
+        [alertController addAction:[UIAlertAction actionWithTitle:@"返回"
                                                   style:UIAlertActionStyleCancel
                                                 handler:nil]];
-        [self presentViewControllerSafe:alert];
+        [self presentViewControllerSafe:alertController];
     } else {
         [self showAlertWithTitle:@"加载错误" message:errorMessage];
     }

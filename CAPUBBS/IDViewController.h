@@ -7,7 +7,6 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "InternalLoginViewController.h"
 
 @interface IDViewController : CustomTableViewController {
     NSMutableArray *data;

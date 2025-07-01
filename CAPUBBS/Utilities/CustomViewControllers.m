@@ -142,18 +142,18 @@ static char kIsAttemptingToPresentKey;
              confirmAction:(void (^)(UIAlertAction *action))confirmAction
                cancelTitle:(NSString *)cancelTitle
               cancelAction:(void (^)(UIAlertAction *action))cancelAction {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:title
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:title
                                                                    message:message
                                                             preferredStyle:UIAlertControllerStyleAlert];
     if (confirmTitle && confirmAction) {
-        [alert addAction:[UIAlertAction actionWithTitle:confirmTitle
+        [alertController addAction:[UIAlertAction actionWithTitle:confirmTitle
                                                   style:[confirmTitle containsString:@"删除"] ? UIAlertActionStyleDestructive : UIAlertActionStyleDefault
                                                 handler:confirmAction]];
     }
-    [alert addAction:[UIAlertAction actionWithTitle:cancelTitle
+    [alertController addAction:[UIAlertAction actionWithTitle:cancelTitle
                                               style:UIAlertActionStyleCancel
                                             handler:cancelAction]];
-    [self presentViewControllerSafe:alert];
+    [self presentViewControllerSafe:alertController];
 };
 
 - (void)showAlertWithTitle:(NSString *)title

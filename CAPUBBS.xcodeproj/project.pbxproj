@@ -26,6 +26,7 @@
 		017FE5F21A9DC2E5001BDD15 /* Launch Screen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 017FE5F11A9DC2E5001BDD15 /* Launch Screen.xib */; };
 		018590472DF103EB002E73D9 /* CustomProgressHUD.m in Sources */ = {isa = PBXBuildFile; fileRef = 018590462DF103EA002E73D9 /* CustomProgressHUD.m */; };
 		018DC2021BFF482600334BF1 /* IDCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 018DC2011BFF482600334BF1 /* IDCell.m */; };
+		0191373F2E131FAB00BCA61D /* Downloader.m in Sources */ = {isa = PBXBuildFile; fileRef = 0191373E2E131FAA00BCA61D /* Downloader.m */; };
 		019D7E952DEA179F00F91E41 /* jquery.min.js in Resources */ = {isa = PBXBuildFile; fileRef = 019D7E942DEA179500F91E41 /* jquery.min.js */; };
 		01A552BB1C1204AA002317C0 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 01A552BA1C1204AA002317C0 /* Images.xcassets */; };
 		01A616CB1AB7C9CD009A0D0A /* IconViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 01A616CA1AB7C9CD009A0D0A /* IconViewController.m */; };
@@ -224,7 +225,7 @@
 		8BAC8ECF18B0F2BE00F68A62 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8BAC8ECD18B0F2BE00F68A62 /* InfoPlist.strings */; };
 		8BAC8ED118B0F2BE00F68A62 /* CAPUBBSTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BAC8ED018B0F2BE00F68A62 /* CAPUBBSTests.m */; };
 		8BAC8EE218B0F58500F68A62 /* LoginViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BAC8EE118B0F58500F68A62 /* LoginViewController.m */; };
-		8BAC8EE518B100B100F68A62 /* ActionPerformer.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BAC8EE418B100B100F68A62 /* ActionPerformer.m */; };
+		8BAC8EE518B100B100F68A62 /* Helper.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BAC8EE418B100B100F68A62 /* Helper.m */; };
 		8BAC8EEB18B10E6700F68A62 /* IndexViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BAC8EEA18B10E6700F68A62 /* IndexViewController.m */; };
 		8BAC8EEE18B1112700F68A62 /* ListViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BAC8EED18B1112700F68A62 /* ListViewController.m */; };
 		8BAC8EF118B112E300F68A62 /* ListCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BAC8EF018B112E300F68A62 /* ListCell.m */; };
@@ -294,6 +295,8 @@
 		018590462DF103EA002E73D9 /* CustomProgressHUD.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CustomProgressHUD.m; sourceTree = "<group>"; };
 		018DC2001BFF482600334BF1 /* IDCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IDCell.h; sourceTree = "<group>"; };
 		018DC2011BFF482600334BF1 /* IDCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IDCell.m; sourceTree = "<group>"; };
+		0191373D2E131FA100BCA61D /* Downloader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Downloader.h; sourceTree = "<group>"; };
+		0191373E2E131FAA00BCA61D /* Downloader.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Downloader.m; sourceTree = "<group>"; };
 		019D7E942DEA179500F91E41 /* jquery.min.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = jquery.min.js; sourceTree = "<group>"; };
 		01A552BA1C1204AA002317C0 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		01A616C91AB7C9CD009A0D0A /* IconViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IconViewController.h; sourceTree = "<group>"; };
@@ -517,8 +520,8 @@
 		8BAC8ED018B0F2BE00F68A62 /* CAPUBBSTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CAPUBBSTests.m; sourceTree = "<group>"; };
 		8BAC8EE018B0F58500F68A62 /* LoginViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LoginViewController.h; sourceTree = "<group>"; };
 		8BAC8EE118B0F58500F68A62 /* LoginViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = LoginViewController.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
-		8BAC8EE318B100B100F68A62 /* ActionPerformer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = ActionPerformer.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		8BAC8EE418B100B100F68A62 /* ActionPerformer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ActionPerformer.m; sourceTree = "<group>"; };
+		8BAC8EE318B100B100F68A62 /* Helper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = Helper.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		8BAC8EE418B100B100F68A62 /* Helper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Helper.m; sourceTree = "<group>"; };
 		8BAC8EE918B10E6700F68A62 /* IndexViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndexViewController.h; sourceTree = "<group>"; };
 		8BAC8EEA18B10E6700F68A62 /* IndexViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = IndexViewController.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		8BAC8EEC18B1112700F68A62 /* ListViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ListViewController.h; sourceTree = "<group>"; };
@@ -766,10 +769,12 @@
 			isa = PBXGroup;
 			children = (
 				01F79C8D1D9CAEAC000594F1 /* CommonDefinitions.h */,
-				8BAC8EE318B100B100F68A62 /* ActionPerformer.h */,
-				8BAC8EE418B100B100F68A62 /* ActionPerformer.m */,
 				0100A0D01C0C562C00A1282D /* AnimatedImageView.h */,
 				0100A0D11C0C562C00A1282D /* AnimatedImageView.m */,
+				0191373D2E131FA100BCA61D /* Downloader.h */,
+				0191373E2E131FAA00BCA61D /* Downloader.m */,
+				8BAC8EE318B100B100F68A62 /* Helper.h */,
+				8BAC8EE418B100B100F68A62 /* Helper.m */,
 				01E042BD2DE4B1B700590A6C /* ReachabilityManager.h */,
 				01E042BE2DE4B1C800590A6C /* ReachabilityManager.m */,
 				01E1B1591C28061500EC680D /* UIImageEffects.h */,
@@ -1223,9 +1228,10 @@
 				8BD9862619CF052D0006ECEC /* LzlViewController.m in Sources */,
 				01E042BF2DE4B1C900590A6C /* ReachabilityManager.m in Sources */,
 				011509C11BF21B080076D6F3 /* CollectionViewController.m in Sources */,
+				0191373F2E131FAB00BCA61D /* Downloader.m in Sources */,
 				0169A9552DF0B02600F8978B /* CustomViewControllers.m in Sources */,
 				8BAC8EF118B112E300F68A62 /* ListCell.m in Sources */,
-				8BAC8EE518B100B100F68A62 /* ActionPerformer.m in Sources */,
+				8BAC8EE518B100B100F68A62 /* Helper.m in Sources */,
 				8BAC8EB318B0F2BE00F68A62 /* AppDelegate.m in Sources */,
 				01460DA21AA9962000762761 /* SearchViewCell.m in Sources */,
 				8BAC8EAF18B0F2BE00F68A62 /* main.m in Sources */,
@@ -1430,7 +1436,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 4054;
+				CURRENT_PROJECT_VERSION = 4061;
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 674549EE7Z;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -1439,7 +1445,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = CAPUBBS;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
 				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
-				MARKETING_VERSION = 4.0.5;
+				MARKETING_VERSION = 4.0.6;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xiongdianpku.CAPUBBS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1459,7 +1465,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 4054;
+				CURRENT_PROJECT_VERSION = 4061;
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 674549EE7Z;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -1468,7 +1474,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = CAPUBBS;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
 				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
-				MARKETING_VERSION = 4.0.5;
+				MARKETING_VERSION = 4.0.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xiongdianpku.CAPUBBS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

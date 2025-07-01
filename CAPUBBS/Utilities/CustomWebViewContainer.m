@@ -263,26 +263,26 @@ static dispatch_once_t onceSharedDataSource;
         return YES;
     };
     
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:[CustomWebViewContainer getAlertTitle:frame] message:prompt preferredStyle:UIAlertControllerStyleAlert];
-    [alert addTextFieldWithConfigurationHandler:^(UITextField * textField) {
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:[CustomWebViewContainer getAlertTitle:frame] message:prompt preferredStyle:UIAlertControllerStyleAlert];
+    [alertController addTextFieldWithConfigurationHandler:^(UITextField * textField) {
         textField.text = defaultText;
     }];
-    [alert addAction:[UIAlertAction actionWithTitle:@"确定"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"确定"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * action) {
-        NSString *input = alert.textFields.firstObject.text;
+        NSString *input = alertController.textFields.firstObject.text;
         if (!safeHandler(input)) {
             [self showTimeoutMessage];
         }
     }]];
-    [alert addAction:[UIAlertAction actionWithTitle:@"取消"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"取消"
                                               style:UIAlertActionStyleCancel
                                             handler:^(UIAlertAction * action) {
         if (!safeHandler(nil)) {
             [self showTimeoutMessage];
         }
     }]];
-    [viewController presentViewControllerSafe:alert];
+    [viewController presentViewControllerSafe:alertController];
     
     // 延迟兜底调用 handler，注意这会保持对 completionHandler 的引用，VC会在计时结束后才dealloc
     // 考虑到此类型弹窗很罕见，可以接受
@@ -296,23 +296,25 @@ static dispatch_once_t onceSharedDataSource;
 - (WKWebView *)webView:(WKWebView *)webView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures {
     // Open in new page request (like target='_blank')
     if (!navigationAction.targetFrame.isMainFrame && navigationAction.request.URL) {
-        NSURL *currentUrl = webView.URL;
+        NSURL *sourceUrl = navigationAction.sourceFrame.request.URL;
         NSURL *newUrl = navigationAction.request.URL;
-        if ([currentUrl.host isEqualToString:newUrl.host]) {
+        if ([sourceUrl.host isEqualToString:newUrl.host]) {
             // Same host, navigate directly
             [webView loadRequest:navigationAction.request];
-        } else {
+        } else if ([[UIApplication sharedApplication] canOpenURL:newUrl]) {
             // Ask for user confirmation
             [[AppDelegate getTopViewController] showAlertWithTitle:@"是否跳转至" message:newUrl.absoluteString confirmTitle:@"确定" confirmAction:^(UIAlertAction *action) {
                 NSString *scheme = newUrl.scheme.lowercaseString;
-                if ([scheme isEqualToString:@"http"] || [scheme isEqualToString:@"https"]) {
+                if ([Helper isHttpScheme:scheme]) {
                     [webView loadRequest:navigationAction.request];
-                } else if ([[UIApplication sharedApplication] canOpenURL:newUrl]) {
-                    [[UIApplication sharedApplication] openURL:newUrl options:@{} completionHandler:nil];
                 } else {
-                    [[AppDelegate getTopViewController] showAlertWithTitle:@"加载错误" message:@"可能未安装相应App"];
+                    [[UIApplication sharedApplication] openURL:newUrl options:@{} completionHandler:nil];
                 }
             }];
+        } else {
+            // Load and allow it to fail (trigger alert in VC), ideally never happens,
+            // should already be handled in decidePolicyForNavigationAction
+            [webView loadRequest:navigationAction.request];
         }
     }
     return nil; // 不创建新 webView，防止空白页

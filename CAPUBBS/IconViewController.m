@@ -7,6 +7,7 @@
 //
 
 #import "IconViewController.h"
+#import "IconCell.h"
 #import <MobileCoreServices/MobileCoreServices.h>
 
 #define HAS_CUSTOM_ICON (newIconNum + oldIconNum == -2)
@@ -188,23 +189,23 @@
 }
 
 - (IBAction)upload:(id)sender {
-    UIAlertController *action = [UIAlertController alertControllerWithTitle:@"选择图片来源" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-//    [action addAction:[UIAlertAction actionWithTitle:@"网址链接" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-//        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"设置头像"
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"选择图片来源" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+//    [alertController addAction:[UIAlertAction actionWithTitle:@"网址链接" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+//        UIAlertController *alertControllerLink = [UIAlertController alertControllerWithTitle:@"设置头像"
 //                                                                       message:@"请输入图片链接"
 //                                                                preferredStyle:UIAlertControllerStyleAlert];
 //        
-//        [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+//        [alertControllerLink addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
 //            textField.keyboardType = UIKeyboardTypeURL;
 //            textField.placeholder = @"链接";
 //        }];
-//        [alert addAction:[UIAlertAction actionWithTitle:@"取消"
+//        [alertControllerLink addAction:[UIAlertAction actionWithTitle:@"取消"
 //                                                  style:UIAlertActionStyleCancel
 //                                                handler:nil]];
-//        [alert addAction:[UIAlertAction actionWithTitle:@"确认"
+//        [alertControllerLink addAction:[UIAlertAction actionWithTitle:@"确认"
 //                                                  style:UIAlertActionStyleDefault
 //                                                handler:^(UIAlertAction * _Nonnull action) {
-//            NSString *url = alert.textFields.firstObject.text;
+//            NSString *url = alertControllerLink.textFields.firstObject.text;
 //            if (url.length > 0) {
 //                [NOTIFICATION postNotificationName:@"selectIcon" object:nil userInfo:@{
 //                    @"num" : @"-1",
@@ -215,9 +216,9 @@
 //                [self showAlertWithTitle:@"错误" message:@"链接不能为空"];
 //            }
 //        }]];
-//        [self presentViewControllerSafe:alert];
+//        [self presentViewControllerSafe:alertControllerLink];
 //    }]];
-    [action addAction:[UIAlertAction actionWithTitle:@"照片图库" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    [alertController addAction:[UIAlertAction actionWithTitle:@"照片图库" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         UIImagePickerController *imagePicker = [[UIImagePickerController alloc] init];
         imagePicker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
         imagePicker.mediaTypes = @[(NSString *)kUTTypeImage];
@@ -226,7 +227,7 @@
         [self presentViewControllerSafe:imagePicker];
     }]];
     if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera]) {
-        [action addAction:[UIAlertAction actionWithTitle:@"拍照" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [alertController addAction:[UIAlertAction actionWithTitle:@"拍照" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             UIImagePickerController *imagePicker = [[UIImagePickerController alloc] init];
             imagePicker.sourceType = UIImagePickerControllerSourceTypeCamera;
             imagePicker.cameraDevice = UIImagePickerControllerCameraDeviceFront;
@@ -236,9 +237,9 @@
             [self presentViewControllerSafe:imagePicker];
         }]];
     }
-    [action addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
-    action.popoverPresentationController.barButtonItem = self.buttonUpload;
-    [self presentViewControllerSafe:action];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
+    alertController.popoverPresentationController.barButtonItem = self.buttonUpload;
+    [self presentViewControllerSafe:alertController];
 }
 
 - (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary *)info {
@@ -267,7 +268,7 @@
         }
         NSLog(@"Icon Size:%dkB", (int)imageData.length / 1024);
         [hud showWithProgressMessage:@"正在上传"];
-        [ActionPerformer callApiWithParams:@{ @"image" : [imageData base64EncodedStringWithOptions:0] } toURL:@"image" callback:^(NSArray *result, NSError *err) {
+        [Helper callApiWithParams:@{ @"image" : [imageData base64EncodedStringWithOptions:0] } toURL:@"image" callback:^(NSArray *result, NSError *err) {
             if (err || result.count == 0) {
                 [hud hideWithFailureMessage:@"上传失败"];
                 return;

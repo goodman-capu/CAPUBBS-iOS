@@ -7,7 +7,7 @@
 //
 
 #import "ReachabilityManager.h"
-@import Network;
+#import <Network/Network.h>
 
 @interface ReachabilityManager ()
 @property (nonatomic, assign) NetworkType currentNetworkTypeInternal;

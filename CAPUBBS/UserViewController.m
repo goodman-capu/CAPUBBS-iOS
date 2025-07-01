@@ -152,7 +152,7 @@
 - (void)getInformation {
     [self setDefault];
     [hud showWithProgressMessage:@"查询中"];
-    [ActionPerformer callApiWithParams:@{@"uid": self.ID, @"recent": @"YES", @"raw": @"YES"} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:@{@"uid": self.ID, @"recent": @"YES", @"raw": @"YES"} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
         if (control.isRefreshing) {
             [control endRefreshing];
         }
@@ -173,7 +173,7 @@
         } else {
             if ([dict[@"username"] isEqualToString:UID]) {
                 NSLog(@"User Info Refreshed");
-                [ActionPerformer updateUserInfo:dict];
+                [Helper updateUserInfo:dict];
                 [NOTIFICATION postNotificationName:@"infoRefreshed" object:nil];
             }
             if ([dict[@"sex"] isEqualToString:@"男"]) {
@@ -217,8 +217,8 @@
                 if ([content isEqualToString:@"Array"] || content.length == 0) {
                     content = @"<font color='gray'>暂无</font>";
                 }
-                content = [ActionPerformer transToHTML:content];
-                NSString *html = [ActionPerformer htmlStringWithText:nil attachments:nil sig:content textSize:textSize];
+                content = [Helper transToHTML:content];
+                NSString *html = [Helper htmlStringWithText:nil attachments:nil sig:content textSize:textSize];
                 if (webViewContainer.webView.isLoading) {
                     [webViewContainer.webView stopLoading];
                 }
@@ -379,8 +379,8 @@
     }
 }
 - (void)showPic:(NSString *)url {
-    NSURL *imageUrl = [NSURL URLWithString:url];
-    NSString *md5Url = [ActionPerformer md5:url];
+    NSURL *imageUrl = [NSURL safeURLWithString:url];
+    NSString *md5Url = [Helper md5:url];
     NSString *cachePath = [NSString stringWithFormat:@"%@/%@", IMAGE_CACHE_PATH, md5Url];
     if ([MANAGER fileExistsAtPath:cachePath]) {
         NSData *imageData = [MANAGER contentsAtPath:cachePath];
@@ -392,9 +392,10 @@
         }
     }
     [hud showWithProgressMessage:@"正在载入"];
-    NSURLRequest *request = [NSURLRequest requestWithURL:imageUrl cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:30.0];
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable idata, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-        ImageFileType type = [AnimatedImageView fileType:idata];
+    [Downloader loadURL:imageUrl progress:^(float progress, NSUInteger expectedBytes) {
+        [hud updateToProgress:progress];
+    } completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+        ImageFileType type = [AnimatedImageView fileType:data];
         if (error || type == ImageFileTypeUnknown) {
             [hud hideWithFailureMessage:@"载入失败"];
             return;
@@ -404,11 +405,10 @@
         if (response.suggestedFilename && response.suggestedFilename.pathExtension.length > 0) {
             fileName = response.suggestedFilename;
         } else {
-            fileName = [ActionPerformer fileNameFromURL:imageUrl] ?: [md5Url stringByAppendingPathExtension:[AnimatedImageView fileExtension:type]];
+            fileName = [Helper fileNameFromURL:imageUrl] ?: [md5Url stringByAppendingPathExtension:[AnimatedImageView fileExtension:type]];
         }
-        [self presentImage:idata fileName:fileName];
+        [self presentImage:data fileName:fileName];
     }];
-    [task resume];
 }
 
 - (void)presentImage:(NSData *)imageData fileName:(NSString *)fileName {

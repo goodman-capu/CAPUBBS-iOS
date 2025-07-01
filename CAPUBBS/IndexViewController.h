@@ -7,7 +7,6 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "IndexViewCell.h"
 
 @interface IndexViewController : CustomViewController<UICollectionViewDelegate> {
     MBProgressHUD *hud;

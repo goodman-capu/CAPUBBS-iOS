@@ -8,6 +8,13 @@
 
 @implementation MBProgressHUD (Custom)
 
+- (void)updateToProgress:(float)progress {
+    dispatch_main_async_safe(^{
+        self.mode = MBProgressHUDModeDeterminate;
+        self.progress = progress;
+    });
+}
+
 - (void)showWithProgressMessage:(NSString *)message {
     dispatch_main_async_safe(^{
         self.label.text = message;

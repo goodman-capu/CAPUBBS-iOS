@@ -7,6 +7,7 @@
 //
 
 #import "ChatViewController.h"
+#import "ChatCell.h"
 #import "UserViewController.h"
 
 @interface ChatViewController ()
@@ -52,21 +53,21 @@
 }
 
 - (void)askForUserId {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"发送私信"
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"发送私信"
                                                                    message:@"请输入对方的用户名"
                                                             preferredStyle:UIAlertControllerStyleAlert];
-    [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+    [alertController addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
         textField.placeholder = @"用户名";
     }];
-    [alert addAction:[UIAlertAction actionWithTitle:@"取消"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"取消"
                                               style:UIAlertActionStyleCancel
                                             handler:^(UIAlertAction * _Nonnull action) {
         [self dismissViewControllerAnimated:YES completion:nil];
     }]];
-    [alert addAction:[UIAlertAction actionWithTitle:@"开始"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"开始"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        NSString *userName = alert.textFields.firstObject.text;
+        NSString *userName = alertController.textFields.firstObject.text;
         if (userName.length == 0) {
             [self showAlertWithTitle:@"错误" message:@"用户名不能为空" confirmTitle:@"重试" confirmAction:^(UIAlertAction *action) {
                 [self askForUserId];
@@ -79,7 +80,7 @@
             [self loadChat];
         }
     }]];
-    [self presentViewControllerSafe:alert];
+    [self presentViewControllerSafe:alertController];
 }
 
 - (void)refresh:(NSNotification *)noti {
@@ -126,7 +127,7 @@
         @"type" : @"chat",
         @"chatter" : self.ID
     };
-    [ActionPerformer callApiWithParams:dict toURL:@"msg" callback: ^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:dict toURL:@"msg" callback: ^(NSArray *result, NSError *err) {
         if (self.refreshControl.isRefreshing) {
             [self.refreshControl endRefreshing];
         }
@@ -161,7 +162,7 @@
 }
 
 - (void)checkID:(BOOL)hudVisible {
-    [ActionPerformer callApiWithParams:@{@"uid":self.ID, @"recent":@"YES"} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:@{@"uid":self.ID, @"recent":@"YES"} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
         if (err || result.count == 0) {
             return;
         }
@@ -278,7 +279,7 @@
         @"to" : self.ID,
         @"text" : text
     };
-    [ActionPerformer callApiWithParams:dict toURL:@"sendmsg" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:dict toURL:@"sendmsg" callback:^(NSArray *result, NSError *err) {
         if (err || result.count == 0) {
             NSLog(@"%@",err);
             [hud hideWithFailureMessage:@"发送失败"];

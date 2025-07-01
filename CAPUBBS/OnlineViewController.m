@@ -7,6 +7,7 @@
 //
 
 #import "OnlineViewController.h"
+#import "OnlineViewCell.h"
 #import "ContentViewController.h"
 #import "UserViewController.h"
 #import "WebViewController.h"
@@ -26,7 +27,7 @@
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
     
-    if (!([ActionPerformer checkRight] > 0)) {
+    if (!([Helper checkRight] > 0)) {
         self.navigationItem.rightBarButtonItems = @[self.buttonStat];
     }
     self.refreshControl = [[UIRefreshControl alloc] init];
@@ -127,7 +128,7 @@
     self.navigationItem.rightBarButtonItem.enabled = YES;
     if (HTMLString && [HTMLString containsString:@"签到统计"]) {
         [hud hideWithSuccessMessage:@"加载成功"];
-        HTMLString = [[ActionPerformer removeHTML:HTMLString restoreFormat:NO] substringFromIndex:@"签到统计\n".length];
+        HTMLString = [[Helper removeHTML:HTMLString restoreFormat:NO] substringFromIndex:@"签到统计\n".length];
         HTMLString = [HTMLString stringByReplacingOccurrencesOfString:@"\n#" withString:@"\n"];
         [self showAlertWithTitle:@"签到统计" message:HTMLString];
     } else {

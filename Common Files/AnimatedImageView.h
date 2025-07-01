@@ -7,7 +7,6 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "AppDelegate.h"
 #import <SDWebImage/SDAnimatedImage.h>
 #import <SDWebImage/SDAnimatedImageView.h>
 

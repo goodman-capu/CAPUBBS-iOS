@@ -7,6 +7,7 @@
 //
 
 #import "LzlViewController.h"
+#import "LzlCell.h"
 #import <StoreKit/StoreKit.h>
 #import "UserViewController.h"
 #import "ContentViewController.h"
@@ -32,7 +33,7 @@
     [self.refreshControl addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
     shouldShowHud = YES;
     [self.tableView addGestureRecognizer:[[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)]];
-    [self.buttomCompose setEnabled:[ActionPerformer checkLogin:NO]];
+    [self.buttomCompose setEnabled:[Helper checkLogin:NO]];
     
     if (self.defaultData) {
         data = [self.defaultData mutableCopy];
@@ -98,7 +99,7 @@
         @"fid" : self.fid,
         @"method" : @"show"
     };
-    [ActionPerformer callApiWithParams:dict toURL:@"lzl" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:dict toURL:@"lzl" callback:^(NSArray *result, NSError *err) {
         if (self.refreshControl.isRefreshing) {
             [self.refreshControl endRefreshing];
         }
@@ -129,7 +130,7 @@
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
     // Return the number of sections.
-    return [ActionPerformer checkLogin:NO] ? 2 : 1;
+    return [Helper checkLogin:NO] ? 2 : 1;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
@@ -178,30 +179,30 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     if (indexPath.section == 0) {
-        UIAlertController *action = [UIAlertController alertControllerWithTitle:@"选择操作" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-        if ([ActionPerformer checkLogin:NO]) {
-            [action addAction:[UIAlertAction actionWithTitle:@"回复" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"选择操作" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+        if ([Helper checkLogin:NO]) {
+            [alertController addAction:[UIAlertAction actionWithTitle:@"回复" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
                 [self directPost:nil];
             }]];
         }
-        [action addAction:[UIAlertAction actionWithTitle:@"复制" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [alertController addAction:[UIAlertAction actionWithTitle:@"复制" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             [[UIPasteboard generalPasteboard] setString:lzlText];
             [hud showAndHideWithSuccessMessage:@"复制完成"];
         }]];
         if ([self tableView:tableView canEditRowAtIndexPath:indexPath]) {
-            [action addAction:[UIAlertAction actionWithTitle:@"删除" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+            [alertController addAction:[UIAlertAction actionWithTitle:@"删除" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
                 [self confirmDelete:indexPath];
             }]];
         }
-        [action addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
+        [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
         lzlText = data[indexPath.row][@"text"];
         lzlAuthor = data[indexPath.row][@"author"];
         NSString *exp = @"[a-zA-z]+://[^\\s]*"; // 提取网址链接
         NSRange range = [lzlText rangeOfString:exp options:NSRegularExpressionSearch];
         if (range.location != NSNotFound) {
             lzlUrl = [lzlText substringWithRange:range];
-            [action addAction:[UIAlertAction actionWithTitle:@"打开链接" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                NSDictionary *dict = [ActionPerformer getLink:lzlUrl];
+            [alertController addAction:[UIAlertAction actionWithTitle:@"打开链接" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                NSDictionary *dict = [Helper getLink:lzlUrl];
                 if (dict.count > 0 && [dict[@"tid"] length] > 0) {
                     ContentViewController *dest = [self.storyboard instantiateViewControllerWithIdentifier:@"content"];
                     dest.bid = dict[@"bid"];
@@ -225,9 +226,9 @@
         }
         LzlCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
         UIView *view = cell.imageBottom;
-        action.popoverPresentationController.sourceView = view;
-        action.popoverPresentationController.sourceRect = view.bounds;
-        [self presentViewControllerSafe:action];
+        alertController.popoverPresentationController.sourceView = view;
+        alertController.popoverPresentationController.sourceRect = view.bounds;
+        [self presentViewControllerSafe:alertController];
     }
 }
 
@@ -235,7 +236,7 @@
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
     // Return NO if you do not want the specified item to be editable.
     if (indexPath.section == 0) {
-        if ([ActionPerformer checkRight] > 1 || [data[indexPath.row][@"author"] isEqualToString:UID]) {
+        if ([Helper checkRight] > 1 || [data[indexPath.row][@"author"] isEqualToString:UID]) {
             return YES;
         }
     }
@@ -261,7 +262,7 @@
             @"fid" : self.fid,
             @"id" : info[@"id"]
         };
-        [ActionPerformer callApiWithParams:dict toURL:@"lzl" callback:^(NSArray *result, NSError *err) {
+        [Helper callApiWithParams:dict toURL:@"lzl" callback:^(NSArray *result, NSError *err) {
             if (err || result.count == 0) {
                 [hud hideWithFailureMessage:@"删除失败"];
                 return;
@@ -304,7 +305,7 @@
         @"fid" : self.fid,
         @"text" : self.textPost.text
     };
-    [ActionPerformer callApiWithParams:dict toURL:@"lzl" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:dict toURL:@"lzl" callback:^(NSArray *result, NSError *err) {
         if (err || result.count == 0) {
             [hud hideWithFailureMessage:@"发布失败"];
             return;
@@ -324,7 +325,7 @@
 }
 
 - (IBAction)directPost:(id)sender {
-    if (![ActionPerformer checkLogin:YES]) {
+    if (![Helper checkLogin:YES]) {
         return;
     }
     [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:1] atScrollPosition:UITableViewScrollPositionBottom animated:YES];
@@ -359,7 +360,7 @@
         if (indexPath == nil || indexPath.section == 1) {
             return;
         }
-        if (![ActionPerformer checkLogin:NO]) {
+        if (![Helper checkLogin:NO]) {
             return;
         }
         lzlAuthor = data[indexPath.row][@"author"];

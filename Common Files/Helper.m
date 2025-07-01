@@ -1,17 +1,17 @@
 //
-//  ActionPerformer.m
+//  Helper.m
 //  CAPUBBS
 //
 //  Created by 熊典 on 14-2-16.
 //  Copyright (c) 2014年 熊典. All rights reserved.
 //
 
-#import "ActionPerformer.h"
+#import "Helper.h"
 #import "XMLDictionary.h" // XML parsing
 #import <CommonCrypto/CommonCrypto.h> // MD5
 #import "sys/utsname.h" // 设备型号
 
-@implementation ActionPerformer
+@implementation Helper
 
 #pragma mark Web Request
 
@@ -107,14 +107,14 @@
     return [[NSString alloc] initWithData:cleanedData encoding:NSUTF8StringEncoding];
 }
 
-+ (void)callApiWithParams:(NSDictionary *)params toURL:(NSString*)url callback:(ActionPerformerResultBlock)block {
++ (void)callApiWithParams:(NSDictionary *)params toURL:(NSString*)url callback:(ApiCompletionBlock)block {
     NSString *postUrl = [NSString stringWithFormat:@"%@/api/client.php?ask=%@",CHEXIE, url];
 #ifdef DEBUG
     NSLog(@"🌐 Calling API: %@", url);
 #endif
     NSMutableDictionary *requestParams = [@{
         @"os": @"ios",
-        @"device": [ActionPerformer doDevicePlatform],
+        @"device": [Helper doDevicePlatform],
         @"version": [[UIDevice currentDevice] systemVersion],
         @"clientversion": APP_VERSION,
         @"clientbuild": APP_BUILD,
@@ -140,40 +140,42 @@
     request.HTTPBody = bodyData;
     [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
     
-    NSURLSession *session = [NSURLSession sharedSession];
-    NSURLSessionDataTask *task = [session dataTaskWithRequest:request
-                                            completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+    [Downloader loadRequest:request progress:nil completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         if (error) {
-            NSLog(@"API POST error: %@", error);
+            NSLog(@"API error: %@", error);
             dispatch_main_async_safe(^{
                 block(nil, error);
             });
             return;
         }
         
-        BOOL hasError = NO;
-        // Sanity check by encoding to UTF-8. Otherwise it might fail silently with lost data.
-        NSString *xmlString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        if (!xmlString) {
-            NSLog(@"API data corrupted, attempting to recover...");
-            xmlString = [self forceDecodeUTF8StringFromData:data replacement:@"�"];
+        dispatch_global_default_async((^{
+            BOOL hasError = NO;
+            // Sanity check by encoding to UTF-8. Otherwise it might fail silently with lost data.
+            NSString *xmlString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
             if (!xmlString) {
-                NSLog(@"API data recovery failed!");
-                hasError = YES;
-            } else {
-                NSLog(@"API data recovery success!");
+                NSLog(@"API data corrupted, attempting to recover...");
+                xmlString = [self forceDecodeUTF8StringFromData:data replacement:@"�"];
+                if (!xmlString) {
+                    NSLog(@"API data recovery failed!");
+                    hasError = YES;
+                } else {
+                    NSLog(@"API data recovery success!");
+                }
             }
-        }
-        NSDictionary *xmlData = [NSDictionary dictionaryWithXMLString:xmlString];
-        if (!xmlData || ![xmlData[@"__name"] isEqualToString:@"capu"]) {
-            hasError = YES;
-        }
-        if (hasError) {
-            [NOTIFICATION postNotificationName:@"showAlert" object:nil userInfo:@{@"title": @"加载失败", @"message": @"内容解析出现异常\n请使用网页版查看"}];
-            dispatch_main_async_safe(^{
-                block(nil, [NSError errorWithDomain:@"XMLParsing" code:0 userInfo:@{NSLocalizedDescriptionKey: @"XML parsing failed"}]);
-            });
-        } else {
+            NSDictionary *xmlData = [NSDictionary dictionaryWithXMLString:xmlString];
+            if (!xmlData || ![xmlData[@"__name"] isEqualToString:@"capu"]) {
+                hasError = YES;
+            }
+            if (hasError) {
+                [NOTIFICATION postNotificationName:@"showAlert" object:nil userInfo:@{@"title": @"加载失败", @"message": @"内容解析出现异常\n请使用网页版查看"}];
+                NSError *xmlError = [NSError errorWithDomain:@"XMLParsing" code:0 userInfo:@{NSLocalizedDescriptionKey: @"XML parsing failed"}];
+                dispatch_main_async_safe(^{
+                    block(nil, xmlError);
+                });
+                return;
+            }
+            
             id info = xmlData[@"info"];
             NSArray *result;
             if (!info) {
@@ -190,12 +192,12 @@
                 if (code == -999) {
                     errorMessage = @"客户端版本过低，请前往App Store更新版本！";
                 }
-#ifdef DEBUG
+    #ifdef DEBUG
                 // Should never happen in production
                 if (code == 14) {
                     errorMessage = @"API ask错误";
                 }
-#endif
+    #endif
             }
             dispatch_main_async_safe(^{
                 if (errorMessage) {
@@ -205,9 +207,8 @@
                     block(result, nil);
                 }
             });
-        }
+        }));
     }];
-    [task resume];
 }
 
 #pragma mark Common Functions
@@ -267,19 +268,13 @@
 }
 
 + (NSString *)getBoardTitle:(NSString *)bid {
-    NSArray *titles = @[@"车协工作区", @"行者足音", @"车友宝典", @"纯净水", @"考察与社会", @"五湖四海", @"一技之长", @"竞赛竞技", @"网站维护"];
     if ([bid hasPrefix:@"b"]) {
         bid = [bid substringFromIndex:@"b".length];
     }
     if ([bid isEqualToString:@"-1"]) {
         return @"全部版面";
     }
-    for (int i = 0; i < NUMBERS.count; i++) {
-        if ([bid isEqualToString:NUMBERS[i]]) {
-            return titles[i];
-        }
-    }
-    return @"未知版面";
+    return BOARD_TITLE_MAP[bid] ?: @"未知版面";
 }
 
 + (NSString *)htmlStringWithText:(NSString *)text attachments:(NSArray *)attachements sig:(NSString *)sig textSize:(int)textSize {
@@ -680,12 +675,16 @@
         return nil;
     }
     
-    NSString *fileName = path.lastPathComponent;
+    NSString *fileName = [path.lastPathComponent stringByRemovingPercentEncoding];
     if (!fileName.length || !fileName.pathExtension.length) {
         return nil;
     }
 
     return fileName;
+}
+
++ (BOOL)isHttpScheme:(NSString *)scheme {
+    return [scheme isEqualToString:@"http"] || [scheme isEqualToString:@"https"];
 }
 
 + (NSString *)md5:(NSString *)str { // 字符串MD5值算法

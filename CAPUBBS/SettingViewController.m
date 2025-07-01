@@ -62,7 +62,7 @@
 
 - (void)userChanged {
     dispatch_main_async_safe(^{
-        if ([ActionPerformer checkLogin:NO]) {
+        if ([Helper checkLogin:NO]) {
             self.textUid.text = UID;
             self.textUidInfo.text = @"加载中...";
             self.cellUser.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
@@ -79,7 +79,7 @@
 
 - (void)refreshInfo {
     dispatch_main_async_safe((^{
-        if ([ActionPerformer checkLogin:NO] && ![USERINFO isEqual:@""]) {
+        if ([Helper checkLogin:NO] && ![USERINFO isEqual:@""]) {
             NSDictionary *info = USERINFO;
             if ([info[@"sex"] isEqualToString:@"男"]) {
                 self.textUid.text = [info[@"username"] stringByAppendingString:@" ♂"];
@@ -109,8 +109,8 @@
         unsigned long long iconCacheSize = [SettingViewController folderSizeAtPath:IMAGE_CACHE_PATH];
         isCalculatingCache = NO;
         dispatch_main_async_safe((^{
-            self.appCacheSize.text = [ActionPerformer fileSize:cacheSize - iconCacheSize];
-            self.iconCacheSize.text = [ActionPerformer fileSize:iconCacheSize];
+            self.appCacheSize.text = [Helper fileSize:cacheSize - iconCacheSize];
+            self.iconCacheSize.text = [Helper fileSize:iconCacheSize];
         }));
     });
 }
@@ -164,7 +164,7 @@
             [NOTIFICATION postNotificationName:@"sendEmail" object:nil userInfo:@{
                 @"recipients": FEEDBACK_EMAIL,
                 @"subject": @"CAPUBBS iOS客户端反馈",
-                @"body": [NSString stringWithFormat:@"\n设备：%@\n系统：iOS %@\n客户端版本：%@ Build %@", [ActionPerformer doDevicePlatform], [[UIDevice currentDevice] systemVersion], APP_VERSION, APP_BUILD],
+                @"body": [NSString stringWithFormat:@"\n设备：%@\n系统：iOS %@\n客户端版本：%@ Build %@", [Helper doDevicePlatform], [[UIDevice currentDevice] systemVersion], APP_VERSION, APP_BUILD],
                 @"fallbackMessage": @"请前往网络维护板块反馈"
             }];
         } else if (indexPath.row == 4) {

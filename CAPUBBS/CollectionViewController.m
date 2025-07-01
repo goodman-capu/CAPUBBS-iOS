@@ -208,33 +208,33 @@
         [self toggleEditMode:NO animated:YES];
         return;
     }
-    UIAlertController *action = [UIAlertController alertControllerWithTitle:@"个人收藏" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-    [action addAction:[UIAlertAction actionWithTitle:@"按收藏日期查看" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"个人收藏" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"按收藏日期查看" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         sortType = SORT_BY_COLLECTION_DATE;
         [DEFAULTS setObject:@(sortType) forKey:@"viewCollectionType"];
         [self refresh];
     }]];
-    [action addAction:[UIAlertAction actionWithTitle:@"按发帖日期查看" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    [alertController addAction:[UIAlertAction actionWithTitle:@"按发帖日期查看" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         sortType = SORT_BY_POST_DATE;
         [DEFAULTS setObject:@(sortType) forKey:@"viewCollectionType"];
         [self refresh];
     }]];
-    [action addAction:[UIAlertAction actionWithTitle:@"按讨论板块查看" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    [alertController addAction:[UIAlertAction actionWithTitle:@"按讨论板块查看" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         sortType = SORT_BY_BOARD_INDEX;
         [DEFAULTS setObject:@(sortType) forKey:@"viewCollectionType"];
         [self refresh];
     }]];
-    [action addAction:[UIAlertAction actionWithTitle:@"按文章作者查看" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    [alertController addAction:[UIAlertAction actionWithTitle:@"按文章作者查看" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         sortType = SORT_BY_AUTHOR;
         [DEFAULTS setObject:@(sortType) forKey:@"viewCollectionType"];
         [self refresh];
     }]];
-    [action addAction:[UIAlertAction actionWithTitle:@"管理收藏" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    [alertController addAction:[UIAlertAction actionWithTitle:@"管理收藏" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [self toggleEditMode:YES animated:YES];
     }]];
-    [action addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
-    action.popoverPresentationController.barButtonItem = self.buttonOrganize;
-    [[self getVcToShowAlert] presentViewControllerSafe:action];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
+    alertController.popoverPresentationController.barButtonItem = self.buttonOrganize;
+    [[self getVcToShowAlert] presentViewControllerSafe:alertController];
 }
 
 - (IBAction)selectAll:(id)sender {
@@ -307,7 +307,7 @@
         @{
             @"type": @"capubbs_collection",
             @"data": collections,
-            @"sig": [ActionPerformer getSigForData:collections]
+            @"sig": [Helper getSigForData:collections]
         }
     ];
     
@@ -371,7 +371,7 @@
         return [NSString stringWithFormat:@"您一共有%d个收藏", (int)data.count];
     }
     if (sortType == SORT_BY_BOARD_INDEX) {
-        return [ActionPerformer getBoardTitle:sortData[section][0][@"bid"]];
+        return [Helper getBoardTitle:sortData[section][0][@"bid"]];
     }
     if (sortType == SORT_BY_AUTHOR) {
         return sortData[section][0][@"author"] ?: @"未知";
@@ -407,7 +407,7 @@
     
     NSString *postTime = dict[@"time"];
     if (sortType == SORT_BY_AUTHOR) {
-        NSString *boardTitle = [ActionPerformer getBoardTitle:dict[@"bid"]];
+        NSString *boardTitle = [Helper getBoardTitle:dict[@"bid"]];
         if (postTime.length > 0) {
             cell.labelSubtitle.text = [NSString stringWithFormat:@"%@  %@", boardTitle, postTime];
         } else {

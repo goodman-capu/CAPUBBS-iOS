@@ -23,7 +23,7 @@
 @property (weak, nonatomic) IBOutlet UIButton *buttonPic;
 @property (weak, nonatomic) IBOutlet UIButton *buttonTools;
 @property (weak, nonatomic) IBOutlet UIButton *buttonAttachments;
-@property (weak, nonatomic) IBOutlet UISegmentedControl *segmentedControl;
+@property (weak, nonatomic) IBOutlet UISegmentedControl *segmentSig;
 @property (weak, nonatomic) IBOutlet UIView *viewTools;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *constraintTop;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *constraintBottom;
@@ -36,5 +36,6 @@
 @property NSString *floor;
 @property BOOL isEdit;
 @property BOOL showEditOthersAlert;
+@property NSString *defaultSigIndex;
 
 @end

@@ -181,18 +181,18 @@
     }
     
     [NOTIFICATION postNotificationName:@"addContent" object:nil userInfo:@{ @"HTML" : text }];
-    UIAlertController *action = [UIAlertController alertControllerWithTitle:@"插入成功" message:@"请选择下一步操作" preferredStyle:UIAlertControllerStyleAlert];
-    [action addAction:[UIAlertAction actionWithTitle:@"清空输入并继续" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"插入成功" message:@"请选择下一步操作" preferredStyle:UIAlertControllerStyleAlert];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"清空输入并继续" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         self.textInput.text = @"";;
         [self.textInput becomeFirstResponder];
     }]];
-    [action addAction:[UIAlertAction actionWithTitle:@"直接继续" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    [alertController addAction:[UIAlertAction actionWithTitle:@"直接继续" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [self.textInput becomeFirstResponder];
     }]];
-    [action addAction:[UIAlertAction actionWithTitle:@"返回发帖" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+    [alertController addAction:[UIAlertAction actionWithTitle:@"返回发帖" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
         [self.navigationController popViewControllerAnimated:YES];
     }]];
-    [self presentViewControllerSafe:action];
+    [self presentViewControllerSafe:alertController];
 }
 
 #pragma mark - Table view data source

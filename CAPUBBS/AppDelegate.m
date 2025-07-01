@@ -50,8 +50,7 @@
     UIToolbar *toolbarAppearance = [UIToolbar appearance];
     if (@available(iOS 13.0, *)) {
         UIToolbarAppearance *appearance = [[UIToolbarAppearance alloc] init];
-        [appearance configureWithOpaqueBackground];
-        appearance.backgroundColor = [UIColor whiteColor];
+//        [appearance configureWithOpaqueBackground];
         
         toolbarAppearance.tintColor = BLUE;
         toolbarAppearance.standardAppearance = appearance;
@@ -62,7 +61,7 @@
         }
     } else {
         [toolbarAppearance setTintColor:BLUE];
-        [toolbarAppearance setTranslucent:NO];
+//        [toolbarAppearance setTranslucent:NO];
     }
     
     
@@ -111,7 +110,7 @@
     [NOTIFICATION addObserver:self selector:@selector(collectionChanged) name:@"collectionChanged" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(sendEmail:) name:@"sendEmail" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(previewFile:) name:@"previewFile" object:nil];
-    if ([ActionPerformer checkLogin:NO] && [[DEFAULTS objectForKey:@"autoLogin"] boolValue]) {
+    if ([Helper checkLogin:NO] && [[DEFAULTS objectForKey:@"autoLogin"] boolValue]) {
         [self login:nil];
     }
     return YES;
@@ -136,7 +135,7 @@
     NSLog(@"Become Active");
     // 返回后自动登录
     // 条件为 已登录 或 不是第一次打开软件且开启了自动登录
-    if (([ActionPerformer checkLogin:NO] || [[DEFAULTS objectForKey:@"autoLogin"] boolValue]) && wakeLogin) {
+    if (([Helper checkLogin:NO] || [[DEFAULTS objectForKey:@"autoLogin"] boolValue]) && wakeLogin) {
         [self login:nil];
     }
     wakeLogin = YES;
@@ -152,7 +151,7 @@
     });
     
 #ifdef DEBUG
-//    [self openLink:[ActionPerformer getLink:@"https://www.chexie.net/bbs/content/?p=25&bid=4&tid=19837#293"] postTitle:nil];
+//    [self openLink:[Helper getLink:@"https://www.chexie.net/bbs/content/?p=25&bid=4&tid=19837#293"] postTitle:nil];
 #endif
     
     // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
@@ -361,7 +360,7 @@
     BOOL isCompose = activityInfo && [activityInfo[@"type"] isEqualToString:@"compose"];
     NSDictionary *linkInfo;
     if (userActivity.webpageURL && userActivity.webpageURL.absoluteString.length > 0) {
-        linkInfo = [ActionPerformer getLink:userActivity.webpageURL.absoluteString];
+        linkInfo = [Helper getLink:userActivity.webpageURL.absoluteString];
     }
     // From universal link or handfoff
     if ([linkInfo[@"bid"] length] > 0) {
@@ -424,7 +423,7 @@
         BOOL hasValidCollection = NO;
         if ([importData isKindOfClass:[NSArray class]]) {
             for (id item in importData) {
-                if ([item isKindOfClass:[NSDictionary class]] && item[@"type"] && item[@"data"] && item[@"sig"] && [[ActionPerformer getSigForData:item[@"data"]] isEqualToString:item[@"sig"]]) {
+                if ([item isKindOfClass:[NSDictionary class]] && item[@"type"] && item[@"data"] && item[@"sig"] && [[Helper getSigForData:item[@"data"]] isEqualToString:item[@"sig"]]) {
                     if (!hasValidCollection && [item[@"type"] isEqualToString:@"capubbs_collection"] && [item[@"data"] isKindOfClass:[NSArray class]]) {
                         hasValidCollection = YES;
                         [self _handleImportCollectionData:item[@"data"]];
@@ -650,7 +649,7 @@
             if (author.length > 0) {
                 text = [NSString stringWithFormat:@"%@ - %@", author, text];
             } else if (bid) {
-                text = [NSString stringWithFormat:@"%@ - %@", [ActionPerformer getBoardTitle:bid], text];
+                text = [NSString stringWithFormat:@"%@ - %@", [Helper getBoardTitle:bid], text];
             }
         }
         attr.textContent = text;
@@ -732,9 +731,9 @@
     }
     NSDictionary *dict = @{
         @"username" : uid,
-        @"password" : [ActionPerformer md5:PASS],
+        @"password" : [Helper md5:PASS],
     };
-    [ActionPerformer callApiWithParams:dict toURL:@"login" callback:^(NSArray *result,NSError *err) {
+    [Helper callApiWithParams:dict toURL:@"login" callback:^(NSArray *result,NSError *err) {
         BOOL success = !err && result.count > 0 && [result[0][@"code"] isEqualToString:@"0"];
         if (!success) {
             if ([UIApplication sharedApplication].applicationState == UIApplicationStateActive) {
@@ -762,47 +761,37 @@
     NSTimeInterval time = [currentDate timeIntervalSinceDate:lastDate];
     if (time > 3600 * 24) { // 每隔1天检测一次更新
         NSLog(@"Check For Update");
-        dispatch_global_default_async(^{
-            [self checkUpdate:^(BOOL success) {
-                if (!success) {
-                    // 如果7天没成功检查更新，提示失败
-                    if (time > 7 * 3600 * 24) {
-                        [[AppDelegate getTopViewController] showAlertWithTitle:@"警告" message:@"向App Store检查更新失败，请检查您的网络连接！"];
-                        [DEFAULTS setObject:[formatter stringFromDate:currentDate] forKey:@"checkUpdate"];
-                    }
-                } else {
+        [self checkUpdate:^(BOOL success) {
+            if (!success) {
+                // 如果7天没成功检查更新，提示失败
+                if (time > 7 * 3600 * 24) {
+                    [[AppDelegate getTopViewController] showAlertWithTitle:@"警告" message:@"向App Store检查更新失败，请检查您的网络连接！"];
                     [DEFAULTS setObject:[formatter stringFromDate:currentDate] forKey:@"checkUpdate"];
                 }
-            }];
-        });
+            } else {
+                [DEFAULTS setObject:[formatter stringFromDate:currentDate] forKey:@"checkUpdate"];
+            }
+        }];
     } else {
         NSLog(@"Needn't Check Update");
     }
 }
 
 - (void)checkUpdate:(void (^)(BOOL success))callback {
-    NSString *currentVersion = APP_VERSION;
-//    currentVersion = @"3.9.5";
-    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] init];
-    [request setURL:[NSURL URLWithString:@"https://itunes.apple.com/lookup?id=826386033"]];
-    [request setHTTPMethod:@"POST"];
-    
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession]
-                                  dataTaskWithRequest:request
-                                  completionHandler:^(NSData * _Nullable data,
-                                                      NSURLResponse * _Nullable response,
-                                                      NSError * _Nullable error) {
-        
+    dispatch_global_default_async((^{
+        NSString *currentVersion = APP_VERSION;
+//        currentVersion = @"3.9.5";
+        NSError *error;
+        NSData *data = [NSData dataWithContentsOfURL:[NSURL URLWithString:@"https://itunes.apple.com/lookup?id=826386033"] options:NSDataReadingMappedIfSafe error:&error];
         if (error || !data) {
             NSLog(@"Check Update Failed: %@", error);
             callback(NO);
             return;
         }
         
-        NSError *jsonError = nil;
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
-        if (!json || jsonError) {
-            NSLog(@"JSON Parse Error: %@", jsonError);
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+        if (error || !json) {
+            NSLog(@"JSON Parse Error: %@", error);
             callback(NO);
             return;
         }
@@ -825,8 +814,7 @@
                 [[UIApplication sharedApplication] openURL:[NSURL URLWithString:newVerURL] options:@{} completionHandler:nil];
             } cancelTitle:@"暂不"];
         }
-    }];
-    [task resume];
+    }));
 }
 
 @end
