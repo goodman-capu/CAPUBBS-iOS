@@ -471,7 +471,7 @@
             int successCount = 0;
             int duplicateCount = 0;
             int failCount = 0;
-            NSMutableArray *collections = [[DEFAULTS objectForKey:@"collection"] mutableCopy];
+            NSMutableArray *collections = [NSMutableArray arrayWithArray:[DEFAULTS objectForKey:@"collection"]];
             for (id newItem in data) {
                 if (![newItem isKindOfClass:[NSDictionary class]]) {
                     failCount++;

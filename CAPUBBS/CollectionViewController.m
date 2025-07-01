@@ -131,7 +131,7 @@
 
 - (void)refresh {
     dispatch_global_default_async(^{
-        data = [[DEFAULTS objectForKey:@"collection"] mutableCopy];
+        data = [NSMutableArray arrayWithArray:[DEFAULTS objectForKey:@"collection"]];
         [self sortData];
         
         dispatch_main_async_safe(^{

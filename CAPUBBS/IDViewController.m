@@ -143,7 +143,7 @@
 
 - (void)userChanged:(NSNotification*)noti {
     dispatch_main_async_safe(^{
-        data = [[DEFAULTS objectForKey:@"ID"] mutableCopy];
+        data = [NSMutableArray arrayWithArray:[DEFAULTS objectForKey:@"ID"]];
         isDelete = NO;
         self.buttonLogout.enabled = ([UID length] > 0);
         [self.tableView reloadData];
