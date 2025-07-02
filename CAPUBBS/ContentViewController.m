@@ -362,6 +362,7 @@ static const CGFloat kWebViewMinHeight = 40;
 
 - (IBAction)jump:(id)sender {
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"跳转页面" message:[NSString stringWithFormat:@"请输入页码(1-%@)",[data lastObject] [@"pages"]] preferredStyle:UIAlertControllerStyleAlert];
+    __weak typeof(alertController) weakAlertController = alertController; // 避免循环引用
     [alertController addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
         textField.placeholder = @"页码";
         textField.keyboardType = UIKeyboardTypeNumberPad;
@@ -372,7 +373,11 @@ static const CGFloat kWebViewMinHeight = 40;
     [alertController addAction:[UIAlertAction actionWithTitle:@"好"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        NSString *pageip = alertController.textFields.firstObject.text;
+        __strong typeof(weakAlertController) alertController = weakAlertController;
+        if (!alertController) {
+            return;
+        }
+        NSString *pageip = alertController.textFields[0].text;
         int pagen = [pageip intValue];
         if (pagen <= 0 || pagen > [[data lastObject] [@"pages"] integerValue]) {
             [self showAlertWithTitle:@"错误" message:@"输入不合法"];

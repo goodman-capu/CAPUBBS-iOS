@@ -30,4 +30,8 @@
 
 + (UIViewController *)getTopViewController;
 
++ (UIView *)keyboardToolViewWithLeftButtons:(NSArray<UIButton *> *)leftButtons rightButtons:(NSArray<UIButton *> *)rightButtons;
+
++ (UIButton *)keyboardToolButtonWithTitle:(NSString *)title target:(id)target action:(SEL)action;
+
 @end

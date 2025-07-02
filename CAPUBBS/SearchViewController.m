@@ -101,19 +101,18 @@
     self.inputStart.inputView = startDatePicker;
     self.inputEnd.text = [formatter stringFromDate:today];
     self.inputEnd.inputView = endDatePicker;
-    UIToolbar *toolbar1 = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, 1000, 40)];
-    UIToolbar *toolbar2 = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, 1000, 40)];
-    UIBarButtonItem *jump1 = [[UIBarButtonItem alloc] initWithTitle:@"下一个" style:UIBarButtonItemStylePlain target:self action:@selector(next1)];
-    UIBarButtonItem *jump2 = [[UIBarButtonItem alloc] initWithTitle:@"上一个" style:UIBarButtonItemStylePlain target:self action:@selector(next2)];
-    UIBarButtonItem *blank = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil];
-    UIBarButtonItem *cancel1 = [[UIBarButtonItem alloc] initWithTitle:@"取消" style:UIBarButtonItemStylePlain target:self action:@selector(cancel1)];
-    UIBarButtonItem *cancel2 = [[UIBarButtonItem alloc] initWithTitle:@"取消" style:UIBarButtonItemStylePlain target:self action:@selector(cancel2)];
-    UIBarButtonItem *done1 = [[UIBarButtonItem alloc] initWithTitle:@"完成" style:UIBarButtonItemStylePlain target:self action:@selector(sure1)];
-    UIBarButtonItem *done2 = [[UIBarButtonItem alloc] initWithTitle:@"完成" style:UIBarButtonItemStylePlain target:self action:@selector(sure2)];
-    toolbar1.items = @[jump1, blank, cancel1, done1];
-    self.inputStart.inputAccessoryView = toolbar1;
-    toolbar2.items = @[jump2, blank, cancel2, done2];
-    self.inputEnd.inputAccessoryView = toolbar2;
+    self.inputStart.inputAccessoryView = [AppDelegate keyboardToolViewWithLeftButtons:@[
+        [AppDelegate keyboardToolButtonWithTitle:@"下一个" target:self action:@selector(next1)],
+    ] rightButtons:@[
+        [AppDelegate keyboardToolButtonWithTitle:@"取消" target:self action:@selector(cancel1)],
+        [AppDelegate keyboardToolButtonWithTitle:@"完成" target:self action:@selector(sure1)],
+    ]];
+    self.inputEnd.inputAccessoryView = [AppDelegate keyboardToolViewWithLeftButtons:@[
+        [AppDelegate keyboardToolButtonWithTitle:@"上一个" target:self action:@selector(next2)],
+    ] rightButtons:@[
+        [AppDelegate keyboardToolButtonWithTitle:@"取消" target:self action:@selector(cancel2)],
+        [AppDelegate keyboardToolButtonWithTitle:@"完成" target:self action:@selector(sure2)],
+    ]];
 }
 
 - (void)cancel1 {

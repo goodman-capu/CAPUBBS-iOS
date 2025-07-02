@@ -439,6 +439,7 @@
         [alertController addAction:[UIAlertAction actionWithTitle:@"抢沙发模式" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             
             UIAlertController *alertControllerSofa = [UIAlertController alertControllerWithTitle:@"进入抢沙发模式" message:@"版面将持续刷新直至刷出非工作区新帖并且成功回复指定内容为止" preferredStyle:UIAlertControllerStyleAlert];
+            __weak typeof(alertController) weakAlertController = alertController; // 避免循环引用
             [alertControllerSofa addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
                 textField.placeholder = @"请指定回复内容，默认为“沙发”";
             }];
@@ -474,6 +475,7 @@
 
 - (IBAction)jump:(id)sender {
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"跳转页面" message:[NSString stringWithFormat:@"请输入页码(1-%@)",[data lastObject][@"pages"]] preferredStyle:UIAlertControllerStyleAlert];
+    __weak typeof(alertController) weakAlertController = alertController; // 避免循环引用
     [alertController addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
         textField.placeholder = @"页码";
         textField.keyboardType = UIKeyboardTypeNumberPad;
@@ -484,7 +486,11 @@
     [alertController addAction:[UIAlertAction actionWithTitle:@"好"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        NSString *pageip = alertController.textFields.firstObject.text;
+        __strong typeof(weakAlertController) alertController = weakAlertController;
+        if (!alertController) {
+            return;
+        }
+        NSString *pageip = alertController.textFields[0].text;
         NSInteger pagen = [pageip integerValue];
         if (pagen <= 0 || pagen > [[data lastObject][@"pages"] integerValue]) {
             [self showAlertWithTitle:@"错误" message:@"输入不合法"];

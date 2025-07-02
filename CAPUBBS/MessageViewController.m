@@ -235,6 +235,7 @@
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"发送私信"
                                                                    message:@"请输入对方的用户名"
                                                             preferredStyle:UIAlertControllerStyleAlert];
+    __weak typeof(alertController) weakAlertController = alertController; // 避免循环引用
     [alertController addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
         textField.placeholder = @"用户名";
     }];
@@ -244,7 +245,11 @@
     [alertController addAction:[UIAlertAction actionWithTitle:@"开始"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        NSString *userName = alertController.textFields.firstObject.text;
+        __strong typeof(weakAlertController) alertController = weakAlertController;
+        if (!alertController) {
+            return;
+        }
+        NSString *userName = alertController.textFields[0].text;
         if (userName.length == 0) {
             [self showAlertWithTitle:@"错误" message:@"用户名不能为空"];
         } else {

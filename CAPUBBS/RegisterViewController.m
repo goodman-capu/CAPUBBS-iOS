@@ -299,6 +299,7 @@
                 case 0: {
                     if (self.textPsd.text.length > 0) {
                         UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"验证密码" message:@"您选择了修改密码\n请输入原密码以验证身份" preferredStyle:UIAlertControllerStyleAlert];
+                        __weak typeof(alertController) weakAlertController = alertController; // 避免循环引用
                         [alertController addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
                             textField.placeholder = @"原密码";
                             textField.secureTextEntry = YES;
@@ -309,7 +310,11 @@
                             });
                         }]];
                         [alertController addAction:[UIAlertAction actionWithTitle:@"确认" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                            NSString *oldPassword = alertController.textFields.firstObject.text;
+                            __strong typeof(weakAlertController) alertController = weakAlertController;
+                            if (!alertController) {
+                                return;
+                            }
+                            NSString *oldPassword = alertController.textFields[0].text;
                             [self changePasswordWithOldPassword:oldPassword];
                         }]];
                         [self presentViewControllerSafe:alertController];

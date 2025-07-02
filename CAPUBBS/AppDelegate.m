@@ -161,6 +161,61 @@
     // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
 }
 
++ (UIViewController *)getTopViewController {
+    __block UIViewController *topVC;
+    dispatch_main_sync_safe(^{
+        topVC = [UIApplication sharedApplication].keyWindow.rootViewController;
+        while (topVC.presentedViewController && !topVC.presentedViewController.isBeingDismissed && ![topVC isKindOfClass:[UIAlertController class]]) {
+            topVC = topVC.presentedViewController;
+        }
+    });
+    return topVC;
+}
+
++ (UIView *)keyboardToolViewWithLeftButtons:(NSArray<UIButton *> *)leftButtons
+                                rightButtons:(NSArray<UIButton *> *)rightButtons {
+    UIView *keyboardToolView = [[UIView alloc] init];
+    keyboardToolView.translatesAutoresizingMaskIntoConstraints = NO;
+    keyboardToolView.frame = CGRectMake(0, 0, UIScreen.mainScreen.bounds.size.width, 40);
+
+    // 左侧 Stack
+    UIStackView *leftStack = [[UIStackView alloc] initWithArrangedSubviews:leftButtons];
+    leftStack.axis = UILayoutConstraintAxisHorizontal;
+    leftStack.spacing = 16;
+    leftStack.translatesAutoresizingMaskIntoConstraints = NO;
+
+    // 右侧 Stack
+    UIStackView *rightStack = [[UIStackView alloc] initWithArrangedSubviews:rightButtons];
+    rightStack.axis = UILayoutConstraintAxisHorizontal;
+    rightStack.spacing = 16;
+    rightStack.translatesAutoresizingMaskIntoConstraints = NO;
+
+    [keyboardToolView addSubview:leftStack];
+    [keyboardToolView addSubview:rightStack];
+
+    // 设置 Auto Layout 约束
+    [NSLayoutConstraint activateConstraints:@[
+        // 左侧 stack 靠左
+        [leftStack.leadingAnchor constraintEqualToAnchor:keyboardToolView.leadingAnchor constant:16],
+        [leftStack.centerYAnchor constraintEqualToAnchor:keyboardToolView.centerYAnchor],
+
+        // 右侧 stack 靠右
+        [rightStack.trailingAnchor constraintEqualToAnchor:keyboardToolView.trailingAnchor constant:-16],
+        [rightStack.centerYAnchor constraintEqualToAnchor:keyboardToolView.centerYAnchor],
+    ]];
+
+    return keyboardToolView;
+}
+
++ (UIButton *)keyboardToolButtonWithTitle:(NSString *)title target:(id)target action:(SEL)action {
+    UIButton *btn = [UIButton buttonWithType:UIButtonTypeSystem];
+    [btn setTitle:title forState:UIControlStateNormal];
+    btn.titleLabel.font = [UIFont systemFontOfSize:18];
+    btn.translatesAutoresizingMaskIntoConstraints = NO;
+    [btn addTarget:target action:action forControlEvents:UIControlEventTouchUpInside];
+    return btn;
+}
+
 - (void)transferDefaults {
     NSUserDefaults *appGroup = GROUP_DEFAULTS;
     if (![[appGroup objectForKey:@"activated"] boolValue]) {
@@ -174,17 +229,6 @@
         [appGroup setObject:@(YES) forKey:@"activated"];
         [appGroup synchronize];
     }
-}
-
-+ (UIViewController *)getTopViewController {
-    __block UIViewController *topVC;
-    dispatch_main_sync_safe(^{
-        topVC = [UIApplication sharedApplication].keyWindow.rootViewController;
-        while (topVC.presentedViewController && !topVC.presentedViewController.isBeingDismissed && ![topVC isKindOfClass:[UIAlertController class]]) {
-            topVC = topVC.presentedViewController;
-        }
-    });
-    return topVC;
 }
 
 - (void)showAlert:(NSNotification *)noti {

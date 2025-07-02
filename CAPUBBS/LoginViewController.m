@@ -8,7 +8,6 @@
 
 #import "LoginViewController.h"
 #import <AudioToolbox/AudioToolbox.h>
-#import "AppDelegate.h"
 #import "ContentViewController.h"
 #import "WebViewController.h"
 
@@ -177,6 +176,7 @@
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"添加公告"
                                                                    message:@"请填写公告的标题和链接\n链接可以为空"
                                                             preferredStyle:UIAlertControllerStyleAlert];
+    __weak typeof(alertController) weakAlertController = alertController; // 避免循环引用
     [alertController addTextFieldWithConfigurationHandler:^(UITextField *textField) {
         textField.placeholder = @"标题";
     }];
@@ -190,6 +190,10 @@
     [alertController addAction:[UIAlertAction actionWithTitle:@"添加"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
+        __strong typeof(weakAlertController) alertController = weakAlertController;
+        if (!alertController) {
+            return;
+        }
         NSString *text = alertController.textFields[0].text;
         NSString *url = alertController.textFields[1].text;
         if (text.length == 0) {

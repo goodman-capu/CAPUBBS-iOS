@@ -497,6 +497,7 @@
             totalRowCount += [self.tableView numberOfRowsInSection:section];
         }
         self.buttonSelectAll.enabled = selectedCount < totalRowCount;
+        self.buttonSelectReverse.enabled = totalRowCount > 0;
         self.buttonShare.enabled = selectedCount > 0;
         self.buttonTrash.enabled = selectedCount > 0;
     });

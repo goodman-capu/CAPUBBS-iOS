@@ -212,16 +212,17 @@
 
 - (void)initiateToolBar {
     toolbarEditor = [[DEFAULTS objectForKey:@"toolbarEditor"] intValue];
-    toolbar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, 1000, 40)];
-    UIBarButtonItem *saveD = [[UIBarButtonItem alloc] initWithTitle:@" 📥 " style:UIBarButtonItemStylePlain target:self action:@selector(saveDraft:)];
-    UIBarButtonItem *restoreD = [[UIBarButtonItem alloc] initWithTitle:@" 📤 " style:UIBarButtonItemStylePlain target:self action:@selector(restoreDraft:)];
-    UIBarButtonItem *blank = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil];
-    UIBarButtonItem *addAt = [[UIBarButtonItem alloc] initWithTitle:@" 🔔 " style:UIBarButtonItemStylePlain target:self action:@selector(addAt:)];
-    UIBarButtonItem *addLink = [[UIBarButtonItem alloc] initWithTitle:@" 🔗 " style:UIBarButtonItemStylePlain target:self action:@selector(addLink:)];
-    UIBarButtonItem *changeText = [[UIBarButtonItem alloc] initWithTitle:@" 🎨 " style:UIBarButtonItemStylePlain target:self action:@selector(changeText)];
-    UIBarButtonItem *addFace = [[UIBarButtonItem alloc] initWithTitle:@" 😀 " style:UIBarButtonItemStylePlain target:self action:@selector(addFace)];
-    UIBarButtonItem *addPic = [[UIBarButtonItem alloc] initWithTitle:@" 📷 " style:UIBarButtonItemStylePlain target:self action:@selector(addPic:)];
-    toolbar.items = @[saveD, restoreD, blank, addAt, addLink, changeText, addFace, addPic];
+    keyboardToolView = [AppDelegate keyboardToolViewWithLeftButtons:@[
+        [AppDelegate keyboardToolButtonWithTitle:@"📥" target:self action:@selector(saveDraft:)],
+        [AppDelegate keyboardToolButtonWithTitle:@"📤" target:self action:@selector(restoreDraft:)]
+    ] rightButtons:@[
+        [AppDelegate keyboardToolButtonWithTitle:@"🔔" target:self action:@selector(addAt:)],
+        [AppDelegate keyboardToolButtonWithTitle:@"🔗" target:self action:@selector(addLink:)],
+        [AppDelegate keyboardToolButtonWithTitle:@"🎨" target:self action:@selector(changeText)],
+        [AppDelegate keyboardToolButtonWithTitle:@"😀" target:self action:@selector(addFace)],
+        [AppDelegate keyboardToolButtonWithTitle:@"📷" target:self action:@selector(addPic:)]
+    ]];
+    
     [self showToolbar];
 }
 
@@ -231,7 +232,7 @@
         [self.viewTools setHidden:NO];
         self.constraintTop.constant = 66;
     } else if (toolbarEditor == 1) {
-        self.textBody.inputAccessoryView = toolbar;
+        self.textBody.inputAccessoryView = keyboardToolView;
         [self.viewTools setHidden:YES];
         self.constraintTop.constant = 8;
     } else if (toolbarEditor == 2) {
@@ -410,6 +411,7 @@
         UIAlertController *alertControllerLink = [UIAlertController alertControllerWithTitle:@"插入照片"
                                                                        message:@"请输入图片链接"
                                                                 preferredStyle:UIAlertControllerStyleAlert];
+        __weak typeof(alertController) weakAlertController = alertController; // 避免循环引用
         [alertControllerLink addTextFieldWithConfigurationHandler:^(UITextField *textField) {
             textField.placeholder = @"链接";
             textField.keyboardType = UIKeyboardTypeURL;
@@ -693,6 +695,7 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"插入@/引用"
                                                                    message:@"请输入用户和正文\n正文若为空将使用@形式"
                                                             preferredStyle:UIAlertControllerStyleAlert];
+    __weak typeof(alertController) weakAlertController = alertController; // 避免循环引用
     [alertController addTextFieldWithConfigurationHandler:^(UITextField *textField) {
         textField.placeholder = @"用户";
     }];
@@ -705,6 +708,10 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
     [alertController addAction:[UIAlertAction actionWithTitle:@"插入"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
+        __strong typeof(weakAlertController) alertController = weakAlertController;
+        if (!alertController) {
+            return;
+        }
         NSString *user = alertController.textFields[0].text;
         NSString *body = alertController.textFields[1].text;
         if (user.length == 0) {
@@ -723,14 +730,19 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
 - (IBAction)addLink:(id)sender {
     NSString *text = [self.textBody.text substringWithRange:self.textBody.selectedRange];
     if (text.length > 0) {
-        [self.textBody insertText:[NSString stringWithFormat:@"[url=%@]%@[/url]", text, text]];
-        return;
+        NSString *textLower = text.lowercaseString;
+        if ([textLower hasPrefix:@"http://"] || [textLower hasPrefix:@"https://"] || [textLower hasPrefix:@"/"]) {
+            [self.textBody insertText:[NSString stringWithFormat:@"[url]%@[/url]", text]];
+            return;
+        }
     }
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"插入链接"
                                                                    message:@"请输入链接的标题和网址"
                                                             preferredStyle:UIAlertControllerStyleAlert];
+    __weak typeof(alertController) weakAlertController = alertController; // 避免循环引用
     [alertController addTextFieldWithConfigurationHandler:^(UITextField *textField) {
         textField.placeholder = @"标题";
+        textField.text = text;
     }];
     [alertController addTextFieldWithConfigurationHandler:^(UITextField *textField) {
         textField.placeholder = @"网址";
@@ -742,6 +754,10 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
     [alertController addAction:[UIAlertAction actionWithTitle:@"插入"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
+        __strong typeof(weakAlertController) alertController = weakAlertController;
+        if (!alertController) {
+            return;
+        }
         NSString *title = alertController.textFields[0].text;
         NSString *url = alertController.textFields[1].text;
         if (url.length == 0) {

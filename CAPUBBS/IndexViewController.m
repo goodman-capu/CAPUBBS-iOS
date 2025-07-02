@@ -8,7 +8,6 @@
 
 #import "IndexViewController.h"
 #import "IndexViewCell.h"
-#import "AppDelegate.h"
 #import "ListViewController.h"
 #import "ContentViewController.h"
 #import "SettingViewController.h"
@@ -155,7 +154,7 @@
 
 - (IBAction)smart:(id)sender {
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"快速访问" message:[NSString stringWithFormat: @"输入带有帖子链接的文本进行快速访问\n\n高级功能\n输入要连接的论坛地址\n目前地址：%@\n链接会被自动判别", CHEXIE] preferredStyle:UIAlertControllerStyleAlert];
-    
+    __weak typeof(alertController) weakAlertController = alertController; // 避免循环引用
     [alertController addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
         textField.keyboardType = UIKeyboardTypeURL;
         textField.text = @"https://www.chexie.net";
@@ -167,7 +166,11 @@
     [alertController addAction:[UIAlertAction actionWithTitle:@"确认"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        [self multiAction:alertController.textFields.firstObject.text];
+        __strong typeof(weakAlertController) alertController = weakAlertController;
+        if (!alertController) {
+            return;
+        }
+        [self multiAction:alertController.textFields[0].text];
     }]];
     [self presentViewControllerSafe:alertController];
 }

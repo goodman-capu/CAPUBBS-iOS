@@ -13,7 +13,7 @@
     MBProgressHUD *hud;
     NSUserActivity *activity;
     int toolbarEditor;
-    UIToolbar *toolbar;
+    UIView *keyboardToolView;
 }
 
 @property (weak, nonatomic) IBOutlet UITextField *textTitle;

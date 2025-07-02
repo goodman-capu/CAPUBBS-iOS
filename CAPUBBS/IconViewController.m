@@ -192,19 +192,24 @@
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"选择图片来源" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
 //    [alertController addAction:[UIAlertAction actionWithTitle:@"网址链接" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
 //        UIAlertController *alertControllerLink = [UIAlertController alertControllerWithTitle:@"设置头像"
-//                                                                       message:@"请输入图片链接"
-//                                                                preferredStyle:UIAlertControllerStyleAlert];
+//                                                                                     message:@"请输入图片链接"
+//                                                                              preferredStyle:UIAlertControllerStyleAlert];
 //        
 //        [alertControllerLink addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
 //            textField.keyboardType = UIKeyboardTypeURL;
 //            textField.placeholder = @"链接";
 //        }];
+//        __weak typeof(alertController) weakAlertController = alertController; // 避免循环引用
 //        [alertControllerLink addAction:[UIAlertAction actionWithTitle:@"取消"
-//                                                  style:UIAlertActionStyleCancel
-//                                                handler:nil]];
+//                                                                style:UIAlertActionStyleCancel
+//                                                              handler:nil]];
 //        [alertControllerLink addAction:[UIAlertAction actionWithTitle:@"确认"
-//                                                  style:UIAlertActionStyleDefault
-//                                                handler:^(UIAlertAction * _Nonnull action) {
+//                                                                style:UIAlertActionStyleDefault
+//                                                              handler:^(UIAlertAction * _Nonnull action) {
+//            __strong typeof(weakAlertController) alertController = weakAlertController;
+//            if (!alertController) {
+//                return;
+//            }
 //            NSString *url = alertControllerLink.textFields.firstObject.text;
 //            if (url.length > 0) {
 //                [NOTIFICATION postNotificationName:@"selectIcon" object:nil userInfo:@{

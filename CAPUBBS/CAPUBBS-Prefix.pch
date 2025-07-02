@@ -5,6 +5,7 @@
 //
 
 #import <Availability.h>
+#import "AppDelegate.h"
 #import "CommonDefinitions.h"
 #import "CustomProgressHUD.h"
 #import "CustomViewControllers.h"

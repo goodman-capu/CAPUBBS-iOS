@@ -8,7 +8,6 @@
 
 #import "CustomWebViewContainer.h"
 //#import <CommonCrypto/CommonCrypto.h>
-#import "AppDelegate.h"
 
 // Just a random UUID
 #define UUID @"1ff24b67-2a92-41d9-9139-18be48987f3a"
@@ -264,12 +263,17 @@ static dispatch_once_t onceSharedDataSource;
     };
     
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:[CustomWebViewContainer getAlertTitle:frame] message:prompt preferredStyle:UIAlertControllerStyleAlert];
+    __weak typeof(alertController) weakAlertController = alertController; // 避免循环引用
     [alertController addTextFieldWithConfigurationHandler:^(UITextField * textField) {
         textField.text = defaultText;
     }];
     [alertController addAction:[UIAlertAction actionWithTitle:@"确定"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * action) {
+        __strong typeof(weakAlertController) alertController = weakAlertController;
+        if (!alertController) {
+            return;
+        }
         NSString *input = alertController.textFields.firstObject.text;
         if (!safeHandler(input)) {
             [self showTimeoutMessage];

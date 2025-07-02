@@ -33,6 +33,7 @@
         url = [NSURL URLWithString:self.URL];
     }
     
+    self.navigationItem.rightBarButtonItems = @[self.buttonStop];
     [self.webViewContainer.webView loadRequest:[NSURLRequest requestWithURL:url]];
     // Do any additional setup after loading the view.
 }
