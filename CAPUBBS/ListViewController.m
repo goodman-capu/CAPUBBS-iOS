@@ -449,7 +449,11 @@
             [alertControllerSofa addAction:[UIAlertAction actionWithTitle:@"开始"
                                                       style:UIAlertActionStyleDefault
                                                     handler:^(UIAlertAction * _Nonnull action) {
-                sofaContent = alertControllerSofa.textFields.firstObject.text;
+                __strong typeof(weakAlertController) alertController = weakAlertController;
+                if (!alertController) {
+                    return;
+                }
+                sofaContent = alertControllerSofa.textFields[0].text;
                 if ([sofaContent hasPrefix:@"fast"]) {
                     isFastRobSofa = YES;
                     sofaContent = [sofaContent substringFromIndex:@"fast".length];

@@ -424,6 +424,10 @@
         [alertControllerLink addAction:[UIAlertAction actionWithTitle:@"插入"
                                                   style:UIAlertActionStyleDefault
                                                 handler:^(UIAlertAction * _Nonnull action) {
+            __strong typeof(weakAlertController) alertController = weakAlertController;
+            if (!alertController) {
+                return;
+            }
             NSString *url = alertControllerLink.textFields[0].text;
             [self.textBody insertText:[NSString stringWithFormat:@"[img]%@[/img]", url]];
             [self.textBody becomeFirstResponder];
