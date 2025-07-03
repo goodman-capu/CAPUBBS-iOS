@@ -124,8 +124,10 @@
     NSInteger oldPage = self.page;
     self.page = pageNum;
     self.buttonCompose.enabled = [Helper checkLogin:NO];
+    self.buttonBack.enabled = NO;
+    self.buttonJump.enabled = NO;
+    self.buttonForward.enabled = NO;
     if (![self isHotList]) {
-        self.buttonBack.enabled = (self.page != 1);
         NSDictionary *dict = @{
             @"bid" : self.bid,
             @"p" : [NSString stringWithFormat:@"%ld", (long)pageNum],
@@ -136,10 +138,10 @@
                 [self.refreshControl endRefreshing];
             }
 
+            self.buttonBack.enabled = self.page != 1;
             if (err || result.count == 0) {
                 failCount++;
                 self.page = oldPage;
-                self.buttonBack.enabled = self.page != 1;
                 [hud hideWithFailureMessage:@"读取失败"];
                 NSLog(@"%@",err);
             } else {
@@ -176,9 +178,6 @@
             [self checkRobSofa];
         }];
     } else {
-        self.buttonBack.enabled = NO;
-        self.buttonForward.enabled = NO;
-        self.buttonJump.enabled = NO;
         [Helper callApiWithParams:nil toURL:@"globaltop" callback:^(NSArray *topResult, NSError *topErr) {
             [Helper callApiWithParams:@{@"hotnum":[NSString stringWithFormat:@"%d", HOT_NUM]} toURL:@"hot" callback:^(NSArray *hotResult, NSError *hotErr) {
                 if (self.refreshControl.isRefreshing) {
@@ -187,8 +186,6 @@
                 }
                 if (topErr || hotErr || hotResult.count == 0) {
                     failCount++;
-                    self.page = oldPage;
-                    self.buttonBack.enabled = self.page != 1;
                     [hud hideWithFailureMessage:@"读取失败"];
                     if (topErr) {
                         NSLog(@"globaltop error: %@",topErr);

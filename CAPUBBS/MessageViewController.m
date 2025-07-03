@@ -22,6 +22,9 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GREEN_BACK;
+    self.segmentBackgroundView.backgroundColor = [GREEN_BACK colorWithAlphaComponent:0.85];
+    self.tableView.contentInset = UIEdgeInsetsMake(48, 0, 0, 0);
+    self.tableView.scrollIndicatorInsets = self.tableView.contentInset;
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
@@ -82,9 +85,9 @@
 - (void)getInfo {
     dispatch_main_async_safe((^{
         if (self.segmentType.selectedSegmentIndex == 0) {
-            self.toolbarItems = @[self.buttonPrevious, self.barFreeSpace, self.barFreeSpace, self.buttonNext];
+            [self setToolbarItems:@[self.buttonPrevious, self.barFreeSpace, self.barFreeSpace, self.buttonNext] animated:YES];
         } else {
-            self.toolbarItems = @[self.barFreeSpace, self.buttonAdd, self.barFreeSpace];
+            [self setToolbarItems:@[self.barFreeSpace, self.buttonAdd, self.barFreeSpace] animated:YES];
         }
         if ([Helper checkLogin:NO] && !messageRefreshing) {
             messageRefreshing = YES;

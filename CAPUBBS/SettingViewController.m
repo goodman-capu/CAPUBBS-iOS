@@ -87,7 +87,7 @@
                 self.textUid.text = [info[@"username"] stringByAppendingString:@" ♀"];
             }
             [self.iconUser setUrl:info[@"icon"]];
-            self.textUidInfo.text = [NSString stringWithFormat:@"星星：%@ 权限：%@", info[@"star"], info[@"rights"]];
+            self.textUidInfo.text = [NSString stringWithFormat:@"星星：%@ 权限：%@ 签到：%@", info[@"star"], info[@"rights"], info[@"sign"]];
         }
     }));
 }
@@ -271,7 +271,7 @@
         dest.bid = @"4";
         dest.tid = @"17637";
         dest.title = @"CAPUBBS客户端  帮助与意见反馈";
-        dest.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(done:)];
+        dest.navigationItem.leftBarButtonItem = [AppDelegate getCloseButtonForTarget:self action:@selector(done:)];
     }
     // Get the new view controller using [segue destinationViewController].
     // Pass the selected object to the new view controller.

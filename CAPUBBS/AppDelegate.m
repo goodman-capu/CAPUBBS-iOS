@@ -28,10 +28,11 @@
     UINavigationBar *navBarAppearance = [UINavigationBar appearance];
     if (@available(iOS 13.0, *)) {
         UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
-        [appearance configureWithOpaqueBackground]; // solid background (no transparency)
-        appearance.backgroundColor = GREEN_DARK;
-        appearance.titleTextAttributes = @{NSForegroundColorAttributeName: [UIColor whiteColor]};
-        appearance.largeTitleTextAttributes = @{NSForegroundColorAttributeName: [UIColor whiteColor]};
+        [appearance configureWithDefaultBackground];
+        appearance.backgroundColor = [GREEN_DARK colorWithAlphaComponent:0.8];
+        appearance.backgroundEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemUltraThinMaterialDark];
+        appearance.titleTextAttributes = @{NSForegroundColorAttributeName: [UIColor whiteColor]}; // title color
+        appearance.largeTitleTextAttributes = @{NSForegroundColorAttributeName: [UIColor whiteColor]}; // title color
         
         navBarAppearance.standardAppearance = appearance;
         navBarAppearance.scrollEdgeAppearance = appearance;
@@ -48,22 +49,18 @@
     }
     
     UIToolbar *toolbarAppearance = [UIToolbar appearance];
+    toolbarAppearance.tintColor = BLUE;
     if (@available(iOS 13.0, *)) {
         UIToolbarAppearance *appearance = [[UIToolbarAppearance alloc] init];
-//        [appearance configureWithOpaqueBackground];
+        //        [appearance configureWithOpaqueBackground];
         
-        toolbarAppearance.tintColor = BLUE;
         toolbarAppearance.standardAppearance = appearance;
         toolbarAppearance.compactAppearance = appearance;
         if (@available(iOS 15.0, *)) {
             toolbarAppearance.scrollEdgeAppearance = appearance;
             toolbarAppearance.compactScrollEdgeAppearance = appearance;
         }
-    } else {
-        [toolbarAppearance setTintColor:BLUE];
-//        [toolbarAppearance setTranslucent:NO];
     }
-    
     
     [[UITextField appearance] setClearButtonMode:UITextFieldViewModeWhileEditing];
     [[UITextField appearance] setBackgroundColor:[UIColor lightTextColor]];
@@ -172,6 +169,10 @@
     return topVC;
 }
 
++ (UIBarButtonItem *)getCloseButtonForTarget:(id)target action:(SEL)action {
+    return [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCancel target:target action:action];
+}
+
 + (UIView *)keyboardToolViewWithLeftButtons:(NSArray<UIButton *> *)leftButtons
                                 rightButtons:(NSArray<UIButton *> *)rightButtons {
     UIView *keyboardToolView = [[UIView alloc] init];
@@ -241,8 +242,6 @@
     if ([MFMailComposeViewController canSendMail]) {
         MFMailComposeViewController *mail = [[CustomMailComposeViewController alloc] init];
         mail.mailComposeDelegate = self;
-        mail.navigationBar.barStyle = UIBarStyleBlackTranslucent;
-        mail.navigationBar.barTintColor = [UIColor whiteColor];
         [mail setToRecipients:mailInfo[@"recipients"]];
         if (mailInfo[@"subject"]) {
             [mail setSubject:mailInfo[@"subject"]];
@@ -570,7 +569,7 @@
             dispatch_main_sync_safe(^{
                 MessageViewController *dest = [self.window.rootViewController.storyboard instantiateViewControllerWithIdentifier:@"message"];
                 
-                dest.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(back)];
+                dest.navigationItem.leftBarButtonItem = [AppDelegate getCloseButtonForTarget:self action:@selector(back)];
                 UINavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
                 navi.modalPresentationStyle = UIModalPresentationFullScreen;
                 navi.toolbarHidden = NO;
@@ -582,7 +581,7 @@
             ListViewController *dest = [self.window.rootViewController.storyboard instantiateViewControllerWithIdentifier:@"list"];
             dest.bid = @"hot";
             
-            dest.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(back)];
+            dest.navigationItem.leftBarButtonItem = [AppDelegate getCloseButtonForTarget:self action:@selector(back)];
             UINavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
             navi.modalPresentationStyle = UIModalPresentationFullScreen;
             navi.toolbarHidden = NO;
@@ -592,7 +591,7 @@
         dispatch_main_sync_safe(^{
             CollectionViewController *dest = [self.window.rootViewController.storyboard instantiateViewControllerWithIdentifier:@"collection"];
             
-            dest.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(back)];
+            dest.navigationItem.leftBarButtonItem = [AppDelegate getCloseButtonForTarget:self action:@selector(back)];
             UINavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
             navi.modalPresentationStyle = UIModalPresentationFullScreen;
             [view presentViewControllerSafe:navi];
@@ -630,7 +629,7 @@
                 dest.page = page;
             }
             
-            dest.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(back)];
+            dest.navigationItem.leftBarButtonItem = [AppDelegate getCloseButtonForTarget:self action:@selector(back)];
             UINavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
             navi.modalPresentationStyle = UIModalPresentationFullScreen;
             navi.toolbarHidden = NO;
@@ -655,7 +654,7 @@
                 dest.title = @"加载中";
             }
             
-            dest.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(back)];
+            dest.navigationItem.leftBarButtonItem = [AppDelegate getCloseButtonForTarget:self action:@selector(back)];
             UINavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
             navi.modalPresentationStyle = UIModalPresentationFullScreen;
             [view presentViewControllerSafe:navi];

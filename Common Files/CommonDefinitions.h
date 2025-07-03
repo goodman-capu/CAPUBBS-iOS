@@ -37,7 +37,7 @@
 #define BLUE [UIColor colorWithRed:45.0/255 green:144.0/255 blue:220.0/255 alpha:1.0]
 #define GREEN_DARK [UIColor colorWithRed:115.0/255 green:170.0/255 blue:135.0/255 alpha:1.0]
 #define GREEN_LIGHT [UIColor colorWithRed:154.0/255 green:191.0/255 blue:165.0/255 alpha:1.0]
-#define GREEN_BACK [UIColor colorWithPatternImage:[UIImage imageNamed:@"背景色"]]
+#define GREEN_BACK [UIColor colorWithRed:221.0/255 green:236.0/255 blue:222.0/255 alpha:1.0]
 #define GRAY_PATTERN [UIColor colorWithPatternImage:[UIImage imageNamed:@"软件背景"]]
 #define SUCCESSMARK [UIImage imageNamed:@"successmark"]
 #define FAILMARK [UIImage imageNamed:@"failmark"]

@@ -463,7 +463,7 @@
         dest.bid = dict[@"bid"];
         dest.tid = dict[@"tid"];
         dest.title = dict[@"text"];
-        dest.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(done)];
+        dest.navigationItem.leftBarButtonItem = [AppDelegate getCloseButtonForTarget:self action:@selector(done)];
     }
     if ([segue.identifier isEqualToString:@"web"]) {
         WebViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];

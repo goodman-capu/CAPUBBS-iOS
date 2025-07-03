@@ -21,6 +21,8 @@
     BOOL messageRefreshing;
     long originalSegment;
 }
+
+@property (weak, nonatomic) IBOutlet UIView *segmentBackgroundView;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *segmentType;
 @property (weak, nonatomic) IBOutlet UITableView *tableView;
 @property (strong, nonatomic) IBOutlet UIBarButtonItem *barFreeSpace;

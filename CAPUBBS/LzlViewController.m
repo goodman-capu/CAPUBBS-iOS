@@ -76,9 +76,15 @@
     if (self.textPost.text.length == 0) {
         [self dismissViewControllerAnimated:YES completion:nil];
     } else {
-        [self showAlertWithTitle:@"确定退出" message:@"您有尚未发表的楼中楼内容，确定继续退出？" confirmTitle:@"退出" confirmAction:^(UIAlertAction *action) {
+        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"确定退出" message:@"您有尚未发表的楼中楼，建议先保存草稿，确定继续退出？" preferredStyle:UIAlertControllerStyleActionSheet];
+        [alertController addAction:[UIAlertAction actionWithTitle:@"退出" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
             [self dismissViewControllerAnimated:YES completion:nil];
-        } cancelTitle:@"返回"];
+        }]];
+        [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
+        if ([sender isKindOfClass:[UIBarButtonItem class]]) {
+            alertController.popoverPresentationController.barButtonItem = sender;
+        }
+        [self presentViewControllerSafe:alertController];
     }
 }
 
@@ -209,7 +215,7 @@
                     dest.tid = dict[@"tid"];
                     dest.destinationPage = dict[@"p"];
                     dest.title=@"帖子跳转中";
-                    dest.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(done)];
+                    dest.navigationItem.leftBarButtonItem = [AppDelegate getCloseButtonForTarget:self action:@selector(done)];
                     CustomNavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
                     [navi setToolbarHidden:NO];
                     navi.modalPresentationStyle = UIModalPresentationFullScreen;

@@ -20,35 +20,19 @@
                         <rect key="frame" x="0.0" y="0.0" width="402" height="874"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="d4P-v8-pYm">
-                                <rect key="frame" x="16" y="114" width="370" height="44"/>
-                                <constraints>
-                                    <constraint firstAttribute="height" constant="44" id="rET-cz-moI">
-                                        <variation key="heightClass=regular-widthClass=regular" constant="50"/>
-                                    </constraint>
-                                </constraints>
-                                <state key="normal" image="hot">
-                                    <color key="titleShadowColor" red="0.5" green="0.5" blue="0.5" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                </state>
-                                <connections>
-                                    <segue destination="FoI-PQ-VvD" kind="show" identifier="hotlist" id="6hh-48-4Fs">
-                                        <segue key="commit" inheritsFrom="parent" id="TLg-aZ-fR0"/>
-                                        <segue key="preview" inheritsFrom="commit" id="MXN-Q0-khv"/>
-                                    </segue>
-                                </connections>
-                            </button>
                             <collectionView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="H0U-j8-Jg2">
-                                <rect key="frame" x="0.0" y="166" width="402" height="708"/>
+                                <rect key="frame" x="0.0" y="0.0" width="402" height="874"/>
                                 <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="0.0" colorSpace="custom" customColorSpace="sRGB"/>
+                                <inset key="scrollIndicatorInsets" minX="0.0" minY="54" maxX="0.0" maxY="0.0"/>
                                 <collectionViewFlowLayout key="collectionViewLayout" minimumLineSpacing="25" minimumInteritemSpacing="25" id="kl3-qy-BuS">
                                     <size key="itemSize" width="150" height="150"/>
-                                    <size key="headerReferenceSize" width="50" height="50"/>
+                                    <size key="headerReferenceSize" width="50" height="110"/>
                                     <size key="footerReferenceSize" width="0.0" height="0.0"/>
                                     <inset key="sectionInset" minX="25" minY="15" maxX="25" maxY="15"/>
                                 </collectionViewFlowLayout>
                                 <cells>
                                     <collectionViewCell clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="indexcell" id="ZXP-P5-dVZ" customClass="IndexViewCell">
-                                        <rect key="frame" x="25" y="65" width="150" height="150"/>
+                                        <rect key="frame" x="25" y="125" width="150" height="150"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center">
                                             <rect key="frame" x="0.0" y="0.0" width="150" height="150"/>
@@ -88,7 +72,7 @@
                                         </connections>
                                     </collectionViewCell>
                                     <collectionViewCell clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="collectioncell" id="cG8-ub-RLx" customClass="IndexViewCell">
-                                        <rect key="frame" x="227" y="65" width="150" height="150"/>
+                                        <rect key="frame" x="227" y="125" width="150" height="150"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center">
                                             <rect key="frame" x="0.0" y="0.0" width="150" height="150"/>
@@ -129,11 +113,11 @@
                                     </collectionViewCell>
                                 </cells>
                                 <collectionReusableView key="sectionHeaderView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="header" id="ia7-Ot-3U7">
-                                    <rect key="frame" x="0.0" y="0.0" width="402" height="50"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="402" height="110"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                     <subviews>
                                         <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="board" translatesAutoresizingMaskIntoConstraints="NO" id="B7y-Fi-K0h">
-                                            <rect key="frame" x="126" y="12" width="150" height="38"/>
+                                            <rect key="frame" x="126" y="72" width="150" height="38"/>
                                             <constraints>
                                                 <constraint firstAttribute="height" constant="38" id="Sbs-OK-NNg"/>
                                                 <constraint firstAttribute="width" constant="150" id="pIg-jw-gtd"/>
@@ -141,8 +125,8 @@
                                         </imageView>
                                     </subviews>
                                     <constraints>
-                                        <constraint firstItem="B7y-Fi-K0h" firstAttribute="centerY" secondItem="ia7-Ot-3U7" secondAttribute="centerY" constant="6" id="BL9-dA-8hr"/>
-                                        <constraint firstAttribute="centerX" secondItem="B7y-Fi-K0h" secondAttribute="centerX" id="he9-K0-ib1"/>
+                                        <constraint firstAttribute="bottom" secondItem="B7y-Fi-K0h" secondAttribute="bottom" id="HlP-uQ-5Pv"/>
+                                        <constraint firstItem="B7y-Fi-K0h" firstAttribute="centerX" secondItem="ia7-Ot-3U7" secondAttribute="centerX" id="qzb-hC-tDP"/>
                                     </constraints>
                                 </collectionReusableView>
                                 <connections>
@@ -150,16 +134,41 @@
                                     <outlet property="delegate" destination="qgk-3B-9Ls" id="Yeb-IE-A4a"/>
                                 </connections>
                             </collectionView>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="WDa-Gx-fHM">
+                                <rect key="frame" x="0.0" y="0.0" width="402" height="160"/>
+                                <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                            </view>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="d4P-v8-pYm">
+                                <rect key="frame" x="16" y="114" width="370" height="38"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="38" id="rET-cz-moI">
+                                        <variation key="heightClass=regular-widthClass=regular" constant="50"/>
+                                    </constraint>
+                                </constraints>
+                                <state key="normal" image="hot">
+                                    <color key="titleShadowColor" red="0.5" green="0.5" blue="0.5" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                </state>
+                                <connections>
+                                    <segue destination="FoI-PQ-VvD" kind="show" identifier="hotlist" id="6hh-48-4Fs">
+                                        <segue key="commit" inheritsFrom="parent" id="TLg-aZ-fR0"/>
+                                        <segue key="preview" inheritsFrom="commit" id="MXN-Q0-khv"/>
+                                    </segue>
+                                </connections>
+                            </button>
                         </subviews>
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
                             <constraint firstItem="H0U-j8-Jg2" firstAttribute="leading" secondItem="G54-BN-bVa" secondAttribute="leading" id="0uz-wf-sHd"/>
                             <constraint firstAttribute="trailing" secondItem="H0U-j8-Jg2" secondAttribute="trailing" id="1Bi-0g-i0v"/>
+                            <constraint firstItem="WDa-Gx-fHM" firstAttribute="top" secondItem="G54-BN-bVa" secondAttribute="top" id="1xc-By-weL"/>
+                            <constraint firstItem="WDa-Gx-fHM" firstAttribute="centerX" secondItem="G54-BN-bVa" secondAttribute="centerX" id="4o6-ai-6g6"/>
                             <constraint firstAttribute="centerX" secondItem="d4P-v8-pYm" secondAttribute="centerX" id="6U8-l5-JKK"/>
                             <constraint firstItem="d4P-v8-pYm" firstAttribute="leading" secondItem="G54-BN-bVa" secondAttribute="leadingMargin" id="CLN-Uv-2VY"/>
                             <constraint firstItem="d4P-v8-pYm" firstAttribute="top" secondItem="DDD-R7-s1j" secondAttribute="bottom" constant="8" id="Gl2-ea-5Q3"/>
-                            <constraint firstItem="H0U-j8-Jg2" firstAttribute="top" secondItem="d4P-v8-pYm" secondAttribute="bottom" constant="8" id="QUf-XY-iSo"/>
+                            <constraint firstItem="WDa-Gx-fHM" firstAttribute="leading" secondItem="G54-BN-bVa" secondAttribute="leading" id="PdD-rO-Hga"/>
+                            <constraint firstItem="H0U-j8-Jg2" firstAttribute="top" secondItem="G54-BN-bVa" secondAttribute="top" id="QUf-XY-iSo"/>
                             <constraint firstItem="H0U-j8-Jg2" firstAttribute="bottom" secondItem="G54-BN-bVa" secondAttribute="bottom" id="Zhl-cd-ATU"/>
+                            <constraint firstItem="WDa-Gx-fHM" firstAttribute="bottom" secondItem="d4P-v8-pYm" secondAttribute="bottom" constant="8" id="sQo-0R-cA3"/>
                         </constraints>
                         <connections>
                             <outletCollection property="gestureRecognizers" destination="43y-oY-5IC" appends="YES" id="DJh-H4-iZF"/>
@@ -168,7 +177,7 @@
                     </view>
                     <toolbarItems>
                         <barButtonItem style="plain" systemItem="flexibleSpace" id="HQQ-UU-gkc"/>
-                        <barButtonItem title="欢迎来到北大车协论坛" id="EFG-mQ-6Mx">
+                        <barButtonItem title="欢迎来到北大车协论坛" style="plain" id="EFG-mQ-6Mx">
                             <connections>
                                 <action selector="smart:" destination="qgk-3B-9Ls" id="xyy-mS-MhV"/>
                             </connections>
@@ -188,7 +197,7 @@
                         </barButtonItem>
                     </navigationItem>
                     <connections>
-                        <outlet property="buttonHot" destination="d4P-v8-pYm" id="4AJ-YB-kGl"/>
+                        <outlet property="buttonBackgroundView" destination="WDa-Gx-fHM" id="xMe-4H-W0g"/>
                         <outlet property="buttonUser" destination="klk-mt-Qwf" id="gco-XB-SZt"/>
                         <outlet property="collectionView" destination="H0U-j8-Jg2" id="WBY-29-LbA"/>
                     </connections>
@@ -238,8 +247,8 @@
                                                     <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="星星：4 权限：4" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="cU1-dc-7zS">
-                                                    <rect key="frame" x="80" y="44.666666666666664" width="105.66666666666669" height="17"/>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="星星：4 权限：4 签到：1000" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="cU1-dc-7zS">
+                                                    <rect key="frame" x="80" y="44.666666666666664" width="184" height="17"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                                     <color key="textColor" red="0.5568627451" green="0.5568627451" blue="0.57647058819999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                                     <nil key="highlightedColor"/>
@@ -773,7 +782,7 @@
                         </connections>
                     </tableView>
                     <navigationItem key="navigationItem" title="设置" id="vjf-VW-eh3">
-                        <barButtonItem key="leftBarButtonItem" systemItem="done" id="0CP-Eb-zUZ">
+                        <barButtonItem key="leftBarButtonItem" systemItem="cancel" id="0CP-Eb-zUZ">
                             <connections>
                                 <action selector="done:" destination="doL-Jk-LOr" id="ihp-Ws-aMk"/>
                             </connections>
@@ -1027,7 +1036,7 @@
                                     <autoresizingMask key="autoresizingMask"/>
                                     <subviews>
                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="00:00:00" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="EL5-Lt-dZW">
-                                            <rect key="frame" x="175.66666666666666" y="29.666666666666668" width="52.333333333333343" height="13.333333333333332"/>
+                                            <rect key="frame" x="175.66666666666666" y="29.666666666666668" width="52.666666666666657" height="13.333333333333332"/>
                                             <fontDescription key="fontDescription" type="system" pointSize="12"/>
                                             <color key="textColor" red="0.33333333333333331" green="0.33333333333333331" blue="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                             <nil key="highlightedColor"/>
@@ -1039,7 +1048,7 @@
                                             <nil key="highlightedColor"/>
                                         </label>
                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="📱" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="aR0-Ll-x9Z">
-                                            <rect key="frame" x="329.33333333333331" y="14.666666666666666" width="34.333333333333314" height="20.666666666666671"/>
+                                            <rect key="frame" x="329" y="14.666666666666666" width="34.666666666666686" height="20.666666666666671"/>
                                             <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                             <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                             <nil key="highlightedColor"/>
@@ -1085,7 +1094,7 @@
                         </connections>
                     </tableView>
                     <navigationItem key="navigationItem" title="当前在线" id="iEL-74-Uqb">
-                        <barButtonItem key="leftBarButtonItem" systemItem="done" id="PVZ-7V-6H9">
+                        <barButtonItem key="leftBarButtonItem" systemItem="cancel" id="PVZ-7V-6H9">
                             <connections>
                                 <action selector="done:" destination="tbJ-i8-6tM" id="LSP-51-HQq"/>
                             </connections>
@@ -1192,25 +1201,25 @@
                         </connections>
                     </tableView>
                     <toolbarItems>
-                        <barButtonItem title="全选" id="Wut-bV-nQh">
+                        <barButtonItem title="全选" style="plain" id="Wut-bV-nQh">
                             <connections>
                                 <action selector="selectAll:" destination="obI-Ao-Tke" id="qYw-nH-ezB"/>
                             </connections>
                         </barButtonItem>
                         <barButtonItem width="16" systemItem="fixedSpace" id="NSp-Rx-jX2"/>
-                        <barButtonItem title="反选" width="42" id="cZi-m9-hEm">
+                        <barButtonItem title="反选" width="42" style="plain" id="cZi-m9-hEm">
                             <connections>
                                 <action selector="selectReverse:" destination="obI-Ao-Tke" id="3NI-ox-g8a"/>
                             </connections>
                         </barButtonItem>
                         <barButtonItem systemItem="flexibleSpace" id="Q7L-o1-OG8"/>
-                        <barButtonItem systemItem="action" id="2ki-ne-M2y">
+                        <barButtonItem style="plain" systemItem="action" id="2ki-ne-M2y">
                             <connections>
                                 <action selector="shareSelection:" destination="obI-Ao-Tke" id="FTd-QM-8Wg"/>
                             </connections>
                         </barButtonItem>
                         <barButtonItem width="16" systemItem="fixedSpace" id="EJO-4y-W95"/>
-                        <barButtonItem systemItem="trash" id="zl0-qY-vMC">
+                        <barButtonItem style="plain" systemItem="trash" id="zl0-qY-vMC">
                             <color key="tintColor" systemColor="systemRedColor"/>
                             <connections>
                                 <action selector="deleteSelection:" destination="obI-Ao-Tke" id="B7S-hV-JPi"/>
@@ -1224,7 +1233,7 @@
                                     <action selector="toggleOrganize:" destination="obI-Ao-Tke" id="Zee-HF-F3r"/>
                                 </connections>
                             </barButtonItem>
-                            <barButtonItem systemItem="stop" id="I5I-1Q-vSn">
+                            <barButtonItem style="done" systemItem="stop" id="I5I-1Q-vSn">
                                 <connections>
                                     <action selector="toggleOrganize:" destination="obI-Ao-Tke" id="DLq-1f-P5o"/>
                                 </connections>
@@ -1309,31 +1318,31 @@
                         </connections>
                     </tableView>
                     <toolbarItems>
-                        <barButtonItem systemItem="rewind" id="jem-JP-xHi">
+                        <barButtonItem style="plain" systemItem="rewind" id="jem-JP-xHi">
                             <connections>
                                 <action selector="back:" destination="FoI-PQ-VvD" id="yAY-wZ-9VX"/>
                             </connections>
                         </barButtonItem>
                         <barButtonItem style="plain" systemItem="flexibleSpace" id="p5U-43-yRh"/>
-                        <barButtonItem systemItem="bookmarks" id="4tl-eW-MdF">
+                        <barButtonItem style="plain" systemItem="bookmarks" id="4tl-eW-MdF">
                             <connections>
                                 <action selector="jump:" destination="FoI-PQ-VvD" id="hmP-zD-pd0"/>
                             </connections>
                         </barButtonItem>
                         <barButtonItem style="plain" systemItem="flexibleSpace" id="I1E-xE-qfG"/>
-                        <barButtonItem systemItem="action" id="0sg-To-kwG">
+                        <barButtonItem style="plain" systemItem="action" id="0sg-To-kwG">
                             <connections>
                                 <action selector="action:" destination="FoI-PQ-VvD" id="rem-as-ugn"/>
                             </connections>
                         </barButtonItem>
                         <barButtonItem style="plain" systemItem="flexibleSpace" id="29r-z3-pX8"/>
-                        <barButtonItem systemItem="compose" id="wB8-JW-oVz">
+                        <barButtonItem style="plain" systemItem="compose" id="wB8-JW-oVz">
                             <connections>
                                 <segue destination="Qfq-Vt-jca" kind="presentation" identifier="compose" modalPresentationStyle="pageSheet" id="Je3-pI-pju"/>
                             </connections>
                         </barButtonItem>
                         <barButtonItem style="plain" systemItem="flexibleSpace" id="7SY-Oz-GQ8"/>
-                        <barButtonItem systemItem="fastForward" id="zB2-oI-jwP">
+                        <barButtonItem style="plain" systemItem="fastForward" id="zB2-oI-jwP">
                             <connections>
                                 <action selector="forward:" destination="FoI-PQ-VvD" id="zUU-n1-6NQ"/>
                             </connections>
@@ -1461,7 +1470,7 @@
                         </connections>
                     </tableView>
                     <navigationItem key="navigationItem" title="账号管理" id="xuB-GG-Fsw">
-                        <barButtonItem key="leftBarButtonItem" systemItem="done" id="w52-Ow-ny3">
+                        <barButtonItem key="leftBarButtonItem" systemItem="cancel" id="w52-Ow-ny3">
                             <connections>
                                 <action selector="back:" destination="ejI-6L-q3Y" id="bca-Pv-NF1"/>
                             </connections>
@@ -1753,36 +1762,36 @@ Cg
                         </connections>
                     </tableView>
                     <toolbarItems>
-                        <barButtonItem image="star-empty" id="MiY-kK-RzV">
+                        <barButtonItem image="star-empty" style="plain" id="MiY-kK-RzV">
                             <connections>
                                 <action selector="changeCollection:" destination="XjO-Bt-H98" id="ROO-hR-Nk3"/>
                             </connections>
                         </barButtonItem>
-                        <barButtonItem systemItem="rewind" id="ORt-v9-rWt">
+                        <barButtonItem style="plain" systemItem="rewind" id="ORt-v9-rWt">
                             <connections>
                                 <action selector="back:" destination="XjO-Bt-H98" id="Wcl-PD-TaY"/>
                             </connections>
                         </barButtonItem>
                         <barButtonItem style="plain" systemItem="flexibleSpace" id="lWA-vl-tPS"/>
-                        <barButtonItem systemItem="bookmarks" id="Vaa-SB-VKR">
+                        <barButtonItem style="plain" systemItem="bookmarks" id="Vaa-SB-VKR">
                             <connections>
                                 <action selector="jump:" destination="XjO-Bt-H98" id="JZa-Uj-acz"/>
                             </connections>
                         </barButtonItem>
                         <barButtonItem style="plain" systemItem="flexibleSpace" id="gD7-jx-wSw"/>
-                        <barButtonItem systemItem="action" id="WHh-dI-4Ta">
+                        <barButtonItem style="plain" systemItem="action" id="WHh-dI-4Ta">
                             <connections>
                                 <action selector="action:" destination="XjO-Bt-H98" id="1dG-3g-kWv"/>
                             </connections>
                         </barButtonItem>
                         <barButtonItem style="plain" systemItem="flexibleSpace" id="UMX-6C-P1m"/>
-                        <barButtonItem systemItem="compose" id="Ofz-m9-57e">
+                        <barButtonItem style="plain" systemItem="compose" id="Ofz-m9-57e">
                             <connections>
                                 <segue destination="Qfq-Vt-jca" kind="presentation" identifier="compose" modalPresentationStyle="pageSheet" id="nfk-GM-114"/>
                             </connections>
                         </barButtonItem>
                         <barButtonItem style="plain" systemItem="flexibleSpace" id="CbW-Hf-HPT"/>
-                        <barButtonItem systemItem="fastForward" id="qpR-Zn-2Ja">
+                        <barButtonItem style="plain" systemItem="fastForward" id="qpR-Zn-2Ja">
                             <connections>
                                 <action selector="forward:" destination="XjO-Bt-H98" id="Fbj-ow-ztf"/>
                             </connections>
@@ -1834,15 +1843,15 @@ Cg
                         <viewControllerLayoutGuide type="bottom" id="QVb-WA-vjr"/>
                     </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="VBP-0A-h18">
-                        <rect key="frame" x="0.0" y="0.0" width="402" height="802"/>
+                        <rect key="frame" x="0.0" y="0.0" width="402" height="874"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="4by-4l-s7y" customClass="CustomWebViewContainer">
-                                <rect key="frame" x="0.0" y="0.0" width="402" height="802"/>
+                                <rect key="frame" x="0.0" y="0.0" width="402" height="874"/>
                                 <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                             </view>
                             <progressView opaque="NO" contentMode="scaleToFill" verticalHuggingPriority="750" progress="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="Mxg-Yu-l1N">
-                                <rect key="frame" x="0.0" y="56" width="402" height="3"/>
+                                <rect key="frame" x="0.0" y="106" width="402" height="3"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="3" id="s5o-Jw-36P"/>
                                 </constraints>
@@ -1860,25 +1869,25 @@ Cg
                         </constraints>
                     </view>
                     <toolbarItems>
-                        <barButtonItem systemItem="rewind" id="T2B-Ez-QyB">
+                        <barButtonItem style="plain" systemItem="rewind" id="T2B-Ez-QyB">
                             <connections>
                                 <action selector="back:" destination="IZk-hq-VXO" id="m0m-FV-ndP"/>
                             </connections>
                         </barButtonItem>
                         <barButtonItem width="16" style="plain" systemItem="fixedSpace" id="Qpf-jb-sWa"/>
-                        <barButtonItem systemItem="fastForward" id="tvx-1h-lvJ">
+                        <barButtonItem style="plain" systemItem="fastForward" id="tvx-1h-lvJ">
                             <connections>
                                 <action selector="forward:" destination="IZk-hq-VXO" id="Tgy-v8-poo"/>
                             </connections>
                         </barButtonItem>
                         <barButtonItem style="plain" systemItem="flexibleSpace" id="yEE-gK-UQX"/>
-                        <barButtonItem image="safari" id="z1Y-xa-dos">
+                        <barButtonItem image="safari" style="plain" id="z1Y-xa-dos">
                             <connections>
                                 <action selector="openInSafari:" destination="IZk-hq-VXO" id="cTR-ta-KX7"/>
                             </connections>
                         </barButtonItem>
                         <barButtonItem width="16" style="plain" systemItem="fixedSpace" id="Rj5-VU-98i"/>
-                        <barButtonItem systemItem="action" id="vrO-CW-Y0R">
+                        <barButtonItem style="plain" systemItem="action" id="vrO-CW-Y0R">
                             <connections>
                                 <action selector="share:" destination="IZk-hq-VXO" id="QEh-Vc-9Il"/>
                             </connections>
@@ -2073,7 +2082,7 @@ Cg
                     </tableView>
                     <toolbarItems/>
                     <navigationItem key="navigationItem" title="楼中楼" id="0MH-ey-ULF">
-                        <barButtonItem key="leftBarButtonItem" systemItem="done" id="cFb-kZ-IcT">
+                        <barButtonItem key="leftBarButtonItem" systemItem="cancel" id="cFb-kZ-IcT">
                             <connections>
                                 <action selector="back:" destination="T2I-Qj-PzP" id="NoT-sG-sGP"/>
                             </connections>
@@ -2377,7 +2386,7 @@ Cg
                         </connections>
                     </tableView>
                     <navigationItem key="navigationItem" title="插入样式" id="xaC-ap-PZO">
-                        <barButtonItem key="rightBarButtonItem" systemItem="add" id="Vze-Mf-1mu">
+                        <barButtonItem key="rightBarButtonItem" style="done" systemItem="add" id="Vze-Mf-1mu">
                             <connections>
                                 <action selector="addText:" destination="ocX-Cg-Cw2" id="MO0-xt-u8x"/>
                             </connections>
@@ -2411,31 +2420,8 @@ Cg
                         <rect key="frame" x="0.0" y="0.0" width="402" height="874"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <segmentedControl opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="top" segmentControlStyle="plain" selectedSegmentIndex="0" translatesAutoresizingMaskIntoConstraints="NO" id="Lye-IE-UMx">
-                                <rect key="frame" x="16" y="114" width="370" height="32"/>
-                                <constraints>
-                                    <constraint firstAttribute="width" constant="400" id="lGH-62-oOq"/>
-                                </constraints>
-                                <segments>
-                                    <segment title="系统消息"/>
-                                    <segment title="私信消息"/>
-                                </segments>
-                                <variation key="default">
-                                    <mask key="constraints">
-                                        <exclude reference="lGH-62-oOq"/>
-                                    </mask>
-                                </variation>
-                                <variation key="heightClass=regular-widthClass=regular">
-                                    <mask key="constraints">
-                                        <include reference="lGH-62-oOq"/>
-                                    </mask>
-                                </variation>
-                                <connections>
-                                    <action selector="typeChanged:" destination="tW5-JB-519" eventType="valueChanged" id="ViR-0B-dg8"/>
-                                </connections>
-                            </segmentedControl>
                             <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="100" sectionHeaderHeight="22" sectionFooterHeight="22" translatesAutoresizingMaskIntoConstraints="NO" id="QTo-Va-wfA">
-                                <rect key="frame" x="0.0" y="153" width="402" height="721"/>
+                                <rect key="frame" x="0.0" y="0.0" width="402" height="874"/>
                                 <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="0.0" colorSpace="custom" customColorSpace="sRGB"/>
                                 <prototypes>
                                     <tableViewCell contentMode="scaleToFill" selectionStyle="default" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="systemmsg" rowHeight="100" id="TAH-rS-MiS" customClass="MessageCell">
@@ -2642,16 +2628,47 @@ Cg
                                     <outletCollection property="gestureRecognizers" destination="mmd-oK-ZGA" appends="YES" id="6dg-zd-M7U"/>
                                 </connections>
                             </tableView>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="0t2-r5-qCv">
+                                <rect key="frame" x="0.0" y="0.0" width="402" height="153"/>
+                                <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                            </view>
+                            <segmentedControl opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="top" segmentControlStyle="plain" selectedSegmentIndex="0" translatesAutoresizingMaskIntoConstraints="NO" id="Lye-IE-UMx">
+                                <rect key="frame" x="16" y="114" width="370" height="32"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="400" id="lGH-62-oOq"/>
+                                </constraints>
+                                <segments>
+                                    <segment title="系统消息"/>
+                                    <segment title="私信消息"/>
+                                </segments>
+                                <variation key="default">
+                                    <mask key="constraints">
+                                        <exclude reference="lGH-62-oOq"/>
+                                    </mask>
+                                </variation>
+                                <variation key="heightClass=regular-widthClass=regular">
+                                    <mask key="constraints">
+                                        <include reference="lGH-62-oOq"/>
+                                    </mask>
+                                </variation>
+                                <connections>
+                                    <action selector="typeChanged:" destination="tW5-JB-519" eventType="valueChanged" id="ViR-0B-dg8"/>
+                                </connections>
+                            </segmentedControl>
                         </subviews>
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <gestureRecognizers/>
                         <constraints>
                             <constraint firstItem="Lye-IE-UMx" firstAttribute="leading" secondItem="mf9-1r-Y3W" secondAttribute="leadingMargin" id="6ay-ps-f6b"/>
-                            <constraint firstItem="QTo-Va-wfA" firstAttribute="top" secondItem="Lye-IE-UMx" secondAttribute="bottom" constant="8" symbolic="YES" id="FJm-Fv-ueE"/>
+                            <constraint firstItem="QTo-Va-wfA" firstAttribute="top" secondItem="mf9-1r-Y3W" secondAttribute="top" id="FJm-Fv-ueE"/>
+                            <constraint firstItem="0t2-r5-qCv" firstAttribute="bottom" secondItem="Lye-IE-UMx" secondAttribute="bottom" constant="8" id="KG9-ZC-x6x"/>
                             <constraint firstItem="QTo-Va-wfA" firstAttribute="bottom" secondItem="mf9-1r-Y3W" secondAttribute="bottom" id="Lg4-FT-QSD"/>
+                            <constraint firstItem="0t2-r5-qCv" firstAttribute="leading" secondItem="mf9-1r-Y3W" secondAttribute="leading" id="Vaq-g5-RSd"/>
                             <constraint firstItem="Lye-IE-UMx" firstAttribute="centerX" secondItem="mf9-1r-Y3W" secondAttribute="centerX" id="XBu-AN-UBd"/>
                             <constraint firstItem="QTo-Va-wfA" firstAttribute="leading" secondItem="mf9-1r-Y3W" secondAttribute="leading" id="XIT-2K-1lI"/>
+                            <constraint firstItem="0t2-r5-qCv" firstAttribute="centerX" secondItem="mf9-1r-Y3W" secondAttribute="centerX" id="n5C-Jc-r6M"/>
                             <constraint firstItem="Lye-IE-UMx" firstAttribute="top" secondItem="2Vk-4p-o8J" secondAttribute="bottom" constant="8" symbolic="YES" id="nLG-vN-sA4"/>
+                            <constraint firstItem="0t2-r5-qCv" firstAttribute="top" secondItem="mf9-1r-Y3W" secondAttribute="top" id="pbh-IP-aUp"/>
                             <constraint firstAttribute="trailing" secondItem="QTo-Va-wfA" secondAttribute="trailing" id="zhr-Ca-nMC"/>
                         </constraints>
                         <variation key="heightClass=regular-widthClass=regular">
@@ -2661,19 +2678,19 @@ Cg
                         </variation>
                     </view>
                     <toolbarItems>
-                        <barButtonItem systemItem="rewind" id="lkR-MS-VFh">
+                        <barButtonItem style="plain" systemItem="rewind" id="lkR-MS-VFh">
                             <connections>
                                 <action selector="previous:" destination="tW5-JB-519" id="Y4U-ft-5nc"/>
                             </connections>
                         </barButtonItem>
                         <barButtonItem style="plain" systemItem="flexibleSpace" id="1U2-R3-PaO"/>
-                        <barButtonItem systemItem="add" id="Mx9-mw-enK">
+                        <barButtonItem style="plain" systemItem="add" id="Mx9-mw-enK">
                             <connections>
                                 <action selector="add:" destination="tW5-JB-519" id="jPI-gK-oNf"/>
                             </connections>
                         </barButtonItem>
                         <barButtonItem style="plain" systemItem="flexibleSpace" id="azw-35-PB2"/>
-                        <barButtonItem systemItem="fastForward" id="vQh-jK-oOz">
+                        <barButtonItem style="plain" systemItem="fastForward" id="vQh-jK-oOz">
                             <connections>
                                 <action selector="next:" destination="tW5-JB-519" id="qon-a2-YqI"/>
                             </connections>
@@ -2693,6 +2710,7 @@ Cg
                         <outlet property="buttonAdd" destination="Mx9-mw-enK" id="Z08-KJ-ZAk"/>
                         <outlet property="buttonNext" destination="vQh-jK-oOz" id="pWT-Vx-vfA"/>
                         <outlet property="buttonPrevious" destination="lkR-MS-VFh" id="iYb-rD-Sge"/>
+                        <outlet property="segmentBackgroundView" destination="0t2-r5-qCv" id="9Rk-U8-O5E"/>
                         <outlet property="segmentType" destination="Lye-IE-UMx" id="hFw-Dn-0Qg"/>
                         <outlet property="tableView" destination="QTo-Va-wfA" id="9rf-1Q-i2W"/>
                     </connections>
@@ -2957,7 +2975,7 @@ Cg
                             </connections>
                         </barButtonItem>
                         <rightBarButtonItems>
-                            <barButtonItem systemItem="action" id="QOe-jD-gWR">
+                            <barButtonItem style="done" systemItem="action" id="QOe-jD-gWR">
                                 <connections>
                                     <action selector="done:" destination="Vc0-tw-U0V" id="E73-7x-jdu"/>
                                 </connections>
@@ -3469,7 +3487,7 @@ Cg
                                 <action selector="cancel:" destination="314-pX-Udj" id="h58-Mf-GCf"/>
                             </connections>
                         </barButtonItem>
-                        <barButtonItem key="rightBarButtonItem" systemItem="done" id="OLS-Pq-OUW">
+                        <barButtonItem key="rightBarButtonItem" style="done" systemItem="action" id="OLS-Pq-OUW">
                             <connections>
                                 <action selector="done:" destination="314-pX-Udj" id="lWs-iW-kAm"/>
                             </connections>
@@ -4072,7 +4090,7 @@ Cg
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" title="预览" id="tpG-TI-d5s">
-                        <barButtonItem key="rightBarButtonItem" systemItem="action" id="G3w-hW-WSF">
+                        <barButtonItem key="rightBarButtonItem" style="done" systemItem="action" id="G3w-hW-WSF">
                             <connections>
                                 <action selector="done:" destination="kdc-W9-BOu" id="h8x-ei-cng"/>
                             </connections>
@@ -4729,7 +4747,7 @@ Cg
                         </connections>
                     </tableView>
                     <navigationItem key="navigationItem" title="用户信息" id="Yvn-Nk-MGE">
-                        <barButtonItem key="leftBarButtonItem" systemItem="done" id="a0Y-bA-CSj">
+                        <barButtonItem key="leftBarButtonItem" systemItem="cancel" id="a0Y-bA-CSj">
                             <connections>
                                 <action selector="back:" destination="8TC-gz-VH4" id="XcL-et-dAw"/>
                             </connections>
@@ -5038,7 +5056,7 @@ Cg
                         </connections>
                     </tableView>
                     <navigationItem key="navigationItem" title="主席团" id="9ur-Kz-yPw">
-                        <barButtonItem key="leftBarButtonItem" systemItem="done" id="FgQ-eU-Z2g">
+                        <barButtonItem key="leftBarButtonItem" systemItem="cancel" id="FgQ-eU-Z2g">
                             <connections>
                                 <action selector="buttonBack:" destination="jph-oO-bQ6" id="Ojm-lP-aJN"/>
                             </connections>
@@ -5123,12 +5141,12 @@ Cg
                 <navigationController automaticallyAdjustsScrollViewInsets="NO" toolbarHidden="NO" id="FTr-67-wVh" customClass="CustomNavigationController" sceneMemberID="viewController">
                     <toolbarItems/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="jpI-uk-B3P">
-                        <rect key="frame" x="0.0" y="0.0" width="402" height="56"/>
+                        <rect key="frame" x="0.0" y="62" width="402" height="44"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </navigationBar>
                     <nil name="viewControllers"/>
                     <toolbar key="toolbar" opaque="NO" clearsContextBeforeDrawing="NO" contentMode="scaleToFill" id="B6c-mi-6kD">
-                        <rect key="frame" x="0.0" y="719" width="402" height="49"/>
+                        <rect key="frame" x="0.0" y="791" width="402" height="49"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </toolbar>
                     <connections>
@@ -5203,26 +5221,26 @@ Cg
         </scene>
     </scenes>
     <inferredMetricsTieBreakers>
-        <segue reference="30P-vY-89P"/>
-        <segue reference="YKe-kj-cjm"/>
-        <segue reference="Fya-PN-HA8"/>
+        <segue reference="4Z1-rz-5cn"/>
+        <segue reference="bde-Ng-mlI"/>
+        <segue reference="kQU-v5-vas"/>
         <segue reference="zES-xi-3kG"/>
         <segue reference="vdh-wV-eVI"/>
-        <segue reference="akm-dg-fMD"/>
+        <segue reference="htl-Tg-7sK"/>
         <segue reference="g7o-PX-3NP"/>
         <segue reference="pRm-2J-noW"/>
-        <segue reference="zeh-nQ-sTa"/>
+        <segue reference="fQO-XK-dvT"/>
         <segue reference="ZOD-sm-t80"/>
         <segue reference="UWO-DD-ehb"/>
         <segue reference="P8Y-Av-Bkc"/>
         <segue reference="sE4-fz-lm6"/>
         <segue reference="dPz-Eq-4Ek"/>
-        <segue reference="0LY-07-Xh9"/>
-        <segue reference="Je3-pI-pju"/>
+        <segue reference="ftB-bq-E4r"/>
+        <segue reference="nfk-GM-114"/>
         <segue reference="5wZ-RT-jhw"/>
-        <segue reference="kGD-nG-mgk"/>
-        <segue reference="imR-kz-vNb"/>
-        <segue reference="6hh-48-4Fs"/>
+        <segue reference="Xy3-UX-faM"/>
+        <segue reference="jCl-fG-hwJ"/>
+        <segue reference="nvR-pU-fEO"/>
         <segue reference="ZFk-VU-EwR"/>
     </inferredMetricsTieBreakers>
     <resources>

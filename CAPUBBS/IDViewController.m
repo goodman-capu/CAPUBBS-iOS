@@ -126,15 +126,18 @@
 }
 
 - (IBAction)logOut:(id)sender {
-    [self showAlertWithTitle:@"警告" message:@"您确定要注销当前账号吗？" confirmTitle:@"确定" confirmAction:^(UIAlertAction *action) {
-        [Helper callApiWithParams:nil toURL:@"logout" callback:^(NSArray *result, NSError *err) {}];
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"退出登录" message:@"您确定要登出当前账号吗？" preferredStyle:UIAlertControllerStyleActionSheet];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
         NSLog(@"Logout - %@", UID);
         [GROUP_DEFAULTS removeObjectForKey:@"uid"];
         [GROUP_DEFAULTS removeObjectForKey:@"pass"];
         [GROUP_DEFAULTS removeObjectForKey:@"token"];
         [GROUP_DEFAULTS removeObjectForKey:@"userInfo"];
         [NOTIFICATION postNotificationName:@"userChanged" object:nil userInfo:nil];
-    }];
+    }]];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
+    alertController.popoverPresentationController.barButtonItem = sender;
+    [self presentViewControllerSafe:alertController];
 }
 
 - (IBAction)back:(id)sender {

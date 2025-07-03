@@ -102,7 +102,7 @@
         dest.tid = dict[@"tid"];
         dest.destinationFloor = dict[@"pid"];
         dest.title = dict[@"title"];
-        dest.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(done)];
+        dest.navigationItem.leftBarButtonItem = [AppDelegate getCloseButtonForTarget:self action:@selector(done)];
     }
 }
 

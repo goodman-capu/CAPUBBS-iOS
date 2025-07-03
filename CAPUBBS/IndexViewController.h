@@ -17,7 +17,7 @@
     CGFloat fontSize;
 }
 
-@property (weak, nonatomic) IBOutlet UIButton *buttonHot;
+@property (weak, nonatomic) IBOutlet UIView *buttonBackgroundView;
 @property (weak, nonatomic) IBOutlet UICollectionView *collectionView;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonUser;
 

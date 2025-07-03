@@ -94,24 +94,8 @@
             [self dismiss];
         }];
         return;
-    } else if (![BOARDS containsObject:self.bid]) {
-        self.isEdit = NO;
-        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"请选择发帖的版块" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-        for (int i = 0; i < BOARDS.count; i++) {
-            NSString *bid = BOARDS[i];
-            [alertController addAction:[UIAlertAction actionWithTitle:[Helper getBoardTitle:bid] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                self.bid = bid;
-                self.title = [NSString stringWithFormat:@"%@ @ %@", self.title, [Helper getBoardTitle:self.bid]];
-                [self.textTitle becomeFirstResponder];
-                [self updateActivity];
-            }]];
-        }
-        [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
-            [self dismiss];
-        }]];
-        alertController.popoverPresentationController.sourceView = self.navigationController.navigationBar;
-        alertController.popoverPresentationController.sourceRect = self.navigationController.navigationBar.bounds;
-        [self presentViewControllerSafe:alertController];
+    } else {
+        [self checkBoard];
     }
     
     if (self.showEditOthersAlert) {
@@ -159,6 +143,31 @@
     if (@available(iOS 13.0, *)) {
         [self setModalInPresentation:[self shouldShowDismissWarning]];
     }
+}
+
+- (BOOL)checkBoard {
+    if ([BOARDS containsObject:self.bid]) {
+        return YES;
+    }
+    
+    self.isEdit = NO;
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"请选择发帖的版块" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    for (int i = 0; i < BOARDS.count; i++) {
+        NSString *bid = BOARDS[i];
+        [alertController addAction:[UIAlertAction actionWithTitle:[Helper getBoardTitle:bid] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            self.bid = bid;
+            self.title = [NSString stringWithFormat:@"%@ @ %@", self.title, [Helper getBoardTitle:self.bid]];
+            [self.textTitle becomeFirstResponder];
+            [self updateActivity];
+        }]];
+    }
+    [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        [self dismiss];
+    }]];
+    alertController.popoverPresentationController.sourceView = self.navigationController.navigationBar;
+    alertController.popoverPresentationController.sourceRect = self.navigationController.navigationBar.bounds;
+    [self presentViewControllerSafe:alertController];
+    return NO;
 }
 
 - (void)updateAttachments {
@@ -266,16 +275,19 @@
 }
 
 - (IBAction)done:(id)sender {
-    if (self.textTitle.text.length==0) {
+    if (self.textTitle.text.length == 0) {
         [self showAlertWithTitle:@"错误" message:@"请输入标题！" cancelAction:^(UIAlertAction *action) {
             [self.textTitle becomeFirstResponder];
         }];
         return;
     }
-    if (self.textBody.text.length==0) {
+    if (self.textBody.text.length == 0) {
         [self showAlertWithTitle:@"错误" message:@"请输入帖子内容！" cancelAction:^(UIAlertAction *action) {
             [self.textBody becomeFirstResponder];
         }];
+        return;
+    }
+    if (![self checkBoard]) {
         return;
     }
     [self.textTitle resignFirstResponder];
@@ -389,9 +401,15 @@
 
 - (IBAction)cancel:(id)sender {
     if ([self shouldShowDismissWarning]) {
-        [self showAlertWithTitle:@"确定退出" message:@"您有尚未发表的内容，建议先保存草稿，确定继续退出？" confirmTitle:@"退出" confirmAction:^(UIAlertAction *action) {
+        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"确定退出" message:@"您有尚未发表的内容，建议先保存草稿，确定继续退出？" preferredStyle:UIAlertControllerStyleActionSheet];
+        [alertController addAction:[UIAlertAction actionWithTitle:@"退出" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
             [self dismiss];
-        } cancelTitle:@"返回"];
+        }]];
+        [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
+        if ([sender isKindOfClass:[UIBarButtonItem class]]) {
+            alertController.popoverPresentationController.barButtonItem = sender;
+        }
+        [self presentViewControllerSafe:alertController];
     } else {
         [self dismiss];
     }
@@ -462,13 +480,9 @@
     }
     [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
     
-    if ([sender isKindOfClass:[UIBarButtonItem class]]) {
-        alertController.popoverPresentationController.barButtonItem = sender;
-    } else {
-        UIButton *button = sender;
-        alertController.popoverPresentationController.sourceView = button;
-        alertController.popoverPresentationController.sourceRect = button.bounds;
-    }
+    UIButton *button = sender;
+    alertController.popoverPresentationController.sourceView = button;
+    alertController.popoverPresentationController.sourceRect = button.bounds;
     [self presentViewControllerSafe:alertController];
 }
 

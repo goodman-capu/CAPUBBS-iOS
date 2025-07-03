@@ -17,7 +17,9 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    self.view.backgroundColor = GRAY_PATTERN;
     [self.webViewContainer initiateWebViewWithToken:YES];
+    [self.webViewContainer setBackgroundColor:[UIColor clearColor]];
     [self.webViewContainer.webView setNavigationDelegate:self];
     [self.webViewContainer.webView.scrollView setDelegate:self];
     [self.webViewContainer.webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionNew context:nil];

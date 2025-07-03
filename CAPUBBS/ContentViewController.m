@@ -107,9 +107,9 @@ static const CGFloat kWebViewMinHeight = 40;
     int oldPage = page;
     page = pageNum;
     if (page == 1) {
-        self.toolbarItems = @[self.buttonCollection, self.barFreeSpace, self.buttonJump, self.barFreeSpace, self.buttonAction, self.barFreeSpace, self.buttonCompose, self.barFreeSpace, self.buttonForward];
+        [self setToolbarItems:@[self.buttonCollection, self.barFreeSpace, self.buttonJump, self.barFreeSpace, self.buttonAction, self.barFreeSpace, self.buttonCompose, self.barFreeSpace, self.buttonForward] animated:YES];
     } else {
-        self.toolbarItems = @[self.buttonBack, self.barFreeSpace, self.buttonJump, self.barFreeSpace, self.buttonAction, self.barFreeSpace, self.buttonCompose, self.barFreeSpace, self.buttonForward];
+        [self setToolbarItems:@[self.buttonBack, self.barFreeSpace, self.buttonJump, self.barFreeSpace, self.buttonAction, self.barFreeSpace, self.buttonCompose, self.barFreeSpace, self.buttonForward] animated:YES];
     }
     self.buttonBack.enabled = (page > 1);
     self.buttonForward.enabled = NO;

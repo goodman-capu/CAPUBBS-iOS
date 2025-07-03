@@ -30,6 +30,8 @@
 
 + (UIViewController *)getTopViewController;
 
++ (UIBarButtonItem *)getCloseButtonForTarget:(id)target action:(SEL)action;
+
 + (UIView *)keyboardToolViewWithLeftButtons:(NSArray<UIButton *> *)leftButtons rightButtons:(NSArray<UIButton *> *)rightButtons;
 
 + (UIButton *)keyboardToolButtonWithTitle:(NSString *)title target:(id)target action:(SEL)action;
