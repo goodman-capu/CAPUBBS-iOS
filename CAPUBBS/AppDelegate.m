@@ -122,6 +122,15 @@
     // Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
 }
 
++ (UIWindow *)getKeyWindow {
+    for (UIWindow *window in [UIApplication sharedApplication].windows) {
+        if (window.isKeyWindow) {
+            return window;
+        }
+    }
+    return nil;
+}
+
 - (void)applicationDidBecomeActive:(UIApplication *)application {
     NSLog(@"Become Active");
     // 返回后自动登录
@@ -135,10 +144,9 @@
     
     static dispatch_once_t addTapListenerToken;
     dispatch_once(&addTapListenerToken, ^{
-        UIWindow *keyWindow = [UIApplication sharedApplication].keyWindow;
         UITapGestureRecognizer *globalTapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleGlobalTap:)];
         globalTapGesture.cancelsTouchesInView = NO;
-        [keyWindow addGestureRecognizer:globalTapGesture];
+        [[AppDelegate getKeyWindow] addGestureRecognizer:globalTapGesture];
     });
     
 #ifdef DEBUG
@@ -153,9 +161,13 @@
 }
 
 + (UIViewController *)getTopViewController {
-    __block UIViewController *topVC;
+    __block UIViewController *topVC = nil;
     dispatch_main_sync_safe(^{
-        topVC = [UIApplication sharedApplication].keyWindow.rootViewController;
+        UIWindow *keyWindow = [self getKeyWindow];
+        if (!keyWindow) {
+            return;
+        }
+        topVC = keyWindow.rootViewController;
         while (topVC.presentedViewController && !topVC.presentedViewController.isBeingDismissed && ![topVC isKindOfClass:[UIAlertController class]]) {
             topVC = topVC.presentedViewController;
         }
@@ -191,11 +203,11 @@
     // 设置 Auto Layout 约束
     [NSLayoutConstraint activateConstraints:@[
         // 左侧 stack 靠左
-        [leftStack.leadingAnchor constraintEqualToAnchor:keyboardToolView.leadingAnchor constant:16],
+        [leftStack.leadingAnchor constraintEqualToAnchor:keyboardToolView.safeAreaLayoutGuide.leadingAnchor constant:16],
         [leftStack.centerYAnchor constraintEqualToAnchor:keyboardToolView.centerYAnchor],
 
         // 右侧 stack 靠右
-        [rightStack.trailingAnchor constraintEqualToAnchor:keyboardToolView.trailingAnchor constant:-16],
+        [rightStack.trailingAnchor constraintEqualToAnchor:keyboardToolView.safeAreaLayoutGuide.trailingAnchor constant:-16],
         [rightStack.centerYAnchor constraintEqualToAnchor:keyboardToolView.centerYAnchor],
     ]];
 

@@ -1363,7 +1363,7 @@ static const CGFloat kWebViewMinHeight = 40;
             while (YES) {
                 if ([[text substringWithRange:NSMakeRange(tempIndex, 1)] isEqualToString:@" "] || [[text substringWithRange:NSMakeRange(tempIndex, 1)] isEqualToString:@">"]) {
                     NSString *label = [text substringWithRange:NSMakeRange(index + 1 + isRemove, tempIndex - index - 1 - isRemove)];
-                    bool isBlank = NO;
+                    BOOL isBlank = NO;
                     for (NSString *exc in exception) {
                         if ([label isEqualToString:exc]) {
                             isBlank = YES;

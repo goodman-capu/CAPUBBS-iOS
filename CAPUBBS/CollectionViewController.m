@@ -26,7 +26,7 @@
     self.view.backgroundColor = GREEN_BACK;
     if (!SIMPLE_VIEW) {
         AnimatedImageView *backgroundView = [[AnimatedImageView alloc] init];
-        [backgroundView setBlurredImage:[UIImage imageNamed:@"bcollection"] animated:NO];
+        [backgroundView setImage:[UIImage imageNamed:@"bcollection"] blurred:YES animated:NO];
         [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
         self.tableView.backgroundView = backgroundView;
     }

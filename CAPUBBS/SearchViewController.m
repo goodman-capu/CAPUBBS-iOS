@@ -59,8 +59,9 @@
             [self.view addConstraint:[NSLayoutConstraint constraintWithItem:backgroundView attribute:dir[i] relatedBy:NSLayoutRelationEqual toItem:self.view attribute:dir[i] multiplier:1.0 constant:0.0]];
         }
     }
-    UIImage *image = [self.bid isEqualToString:@"-1"] ? nil : [UIImage imageNamed:[@"b" stringByAppendingString:self.bid]];
-    [backgroundView setBlurredImage:image animated:animated];
+    BOOL isAll = [self.bid isEqualToString:@"-1"];
+    UIImage *image = isAll ? [UIImage imageWithColor:GREEN_BACK size:CGSizeMake(100, 100)] : [UIImage imageNamed:[@"b" stringByAppendingString:self.bid]];
+    [backgroundView setImage:image blurred:!isAll animated:animated];
 }
 
 - (void)refreshControlValueChanged:(UIRefreshControl *)refreshControl {

@@ -33,10 +33,10 @@
         [view setScrollsToTop:NO];
     }
     [self.icon setRounded:YES];
-    if (self.isEdit == YES) {
+    if (self.isEdit) {
         self.title = @"修改个人信息";
-        [self.imageUidAvailable setImage:SUCCESSMARK];
         [self setDefaultValue];
+        [self refreshBackgroundViewAnimated:NO];
     } else {
         iconURL = [NSString stringWithFormat:@"%@/bbsimg/icons/%@", CHEXIE, ICON_NAMES[arc4random() % [ICON_NAMES count]]];
         [self.icon setUrl:iconURL];
@@ -70,6 +70,7 @@
     self.textUid.userInteractionEnabled = NO;
     [self.labelUidGuide setText:@"用户名一经注册无法更改"];
     [self.labelUidGuide setTextColor:[UIColor darkGrayColor]];
+    [self.imageUidAvailable setImage:SUCCESSMARK];
     self.cellUidGuide.userInteractionEnabled = NO;
     self.cellUidGuide.accessoryType = UITableViewCellAccessoryNone;
     self.labelPsdGuide.text = @"新密码：";
@@ -135,7 +136,7 @@
     NSString *sig2 = self.textSig2.text;
     NSString *sig3 = self.textSig3.text;
     //NSString *code = self.textCode.text;
-    if (self.isEdit == NO) {
+    if (!self.isEdit) {
         if (uid.length == 0) {
             [self showAlertWithTitle:@"错误" message:@"请填写用户名！" cancelAction:^(UIAlertAction *action) {
                 [self.textUid becomeFirstResponder];
@@ -167,13 +168,13 @@
 //        }];
 //        return;
 //    }
-    if (email.length > 0 && [self isValidateEmail:email] == NO) {
+    if (email.length > 0 && ![self isValidateEmail:email]) {
         [self showAlertWithTitle:@"错误" message:@"邮箱格式错误！" cancelAction:^(UIAlertAction *action) {
             [self.textEmail becomeFirstResponder];
         }];
         return;
     }
-    if (qq.length > 0 && [self isValidQQ:qq] == NO) {
+    if (qq.length > 0 && ![self isValidQQ:qq]) {
         [self showAlertWithTitle:@"错误" message:@"QQ格式错误！" cancelAction:^(UIAlertAction *action) {
             [self.textQQ becomeFirstResponder];
         }];
@@ -233,7 +234,7 @@
         @"sig2" : sig2,
         @"sig3" : sig3,
     };
-    if (self.isEdit == NO) {
+    if (!self.isEdit) {
         [hud showWithProgressMessage:@"注册中"];
         [Helper callApiWithParams:dict toURL:@"register" callback:^(NSArray *result, NSError *err) {
             if (err || result.count == 0) {
@@ -453,6 +454,25 @@
         }
     }
     return bytes;
+}
+
+- (void)refreshBackgroundViewAnimated:(BOOL)animated {
+    if (SIMPLE_VIEW || !self.isEdit || !self.iconData) {
+        return;
+    }
+    if (!backgroundView) {
+        backgroundView = [[AnimatedImageView alloc] init];
+        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
+        self.tableView.backgroundView = backgroundView;
+    }
+    [backgroundView setImage:[UIImage imageWithData:self.iconData] blurred:YES animated:animated];
+}
+
+- (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath {
+    if (SIMPLE_VIEW || !self.isEdit || !self.iconData) {
+        return;
+    }
+    cell.backgroundColor = [UIColor colorWithWhite:1 alpha:0.6];
 }
 
 #pragma mark - Navigation

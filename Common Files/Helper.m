@@ -694,7 +694,11 @@
     const char* cStr=[str UTF8String];
     CC_LONG dataLength = (CC_LONG)[str lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
     unsigned char digist[CC_MD5_DIGEST_LENGTH]; // CC_MD5_DIGEST_LENGTH = 16
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    // Suppress CC_MD5 deprecated warning
     CC_MD5(cStr, dataLength, digist);
+#pragma clang diagnostic pop
     NSMutableString* outPutStr = [NSMutableString stringWithCapacity:CC_MD5_DIGEST_LENGTH * 2];
     for(int  i = 0; i < CC_MD5_DIGEST_LENGTH; i++) {
         [outPutStr appendFormat:@"%02X", digist[i]];// 小写 x 表示输出的是小写 MD5 ，大写 X 表示输出的是大写 MD5

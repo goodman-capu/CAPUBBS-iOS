@@ -38,28 +38,17 @@
     [super setImage:image];
 }
 
-- (void)setBlurredImage:(UIImage *)image animated:(BOOL)animated {
-    float animationTime = 0.5;
-    if (image) {
-        image = [UIImageEffects imageByApplyingExtraLightEffectToImage:image];
+- (void)setImage:(UIImage *)image blurred:(BOOL)blurred animated:(BOOL)animated {
+    if (image && blurred) {
+        image = [UIImageEffects imageByApplyingBlurToImage:image withRadius:40 tintColor:[UIColor colorWithWhite:0.93 alpha:0.9] saturationDeltaFactor:4 maskImage:nil];
     }
     if (animated) {
-        if (self.image) { // 原本有图片
-            [UIView animateWithDuration:animationTime / 2 animations:^{
-                [self setAlpha:0.25];
-            } completion:^(BOOL finished) {
-                [self setImage:image];
-                [UIView animateWithDuration:animationTime / 2 animations:^{
-                    [self setAlpha:1.0];
-                }];
-            }];
-        } else {
-            [self setAlpha:0.0];
+        [UIView transitionWithView:self
+                          duration:0.25
+                           options:UIViewAnimationOptionTransitionCrossDissolve
+                        animations:^{
             [self setImage:image];
-            [UIView animateWithDuration:animationTime animations:^{
-                [self setAlpha:1.0];
-            }];
-        }
+        } completion:nil];
     } else {
         [self setImage:image];
     }

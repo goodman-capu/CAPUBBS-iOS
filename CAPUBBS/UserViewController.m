@@ -106,7 +106,7 @@
         [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
         self.tableView.backgroundView = backgroundView;
     }
-    [backgroundView setBlurredImage:[UIImage imageWithData:self.iconData] animated:animated];
+    [backgroundView setImage:[UIImage imageWithData:self.iconData] blurred:YES animated:animated];
 }
 
 - (void)refreshControlValueChanged:(UIRefreshControl *)refreshControl {
@@ -274,12 +274,12 @@
     } else if (indexPath.section == 1) {
         return MIN(MAX([heights[indexPath.row] floatValue], 14) + 35, WEB_VIEW_MAX_HEIGHT);
     } else {
-        return 55;
+        return 50;
     }
 }
 
 - (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath {
-    cell.backgroundColor = [UIColor colorWithWhite:1 alpha:0.5];
+    cell.backgroundColor = [UIColor colorWithWhite:1 alpha:0.6];
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -447,6 +447,7 @@
     if ([segue.identifier isEqualToString:@"edit"]) {
         RegisterViewController *dest = [segue destinationViewController];
         dest.isEdit = YES;
+        dest.iconData = self.iconData;
         dest.navigationItem.leftBarButtonItems = nil;
     }
     if ([segue.identifier hasPrefix:@"recent"]) {

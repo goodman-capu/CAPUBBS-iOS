@@ -34,7 +34,7 @@
     
     if (![self isHotList] && !SIMPLE_VIEW) {
         AnimatedImageView *backgroundView = [[AnimatedImageView alloc] init];
-        [backgroundView setBlurredImage:[UIImage imageNamed:[@"b" stringByAppendingString:self.bid]] animated:NO];
+        [backgroundView setImage:[UIImage imageNamed:[@"b" stringByAppendingString:self.bid]] blurred:YES animated:NO];
         [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
         self.tableView.backgroundView = backgroundView;
     }

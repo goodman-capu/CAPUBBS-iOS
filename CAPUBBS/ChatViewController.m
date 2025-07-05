@@ -106,7 +106,7 @@
         [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
         self.tableView.backgroundView = backgroundView;
     }
-    [backgroundView setBlurredImage:[UIImage imageWithData:self.iconData] animated:animated];
+    [backgroundView setImage:[UIImage imageWithData:self.iconData] blurred:YES animated:animated];
 }
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {

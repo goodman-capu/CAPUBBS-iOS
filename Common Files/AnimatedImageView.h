@@ -23,7 +23,7 @@ typedef NS_ENUM(int, ImageFileType) {
 @interface AnimatedImageView : SDAnimatedImageView
 
 - (void)setRounded:(BOOL)isRounded;
-- (void)setBlurredImage:(UIImage *)image animated:(BOOL)animated;
+- (void)setImage:(UIImage *)image blurred:(BOOL)blurred animated:(BOOL)animated;
 - (void)setGif:(NSString *)imageName;
 - (void)setUrl:(NSString *)urlToSet;
 - (NSString *)getUrl;

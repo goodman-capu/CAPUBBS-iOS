@@ -31,6 +31,7 @@
     }
     cellWidth = cellHeight = 0;
     
+    [NOTIFICATION addObserver:self selector:@selector(changeNoti) name:@"userChanged" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(changeNoti) name:@"infoRefreshed" object:nil];
     
     [self changeNoti];
@@ -61,10 +62,10 @@
 }
 
 - (void)changeNoti {
+    NSDictionary *infoDict = USERINFO;
+    BOOL loggedIn = [Helper checkLogin:NO];
+    BOOL hasNoti = loggedIn && ![infoDict isEqual:@""] && [infoDict[@"newmsg"] integerValue] > 0;
     dispatch_main_async_safe(^{
-        NSDictionary *infoDict = USERINFO;
-        BOOL loggedIn = [Helper checkLogin:NO];
-        bool hasNoti = loggedIn && ![infoDict isEqual:@""] && [infoDict[@"newmsg"] integerValue] > 0;
         self.buttonUser.image = [UIImage systemImageNamed:hasNoti ? @"envelope.badge" : @"envelope"];
         self.buttonUser.enabled = loggedIn;
     });
