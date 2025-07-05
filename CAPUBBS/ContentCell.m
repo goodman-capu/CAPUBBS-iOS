@@ -13,6 +13,7 @@
 - (void)awakeFromNib {
     [super awakeFromNib];
     // Initialization code
+    self.backgroundColor = [UIColor clearColor];
     [self.icon setRounded:YES];
     [self.webViewContainer.layer setCornerRadius:10.0];
     [self.webViewContainer.layer setBorderColor:GREEN_LIGHT.CGColor];
@@ -79,6 +80,7 @@
 - (void)awakeFromNib {
     [super awakeFromNib];
     // Initialization code
+    self.backgroundColor = [UIColor clearColor];
     [self.lzlIcon setRounded:YES];
 }
 

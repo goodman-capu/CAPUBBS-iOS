@@ -26,8 +26,6 @@
 
 @property NSString *bid;
 @property NSInteger page;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonViewOnline;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonSearch;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonBack;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonForward;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonJump;

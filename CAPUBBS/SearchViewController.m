@@ -59,8 +59,7 @@
             [self.view addConstraint:[NSLayoutConstraint constraintWithItem:backgroundView attribute:dir[i] relatedBy:NSLayoutRelationEqual toItem:self.view attribute:dir[i] multiplier:1.0 constant:0.0]];
         }
     }
-    self.view.backgroundColor = [UIColor whiteColor];
-    UIImage *image = [self.bid isEqualToString:@"-1"] ? [UIImage imageWithColor:GREEN_DARK size:CGSizeMake(100, 100)] : [UIImage imageNamed:[@"b" stringByAppendingString:self.bid]];
+    UIImage *image = [self.bid isEqualToString:@"-1"] ? nil : [UIImage imageNamed:[@"b" stringByAppendingString:self.bid]];
     [backgroundView setBlurredImage:image animated:animated];
 }
 
@@ -316,13 +315,13 @@
     // Pass the selected object to the new view controller.
     if ([segue.identifier isEqualToString:@"post"]) {
         ContentViewController *dest = [segue destinationViewController];
-        NSDictionary *one = searchResult[[self.tableview indexPathForCell:(UITableViewCell *)sender].row];
-        dest.bid = one[@"bid"];
-        dest.tid = one[@"tid"];
-        if (one[@"floor"]) {
-            dest.destinationFloor = one[@"floor"];
+        NSDictionary *dict = searchResult[[self.tableview indexPathForCell:(UITableViewCell *)sender].row];
+        dest.bid = dict[@"bid"];
+        dest.tid = dict[@"tid"];
+        if (dict[@"floor"]) {
+            dest.destinationFloor = dict[@"floor"];
         }
-        NSString *titleText = one[@"title"] ? one[@"title"] : one[@"text"];
+        NSString *titleText = dict[@"title"] ? dict[@"title"] : dict[@"text"];
         dest.title = [Helper restoreTitle:titleText];
         [self.navigationController setToolbarHidden:NO];
     }

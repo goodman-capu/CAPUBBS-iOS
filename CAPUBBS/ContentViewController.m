@@ -106,16 +106,13 @@ static const CGFloat kWebViewMinHeight = 40;
     [hud showWithProgressMessage:@"加载中"];
     int oldPage = page;
     page = pageNum;
-    if (page == 1) {
-        [self setToolbarItems:@[self.buttonCollection, self.barFreeSpace, self.buttonJump, self.barFreeSpace, self.buttonAction, self.barFreeSpace, self.buttonCompose, self.barFreeSpace, self.buttonForward] animated:YES];
-    } else {
-        [self setToolbarItems:@[self.buttonBack, self.barFreeSpace, self.buttonJump, self.barFreeSpace, self.buttonAction, self.barFreeSpace, self.buttonCompose, self.barFreeSpace, self.buttonForward] animated:YES];
-    }
-    self.buttonBack.enabled = (page > 1);
+    [self updateBackOrCollectIcon];
+    self.buttonBackOrCollect.enabled = NO;
     self.buttonForward.enabled = NO;
     self.buttonLatest.enabled = NO;
     self.buttonJump.enabled = NO;
-    self.buttonCompose.enabled = NO;
+    self.buttonAction.enabled = NO;
+    self.buttonCompose.enabled = [Helper checkLogin:NO];
     activity.webpageURL = [self getCurrentUrl];
     activity.title = self.title;
     NSDictionary *dict = @{
@@ -133,7 +130,6 @@ static const CGFloat kWebViewMinHeight = 40;
             if (!err && (result.count == 0 || [result[0][@"time"] hasPrefix:@"1970"])) {
                 self.title = @"没有这个帖子";
             }
-            self.buttonCollection.enabled = NO;
             [hud hideWithFailureMessage:@"加载失败"];
             NSLog(@"%@", err);
             if (err.code == 111) {
@@ -200,10 +196,11 @@ static const CGFloat kWebViewMinHeight = 40;
         NSString *titleText = data.firstObject[@"title"];
         self.title = [Helper restoreTitle:titleText];
         BOOL isLast = [data[0][@"nextpage"] isEqualToString:@"false"];
+        self.buttonBackOrCollect.enabled = YES;
         self.buttonForward.enabled = !isLast;
         self.buttonLatest.enabled = !isLast;
         self.buttonJump.enabled = ([[data lastObject][@"pages"] integerValue] > 1);
-        self.buttonCompose.enabled = [Helper checkLogin:NO];
+        self.buttonAction.enabled = YES;
         [self clearHeightsAndHTMLCaches:^{
             [hud hideWithSuccessMessage:@"加载成功"];
             for (int i = 0; i < data.count; i++) {
@@ -246,7 +243,9 @@ static const CGFloat kWebViewMinHeight = 40;
 }
 
 - (void)updateCollection {
+    self.isCollection = NO;
     if (data.count == 0) {
+        [self updateBackOrCollectIcon];
         return;
     }
     NSMutableArray *collections = [NSMutableArray arrayWithArray:[DEFAULTS objectForKey:@"collection"]];
@@ -280,9 +279,18 @@ static const CGFloat kWebViewMinHeight = 40;
             self.isCollection = YES;
             break;
         }
-        self.isCollection = NO;
     }
-    [self.buttonCollection setImage:[UIImage imageNamed:(self.isCollection ? @"star-full" : @"star-empty")]];
+    [self updateBackOrCollectIcon];
+}
+
+- (void)updateBackOrCollectIcon {
+    if (page == 1) {
+        self.buttonBackOrCollect.image = [UIImage systemImageNamed:self.isCollection ? @"heart.fill" : @"heart"];
+        self.buttonBackOrCollect.style = self.isCollection ? UIBarButtonItemStyleDone : UIBarButtonItemStylePlain;
+    } else {
+        self.buttonBackOrCollect.image = [UIImage systemImageNamed:@"chevron.left"];
+        self.buttonBackOrCollect.style = UIBarButtonItemStylePlain;
+    }
 }
 
 - (void)clearHeightsAndHTMLCaches:(void (^)(void))callback {
@@ -589,7 +597,7 @@ static const CGFloat kWebViewMinHeight = 40;
     if ([dict[@"lzl"] isEqualToString:@"0"]) {
         [cell.buttonLzl setTitleColor:[UIColor darkGrayColor] forState:UIControlStateNormal];
     } else {
-        [cell.buttonLzl setTitleColor:BLUE forState:UIControlStateNormal];
+        [cell.buttonLzl setTitleColor:nil forState:UIControlStateNormal]; // use default color
     }
     
     if (SIMPLE_VIEW== NO) {
@@ -682,14 +690,17 @@ static const CGFloat kWebViewMinHeight = 40;
 
 // 滚动时调用此方法
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
+    if (@available(iOS 26.0, *)) { // Luiquid glass
+        return;
+    }
     // NSLog(@"scrollView.contentOffset:%f, %f", scrollView.contentOffset.x, scrollView.contentOffset.y);
-    if (isAtEnd == NO && scrollView.contentOffset.y >= scrollView.contentSize.height - scrollView.frame.size.height) {
+    if (!isAtEnd && scrollView.contentOffset.y >= scrollView.contentSize.height - scrollView.frame.size.height) {
         if (heights.count > 0 && [[heights lastObject] floatValue] > 0) {
             [self.navigationController setToolbarHidden:NO animated:YES];
             isAtEnd = YES;
         }
     }
-    if (isAtEnd == NO && scrollView.dragging) { // 拖拽
+    if (!isAtEnd && scrollView.dragging) { // 拖拽
         if ((scrollView.contentOffset.y - contentOffsetY) > 5.0f) { // 向上拖拽
             [self.navigationController setToolbarHidden:YES animated:YES];
         } else if ((contentOffsetY - scrollView.contentOffset.y) > 5.0f) { // 向下拖拽
@@ -1053,7 +1064,7 @@ static const CGFloat kWebViewMinHeight = 40;
     }];
 }
 
-- (IBAction)changeCollection:(id)sender {
+- (void)toggleCollection {
     NSMutableArray *array = [NSMutableArray arrayWithArray:[DEFAULTS objectForKey:@"collection"]];
     NSMutableDictionary *mdic;
     if (self.isCollection) {
@@ -1087,8 +1098,12 @@ static const CGFloat kWebViewMinHeight = 40;
     }
 }
 
-- (IBAction)back:(id)sender {
-    [self jumpTo:page - 1];
+- (IBAction)backOrCollect:(id)sender {
+    if (page > 1) {
+        [self jumpTo:page - 1];
+    } else {
+        [self toggleCollection];
+    }
 }
 
 - (IBAction)forward:(id)sender {
@@ -1107,7 +1122,7 @@ static const CGFloat kWebViewMinHeight = 40;
         }];
     }]];
     [alertController addAction:[UIAlertAction actionWithTitle:self.isCollection ? @"取消收藏" : @"收藏" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        [self changeCollection:nil];
+        [self toggleCollection];
     }]];
     [alertController addAction:[UIAlertAction actionWithTitle:@"分享" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         NSString *title = self.title;
@@ -1155,9 +1170,9 @@ static const CGFloat kWebViewMinHeight = 40;
         if (swipeDirection == 2) { // Disable swipe
             return;
         }
-        if (self.buttonForward.enabled == YES && swipeDirection == 0)
+        if (self.buttonForward.enabled && swipeDirection == 0)
             [self jumpTo:page + 1];
-        if (self.buttonBack.enabled == YES && swipeDirection == 1)
+        if (page > 1 && swipeDirection == 1)
             [self jumpTo:page - 1];
     }
 }
@@ -1168,9 +1183,9 @@ static const CGFloat kWebViewMinHeight = 40;
         if (swipeDirection == 2) { // Disable swipe
             return;
         }
-        if (self.buttonForward.enabled == YES && swipeDirection == 1)
+        if (self.buttonForward.enabled && swipeDirection == 1)
             [self jumpTo:page + 1];
-        if (self.buttonBack.enabled == YES && swipeDirection == 0)
+        if (page > 1 && swipeDirection == 0)
             [self jumpTo:page - 1];
     }
 }

@@ -354,9 +354,7 @@
         [self.labelByte setTextColor:[UIColor redColor]];
     }
     // 如果有输入文字，不允许点击外部关闭
-    if (@available(iOS 13.0, *)) {
-        [self setModalInPresentation:length > 0];
-    }
+    [self setModalInPresentation:length > 0];
 }
 
 - (void)longPress:(UILongPressGestureRecognizer *)sender {

@@ -18,7 +18,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.view.backgroundColor = GREEN_BACK;
+    self.view.backgroundColor = GRAY_PATTERN;
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
@@ -44,9 +44,7 @@
     }
     
     // 不允许点击外部关闭
-    if (@available(iOS 13.0, *)) {
-        [self setModalInPresentation:YES];
-    }
+    [self setModalInPresentation:YES];
     
     // Uncomment the following line to preserve selection between presentations.
     // self.clearsSelectionOnViewWillAppear = NO;

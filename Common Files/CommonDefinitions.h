@@ -34,7 +34,8 @@
 #define HOTPOSTS [GROUP_DEFAULTS objectForKey:@"hotPosts"]
 #define SIMPLE_VIEW [[GROUP_DEFAULTS objectForKey:@"simpleView"] boolValue]
 
-#define BLUE [UIColor colorWithRed:45.0/255 green:144.0/255 blue:220.0/255 alpha:1.0]
+#define BLUE [UIColor colorWithRed:22.0/255 green:133.0/255 blue:237.0/255 alpha:1.0]
+#define GREEN_TINT [UIColor colorWithRed:83.0/255 green:138.0/255 blue:95.0/255 alpha:1.0]
 #define GREEN_DARK [UIColor colorWithRed:115.0/255 green:170.0/255 blue:135.0/255 alpha:1.0]
 #define GREEN_LIGHT [UIColor colorWithRed:154.0/255 green:191.0/255 blue:165.0/255 alpha:1.0]
 #define GREEN_BACK [UIColor colorWithRed:221.0/255 green:236.0/255 blue:222.0/255 alpha:1.0]

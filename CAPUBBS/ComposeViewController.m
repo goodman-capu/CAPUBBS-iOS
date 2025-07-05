@@ -85,7 +85,7 @@
 //        [DEFAULTS setObject:@(YES) forKey:@"FeatureText2.1"];
 //    }
     if (![[DEFAULTS objectForKey:@"FeaturePreview2.2"] boolValue]) {
-        [self showAlertWithTitle:@"Tips" message:@"发帖前可以预览，所见即所得\n向左滑动或者点击右上方▶︎前往" cancelTitle:@"我知道了"];
+        [self showAlertWithTitle:@"Tips" message:@"发帖前可以预览，所见即所得\n向左滑动或者点击右上方小眼睛前往" cancelTitle:@"我知道了"];
         [DEFAULTS setObject:@(YES) forKey:@"FeaturePreview2.2"];
     }
     
@@ -140,9 +140,7 @@
 
 - (void)updateDismissable {
     // 如果有输入文字，不允许点击外部关闭
-    if (@available(iOS 13.0, *)) {
-        [self setModalInPresentation:[self shouldShowDismissWarning]];
-    }
+    [self setModalInPresentation:[self shouldShowDismissWarning]];
 }
 
 - (BOOL)checkBoard {

@@ -425,12 +425,15 @@
 
 // 滚动时调用此方法
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
+    if (@available(iOS 26.0, *)) { // Luiquid glass
+        return;
+    }
     // NSLog(@"scrollView.contentOffset:%f, %f", scrollView.contentOffset.x, scrollView.contentOffset.y);
-    if (isAtEnd == NO && scrollView.contentOffset.y >= scrollView.contentSize.height - scrollView.frame.size.height) {
+    if (!isAtEnd && scrollView.contentOffset.y >= scrollView.contentSize.height - scrollView.frame.size.height) {
         [self.navigationController setToolbarHidden:NO animated:YES];
         isAtEnd = YES;
     }
-    if (isAtEnd == NO && scrollView.dragging) { // 拖拽
+    if (!isAtEnd && scrollView.dragging) { // 拖拽
         if ((scrollView.contentOffset.y - contentOffsetY) > 5.0f) { // 向上拖拽
             [self.navigationController setToolbarHidden:YES animated:YES];
         } else if ((contentOffsetY - scrollView.contentOffset.y) > 5.0f) { // 向下拖拽

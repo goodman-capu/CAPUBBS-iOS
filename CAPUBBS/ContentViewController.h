@@ -40,13 +40,11 @@
 /// If set, will try to scroll to the last flor
 @property BOOL willScrollToBottom;
 @property BOOL isCollection;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *barFreeSpace;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonCollection;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonBack;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonForward;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonLatest;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonJump;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonAction;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonCompose;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonLatest;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonBackOrCollect;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonForward;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonJump;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonAction;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonCompose;
 
 @end

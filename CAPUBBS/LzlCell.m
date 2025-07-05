@@ -13,6 +13,7 @@
 - (void)awakeFromNib {
     [super awakeFromNib];
     // Initialization code
+    self.backgroundColor = [UIColor clearColor];
     
     [self.imageBottom setAlpha:0.8];
     [self.icon setRounded:YES];

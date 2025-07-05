@@ -59,7 +59,7 @@
             cell.accessoryType = UITableViewCellAccessoryCheckmark;
             cell.userInteractionEnabled = NO;
         } else {
-            cell.accessoryType = UITableViewCellAccessoryNone;
+            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
             cell.userInteractionEnabled = YES;
         }
         [cell.icon setUrl:info[@"icon"]];

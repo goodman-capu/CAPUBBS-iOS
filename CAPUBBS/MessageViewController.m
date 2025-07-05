@@ -39,18 +39,17 @@
     control = [[UIRefreshControl alloc] init];
     [control addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
     [self.tableView addSubview:control];
-    if (@available(iOS 13.0, *)) {
+    if (@available(iOS 26.0, *)) {
+    } else {
         self.segmentType.selectedSegmentTintColor = GREEN_DARK;
         // 普通状态文字颜色
         [self.segmentType setTitleTextAttributes:@{
-            NSForegroundColorAttributeName: [UIColor grayColor]
+            NSForegroundColorAttributeName: [UIColor darkGrayColor]
         } forState:UIControlStateNormal];
         // 选中状态文字颜色
         [self.segmentType setTitleTextAttributes:@{
             NSForegroundColorAttributeName: [UIColor whiteColor]
         } forState:UIControlStateSelected];
-    } else {
-        self.segmentType.tintColor = GREEN_DARK;
     }
     [self typeChanged:self.segmentType];
     // Do any additional setup after loading the view.

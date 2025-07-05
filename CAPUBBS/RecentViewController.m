@@ -66,6 +66,7 @@
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell" forIndexPath:indexPath];
+    cell.backgroundColor = [UIColor clearColor];
     if (self.data.count > 0) {
         cell.textLabel.text = [Helper restoreTitle:self.data[indexPath.row][@"title"]];
         cell.detailTextLabel.text = self.data[indexPath.row][@"time"];

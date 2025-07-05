@@ -269,18 +269,22 @@
 #pragma mark - Table view data source
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
-    if (indexPath.row == 0) {
+    if (indexPath.section == 0) {
         return UITableViewAutomaticDimension;
-    } else if (indexPath.row <= 4) {
-        return MIN(MAX([heights[indexPath.row - 1] floatValue], 14) + 35, WEB_VIEW_MAX_HEIGHT);
+    } else if (indexPath.section == 1) {
+        return MIN(MAX([heights[indexPath.row] floatValue], 14) + 35, WEB_VIEW_MAX_HEIGHT);
     } else {
         return 55;
     }
 }
 
+- (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath {
+    cell.backgroundColor = [UIColor colorWithWhite:1 alpha:0.5];
+}
+
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    if (indexPath.section == 0 && indexPath.row == 7) {
+    if (indexPath.section == 2 && indexPath.row == 2) {
         if ([self.ID isEqualToString:UID]) {
             [NOTIFICATION postNotificationName:@"sendEmail" object:nil userInfo:@{
                 @"recipients": REPORT_EMAIL,

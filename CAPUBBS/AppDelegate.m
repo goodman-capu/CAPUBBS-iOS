@@ -25,51 +25,45 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
     
-    UINavigationBar *navBarAppearance = [UINavigationBar appearance];
-    if (@available(iOS 13.0, *)) {
-        UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
-        [appearance configureWithDefaultBackground];
-        appearance.backgroundColor = [GREEN_DARK colorWithAlphaComponent:0.8];
-        appearance.backgroundEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemUltraThinMaterialDark];
-        appearance.titleTextAttributes = @{NSForegroundColorAttributeName: [UIColor whiteColor]}; // title color
-        appearance.largeTitleTextAttributes = @{NSForegroundColorAttributeName: [UIColor whiteColor]}; // title color
-        
-        navBarAppearance.standardAppearance = appearance;
-        navBarAppearance.scrollEdgeAppearance = appearance;
-        navBarAppearance.compactAppearance = appearance;
-        if (@available(iOS 15.0, *)) {
-            navBarAppearance.compactScrollEdgeAppearance = appearance;
-        }
-        navBarAppearance.tintColor = [UIColor whiteColor]; // buttons color
+    if (@available(iOS 26.0, *)) { // Liquid glass
+        self.window.tintColor = GREEN_TINT;
+        [UISwitch appearance].onTintColor = GREEN_DARK;
     } else {
-        [navBarAppearance setBarTintColor:GREEN_DARK];
-        [navBarAppearance setBarStyle:UIBarStyleBlack];
-        [navBarAppearance setTintColor:[UIColor whiteColor]];
-        [navBarAppearance setTranslucent:NO];
-    }
-    
-    UIToolbar *toolbarAppearance = [UIToolbar appearance];
-    toolbarAppearance.tintColor = BLUE;
-    if (@available(iOS 13.0, *)) {
-        UIToolbarAppearance *appearance = [[UIToolbarAppearance alloc] init];
-        //        [appearance configureWithOpaqueBackground];
+        UINavigationBar *navBar = [UINavigationBar appearance];
+        UINavigationBarAppearance *navBarAppearance = [[UINavigationBarAppearance alloc] init];
+        [navBarAppearance configureWithDefaultBackground];
+        navBarAppearance.backgroundColor = [GREEN_DARK colorWithAlphaComponent:0.8];
+        navBarAppearance.backgroundEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemUltraThinMaterialDark];
+        navBarAppearance.titleTextAttributes = @{NSForegroundColorAttributeName: [UIColor whiteColor]}; // title color
+        navBarAppearance.largeTitleTextAttributes = @{NSForegroundColorAttributeName: [UIColor whiteColor]}; // title color
         
-        toolbarAppearance.standardAppearance = appearance;
-        toolbarAppearance.compactAppearance = appearance;
+        navBar.standardAppearance = navBarAppearance;
+        navBar.scrollEdgeAppearance = navBarAppearance;
+        navBar.compactAppearance = navBarAppearance;
         if (@available(iOS 15.0, *)) {
-            toolbarAppearance.scrollEdgeAppearance = appearance;
-            toolbarAppearance.compactScrollEdgeAppearance = appearance;
+            navBar.compactScrollEdgeAppearance = navBarAppearance;
         }
+        navBar.tintColor = [UIColor whiteColor]; // buttons color
+        
+        UIToolbar *toolbar = [UIToolbar appearance];
+        UIToolbarAppearance *toolBarAppearance = [[UIToolbarAppearance alloc] init];
+        //    [appearance configureWithOpaqueBackground];
+        
+        toolbar.standardAppearance = toolBarAppearance;
+        toolbar.compactAppearance = toolBarAppearance;
+        if (@available(iOS 15.0, *)) {
+            toolbar.scrollEdgeAppearance = toolBarAppearance;
+            toolbar.compactScrollEdgeAppearance = toolBarAppearance;
+        }
+        
+        self.window.tintColor = BLUE;
+        [UISwitch appearance].onTintColor = BLUE;
     }
     
     [[UITextField appearance] setClearButtonMode:UITextFieldViewModeWhileEditing];
     [[UITextField appearance] setBackgroundColor:[UIColor lightTextColor]];
     [[UITextView appearance] setBackgroundColor:[UIColor lightTextColor]];
-    [[UISegmentedControl appearance] setTintColor:BLUE];
-    [[UIStepper appearance] setTintColor:BLUE];
-    [[UISwitch appearance] setOnTintColor:BLUE];
-    [[UISwitch appearance] setTintColor:[UIColor whiteColor]];
-    [[UITableViewCell appearance] setBackgroundColor:[UIColor clearColor]];
+    [[UITableViewCell appearance] setBackgroundColor:[UIColor colorWithWhite:1 alpha:0.8]];
     
     NSDictionary *dict = @{
         // @"proxy" : @2,

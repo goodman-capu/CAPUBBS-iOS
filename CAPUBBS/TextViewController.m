@@ -25,9 +25,6 @@
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
     
-    [self.labelPreview.layer setCornerRadius:10.0];
-    [self.labelPreview.layer setMasksToBounds:YES];
-    [self.textInput.layer setCornerRadius:10.0];
     self.textInput.text = self.defaultText;
     self.textInput.delegate = self;
     [self.segmentColor addTarget:self action:@selector(changeColor:) forControlEvents:UIControlEventValueChanged];
@@ -63,9 +60,9 @@
     
     [textPreview addAttribute:NSForegroundColorAttributeName value:[colors objectAtIndex:color] range:range];
     if ([[colorNames objectAtIndex:color] isEqualToString:@"white"]) {
-        [self.labelPreview setBackgroundColor:[UIColor lightGrayColor]];
+        [self.labelPreview setBackgroundColor:[UIColor colorWithWhite:0 alpha:0.2]];
     } else {
-        [self.labelPreview setBackgroundColor:[UIColor whiteColor]];
+        [self.labelPreview setBackgroundColor:[UIColor colorWithWhite:1 alpha:0.2]];
     }
     UIFontDescriptor *desc = [UIFontDescriptor fontDescriptorWithName:[fontNames objectAtIndex:isBold] size:size];
     if (isItalics) {

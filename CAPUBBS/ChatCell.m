@@ -13,6 +13,8 @@
 - (void)awakeFromNib {
     [super awakeFromNib];
     // Initialization code
+    self.backgroundColor = [UIColor clearColor];
+    
     [self.imageChat setAlpha:0.8];
     [self.labelTime.layer setCornerRadius:5.0];
     [self.labelTime.layer setMasksToBounds:YES];
@@ -20,9 +22,6 @@
     [self.textSend setScrollsToTop:NO];
     [self.textMessage setBackgroundColor:[UIColor clearColor]];
     [self.imageIcon setRounded:YES];
-    
-    self.layer.shouldRasterize = YES; // 光栅化 提高流畅度
-    self.layer.rasterizationScale = [UIScreen mainScreen].scale;
 }
 
 @end

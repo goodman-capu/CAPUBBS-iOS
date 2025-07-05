@@ -192,7 +192,11 @@ static char kIsAttemptingToPresentKey;
 @implementation CustomViewController (Customize)
 
 - (UIStatusBarStyle)preferredStatusBarStyle {
-    return UIStatusBarStyleLightContent;
+    if (@available(iOS 26.0, *)) { // Liquid glass
+        return UIStatusBarStyleDarkContent;
+    } else {
+        return UIStatusBarStyleLightContent;
+    }
 }
 
 @end
@@ -200,7 +204,11 @@ static char kIsAttemptingToPresentKey;
 @implementation CustomTableViewController (Customize)
 
 - (UIStatusBarStyle)preferredStatusBarStyle {
-    return UIStatusBarStyleLightContent;
+    if (@available(iOS 26.0, *)) { // Liquid glass
+        return UIStatusBarStyleDarkContent;
+    } else {
+        return UIStatusBarStyleLightContent;
+    }
 }
 
 @end
@@ -208,7 +216,11 @@ static char kIsAttemptingToPresentKey;
 @implementation CustomCollectionViewController (Customize)
 
 - (UIStatusBarStyle)preferredStatusBarStyle {
-    return UIStatusBarStyleLightContent;
+    if (@available(iOS 26.0, *)) { // Liquid glass
+        return UIStatusBarStyleDarkContent;
+    } else {
+        return UIStatusBarStyleLightContent;
+    }
 }
 
 @end
@@ -216,7 +228,11 @@ static char kIsAttemptingToPresentKey;
 @implementation CustomMailComposeViewController (Customize)
 
 - (UIStatusBarStyle)preferredStatusBarStyle {
-    return UIStatusBarStyleLightContent;
+    if (@available(iOS 26.0, *)) { // Liquid glass
+        return UIStatusBarStyleDarkContent;
+    } else {
+        return UIStatusBarStyleLightContent;
+    }
 }
 
 @end
@@ -224,7 +240,11 @@ static char kIsAttemptingToPresentKey;
 @implementation CustomSearchController (Customize)
 
 - (UIStatusBarStyle)preferredStatusBarStyle {
-    return UIStatusBarStyleLightContent;
+    if (@available(iOS 26.0, *)) { // Liquid glass
+        return UIStatusBarStyleDarkContent;
+    } else {
+        return UIStatusBarStyleLightContent;
+    }
 }
 
 @end

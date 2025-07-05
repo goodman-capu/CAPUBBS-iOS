@@ -32,17 +32,11 @@
     hudSofa = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hudSofa];
     
-    if ([self isHotList]) {
-        self.navigationItem.rightBarButtonItems = @[self.buttonViewOnline];
-    } else {
-        self.navigationItem.rightBarButtonItems = @[self.buttonSearch];
-        
-        if (!SIMPLE_VIEW) {
-            AnimatedImageView *backgroundView = [[AnimatedImageView alloc] init];
-            [backgroundView setBlurredImage:[UIImage imageNamed:[@"b" stringByAppendingString:self.bid]] animated:NO];
-            [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
-            self.tableView.backgroundView = backgroundView;
-        }
+    if (![self isHotList] && !SIMPLE_VIEW) {
+        AnimatedImageView *backgroundView = [[AnimatedImageView alloc] init];
+        [backgroundView setBlurredImage:[UIImage imageNamed:[@"b" stringByAppendingString:self.bid]] animated:NO];
+        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
+        self.tableView.backgroundView = backgroundView;
     }
     isFirstTime = YES;
     [self.tableView addGestureRecognizer:[[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)]];
@@ -123,6 +117,7 @@
     [hud showWithProgressMessage:@"读取中"];
     NSInteger oldPage = self.page;
     self.page = pageNum;
+    self.buttonAction.enabled = NO;
     self.buttonCompose.enabled = [Helper checkLogin:NO];
     self.buttonBack.enabled = NO;
     self.buttonJump.enabled = NO;
@@ -138,6 +133,7 @@
                 [self.refreshControl endRefreshing];
             }
 
+            self.buttonAction.enabled = YES;
             self.buttonBack.enabled = self.page != 1;
             if (err || result.count == 0) {
                 failCount++;
@@ -184,6 +180,7 @@
                     self.page = 1;
                     [self.refreshControl endRefreshing];
                 }
+                self.buttonAction.enabled = YES;
                 if (topErr || hotErr || hotResult.count == 0) {
                     failCount++;
                     [hud hideWithFailureMessage:@"读取失败"];
@@ -328,7 +325,11 @@
     BOOL isCollection = [self isCollection:dict[@"bid"] tid:dict[@"tid"]];
     NSMutableArray *titlePrefixes = [NSMutableArray array];
     if (isCollection) {
-        [titlePrefixes addObject:@"💙"];
+        if (@available(iOS 26.0, *)) {
+            [titlePrefixes addObject:@"💚"];
+        } else {
+            [titlePrefixes addObject:@"💙"];
+        }
     }
     if ([self isHotList]) {
         if (indexPath.row < globalTopCount) {
@@ -508,9 +509,9 @@
         if (swipeDirection == 2) { // Disable swipe
             return;
         }
-        if (self.buttonForward.enabled == YES && swipeDirection == 0)
+        if (self.buttonForward.enabled && swipeDirection == 0)
             [self jumpTo:self.page + 1];
-        if (self.buttonBack.enabled == YES && swipeDirection == 1)
+        if (self.page > 1 && swipeDirection == 1)
             [self jumpTo:self.page - 1];
     }
 }
@@ -521,9 +522,9 @@
         if (swipeDirection == 2) { // Disable swipe
             return;
         }
-        if (self.buttonForward.enabled == YES && swipeDirection == 1)
+        if (self.buttonForward.enabled && swipeDirection == 1)
             [self jumpTo:self.page + 1];
-        if (self.buttonBack.enabled == YES && swipeDirection == 0)
+        if (self.page > 1 && swipeDirection == 0)
             [self jumpTo:self.page - 1];
     }
 }
@@ -649,14 +650,15 @@
     } else if ([segue.identifier isEqualToString:@"post"]) {
         ContentViewController *dest = [segue destinationViewController];
         NSIndexPath *indexPath = [self.tableView indexPathForCell:(UITableViewCell *)sender];
-        NSDictionary *one = data[indexPath.row];
-        dest.tid = one[@"tid"];
-        dest.bid = one[@"bid"];
+        NSDictionary *dict = data[indexPath.row];
+        dest.tid = dict[@"tid"];
+        dest.bid = dict[@"bid"];
         if ([self isHotList] && indexPath.row >= globalTopCount) {
             // pid is reply num, floor # is reply num + 1
-            dest.destinationFloor = [NSString stringWithFormat:@"%ld", [one[@"pid"] integerValue] + 1];
+            dest.destinationFloor = [NSString stringWithFormat:@"%ld", [dict[@"pid"] integerValue] + 1];
         }
-        dest.title = [Helper restoreTitle:one[@"text"]];
+        dest.title = [Helper restoreTitle:dict[@"text"]];
+        dest.isCollection = [self isCollection:dict[@"bid"] tid:dict[@"tid"]];
     }
 
     // Get the new view controller using [segue destinationViewController].

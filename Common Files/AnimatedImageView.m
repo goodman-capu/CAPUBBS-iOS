@@ -40,7 +40,9 @@
 
 - (void)setBlurredImage:(UIImage *)image animated:(BOOL)animated {
     float animationTime = 0.5;
-    image = [UIImageEffects imageByApplyingExtraLightEffectToImage:image];
+    if (image) {
+        image = [UIImageEffects imageByApplyingExtraLightEffectToImage:image];
+    }
     if (animated) {
         if (self.image) { // 原本有图片
             [UIView animateWithDuration:animationTime / 2 animations:^{
