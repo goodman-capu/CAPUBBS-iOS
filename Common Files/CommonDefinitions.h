@@ -43,7 +43,7 @@
 #define SUCCESSMARK [UIImage imageNamed:@"successmark"]
 #define FAILMARK [UIImage imageNamed:@"failmark"]
 #define QUESTIONMARK [UIImage imageNamed:@"questionmark"]
-#define PLACEHOLDER [UIImage imageNamed:@"placeholder"]
+#define PLACEHOLDER [UIImage imageNamed:@"会标"]
 #define CACHE_DIRECTORY [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0]
 #define IMAGE_CACHE_PATH [CACHE_DIRECTORY stringByAppendingString:@"/IconCache"]
 #define ICON_NAMES @[@"dahlia.jpeg", @"whiterose.jpeg", @"red%20rose.jpeg", @"bowling.jpeg", @"yellow%20daisy.jpeg", @"snowflake.jpeg", @"zebra.jpeg", @"football.jpeg", @"smack.jpeg", @"target.jpeg", @"gingerbread%20man.jpeg", @"leaf.jpeg", @"soccer.jpeg", @"poppy.jpeg", @"earth.jpeg", @"turntable.jpeg", @"nest.jpeg", @"piano.jpeg", @"penguin.jpeg", @"dandelion.jpeg", @"lotus.jpeg", @"drum.jpeg", @"basketball.jpeg", @"ying%20yang.jpeg", @"sandollar.jpeg", @"flower.jpeg", @"owl.jpeg", @"zen.jpeg", @"medal.jpeg", @"sunflower.jpeg", @"fortune%20cookie.jpeg", @"cactus.jpeg", @"parrot.jpeg", @"hockey.jpeg", @"guitar.jpeg", @"violin.jpeg", @"baseball.jpeg", @"lightning.jpeg", @"chalk.jpeg", @"8ball.jpeg", @"eagle.jpeg", @"tennis.jpeg", @"golf.jpeg"]

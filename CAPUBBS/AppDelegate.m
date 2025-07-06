@@ -174,13 +174,13 @@
     // 左侧 Stack
     UIStackView *leftStack = [[UIStackView alloc] initWithArrangedSubviews:leftButtons];
     leftStack.axis = UILayoutConstraintAxisHorizontal;
-    leftStack.spacing = 16;
+    leftStack.spacing = 12;
     leftStack.translatesAutoresizingMaskIntoConstraints = NO;
 
     // 右侧 Stack
     UIStackView *rightStack = [[UIStackView alloc] initWithArrangedSubviews:rightButtons];
     rightStack.axis = UILayoutConstraintAxisHorizontal;
-    rightStack.spacing = 16;
+    rightStack.spacing = 12;
     rightStack.translatesAutoresizingMaskIntoConstraints = NO;
 
     [keyboardToolView addSubview:leftStack];
@@ -203,7 +203,7 @@
 + (UIButton *)keyboardToolButtonWithTitle:(NSString *)title target:(id)target action:(SEL)action {
     UIButton *btn = [UIButton buttonWithType:UIButtonTypeSystem];
     [btn setTitle:title forState:UIControlStateNormal];
-    btn.titleLabel.font = [UIFont systemFontOfSize:18];
+    btn.titleLabel.font = [UIFont systemFontOfSize:17];
     btn.translatesAutoresizingMaskIntoConstraints = NO;
     [btn addTarget:target action:action forControlEvents:UIControlEventTouchUpInside];
     return btn;
