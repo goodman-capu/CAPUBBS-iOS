@@ -66,8 +66,8 @@
     
     [NOTIFICATION addObserver:self selector:@selector(getInformation) name:@"userUpdated" object:nil];
     
-    control = [[UIRefreshControl alloc] init];
-    [control addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
+    self.refreshControl = [[UIRefreshControl alloc] init];
+    [self.refreshControl addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
 //    self.tableView.rowHeight = UITableViewAutomaticDimension;
     
     [self getInformation];
@@ -110,7 +110,7 @@
 }
 
 - (void)refreshControlValueChanged:(UIRefreshControl *)refreshControl {
-    control.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
+    refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
     [self getInformation];
 }
 
@@ -153,8 +153,8 @@
     [self setDefault];
     [hud showWithProgressMessage:@"查询中"];
     [Helper callApiWithParams:@{@"uid": self.ID, @"recent": @"YES", @"raw": @"YES"} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
-        if (control.isRefreshing) {
-            [control endRefreshing];
+        if (self.refreshControl.isRefreshing) {
+            [self.refreshControl endRefreshing];
         }
         if (err || result.count == 0) {
             [hud hideWithFailureMessage:@"查询失败"];
@@ -276,10 +276,6 @@
     } else {
         return 50;
     }
-}
-
-- (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath {
-    cell.backgroundColor = [UIColor colorWithWhite:1 alpha:0.6];
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {

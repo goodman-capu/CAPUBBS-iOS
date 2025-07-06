@@ -468,13 +468,6 @@
     [backgroundView setImage:[UIImage imageWithData:self.iconData] blurred:YES animated:animated];
 }
 
-- (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath {
-    if (SIMPLE_VIEW || !self.isEdit || !self.iconData) {
-        return;
-    }
-    cell.backgroundColor = [UIColor colorWithWhite:1 alpha:0.6];
-}
-
 #pragma mark - Navigation
 
 // In a storyboard-based application, you will often want to do a little preparation before navigation

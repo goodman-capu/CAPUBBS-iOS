@@ -121,10 +121,7 @@ static dispatch_once_t onceSharedDataSource;
         [_webView stopLoading];
         [_webView setNavigationDelegate:nil];
         [_webView setUIDelegate:nil];
-        // Before iOS 14, WeakScriptMessageDelegate will be retained forever
-        if (@available(iOS 14.0, *)) {
-            [_webView.configuration.userContentController removeAllScriptMessageHandlers];
-        }
+        [_webView.configuration.userContentController removeAllScriptMessageHandlers];
     }
 }
 

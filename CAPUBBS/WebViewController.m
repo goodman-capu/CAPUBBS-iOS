@@ -425,7 +425,7 @@
 
 // 滚动时调用此方法
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
-    if (@available(iOS 26.0, *)) { // Luiquid glass
+    if (@available(iOS 26.0, *)) { // Liquid glass
         return;
     }
     // NSLog(@"scrollView.contentOffset:%f, %f", scrollView.contentOffset.x, scrollView.contentOffset.y);

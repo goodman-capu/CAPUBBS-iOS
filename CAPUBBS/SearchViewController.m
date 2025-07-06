@@ -65,7 +65,7 @@
 }
 
 - (void)refreshControlValueChanged:(UIRefreshControl *)refreshControl {
-    control.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
+    refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
     [self search:nil];
 }
 
@@ -86,9 +86,7 @@
     endDatePicker = [[UIDatePicker alloc] init];
     for (UIDatePicker *picker in @[startDatePicker, endDatePicker]) {
         picker.datePickerMode = UIDatePickerModeDate;
-        if (@available(iOS 13.4, *)) {
-            picker.preferredDatePickerStyle = UIDatePickerStyleWheels;
-        }
+        picker.preferredDatePickerStyle = UIDatePickerStyleInline;
         picker.minimumDate = minDate;
         picker.maximumDate = today;
         [picker addTarget:self action:@selector(ValueChanged:) forControlEvents:UIControlEventValueChanged];

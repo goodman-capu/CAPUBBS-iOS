@@ -41,8 +41,8 @@
     // self.navigationItem.rightBarButtonItem = self.editButtonItem;
 }
 
-- (void)refreshControlValueChanged:(UIRefreshControl*)sender{
-    self.refreshControl.attributedTitle=[[NSAttributedString alloc] initWithString:@"刷新"];
+- (void)refreshControlValueChanged:(UIRefreshControl *)refreshControl {
+    refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
     [self viewOnline];
 }
 

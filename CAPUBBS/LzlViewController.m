@@ -66,8 +66,8 @@
     [activity invalidate];
 }
 
-- (void)refreshControlValueChanged:(UIRefreshControl*)sender{
-    self.refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
+- (void)refreshControlValueChanged:(UIRefreshControl *)refreshControl {
+    refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
     shouldShowHud = YES;
     [self loadData];
 }
@@ -318,7 +318,7 @@
         }
             if ([result[0][@"code"] integerValue]==0) {
                 [hud hideWithSuccessMessage:@"发布成功"];
-                [SKStoreReviewController requestReview];
+                [SKStoreReviewController requestReviewInScene:self.view.window.windowScene];
                 self.textPost.text = @"";
                 dispatch_global_after(0.5, ^{
                     [self loadData];

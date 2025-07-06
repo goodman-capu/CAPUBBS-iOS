@@ -7,11 +7,11 @@
 //
 
 #import "ComposeViewController.h"
-#import <MobileCoreServices/MobileCoreServices.h>
 #import <StoreKit/StoreKit.h>
 #import "PreviewViewController.h"
 #import "TextViewController.h"
 #import "ContentViewController.h"
+#import "AnimatedImageView.h"
 
 @interface ComposeViewController ()
 
@@ -321,7 +321,7 @@
         NSInteger code = [result[0][@"code"] integerValue];
         if (code == 0) {
             [hud hideWithSuccessMessage:@"发表成功"];
-            [SKStoreReviewController requestReview];
+            [SKStoreReviewController requestReviewInScene:self.view.window.windowScene];
         } else {
             [hud hideWithFailureMessage:@"发表失败"];
         }
@@ -452,26 +452,18 @@
         [self presentViewControllerSafe:alertControllerLink];
     }]];
     [alertController addAction:[UIAlertAction actionWithTitle:@"照片图库" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        if (@available(iOS 14.0, *)) {
-            PHPickerConfiguration *config = [[PHPickerConfiguration alloc] init];
-            config.selectionLimit = 20; // 最多一次选20张
-            config.filter = [PHPickerFilter imagesFilter];
-            PHPickerViewController *picker = [[PHPickerViewController alloc] initWithConfiguration:config];
-            picker.delegate = self;
-            [self presentViewControllerSafe:picker];
-        } else {
-            UIImagePickerController *imagePicker = [[UIImagePickerController alloc] init];
-            imagePicker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
-            imagePicker.mediaTypes = @[(NSString *)kUTTypeImage];
-            imagePicker.delegate = self;
-            [self presentViewControllerSafe:imagePicker];
-        }
+        PHPickerConfiguration *config = [[PHPickerConfiguration alloc] init];
+        config.selectionLimit = 20; // 最多一次选20张
+        config.filter = [PHPickerFilter imagesFilter];
+        PHPickerViewController *picker = [[PHPickerViewController alloc] initWithConfiguration:config];
+        picker.delegate = self;
+        [self presentViewControllerSafe:picker];
     }]];
     if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera]) {
         [alertController addAction:[UIAlertAction actionWithTitle:@"拍照" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             UIImagePickerController *imagePicker = [[UIImagePickerController alloc] init];
             imagePicker.sourceType = UIImagePickerControllerSourceTypeCamera;
-            imagePicker.mediaTypes = @[(NSString *)kUTTypeImage];
+            imagePicker.mediaTypes = @[UTTypeImage.identifier];
             imagePicker.delegate = self;
             [self presentViewControllerSafe:imagePicker];
         }]];
@@ -623,14 +615,19 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
 - (void)compressAndUploadImage:(UIImage *)image withCallback:(void (^)(NSString *url))callback {
     [hud showWithProgressMessage:@"正在压缩"];
     dispatch_global_default_async(^{
-        NSData * imageData = UIImageJPEGRepresentation(image, 1);
-        float maxLength = IS_SUPER_USER ? 500 : 300; // 压缩超过300K / 500K的图片
-        float ratio = 1.0;
-        while (imageData.length / 1024 >= maxLength && ratio >= 0.05) {
-            ratio *= 0.75;
-            imageData = UIImageJPEGRepresentation(image, ratio);
+        NSData *imageData;
+        if ([AnimatedImageView isAlpha:image]) { // 带透明信息的png不可转换成jpeg否则丢失透明性
+            imageData = UIImagePNGRepresentation(image);
+        } else {
+            imageData = UIImageJPEGRepresentation(image, 1);
+            float maxLength = IS_SUPER_USER ? 500 : 300; // 压缩超过300K / 500K的图片
+            float ratio = 1.0;
+            while (imageData.length >= maxLength * 1024 && ratio >= 0.1) {
+                ratio *= 0.8;
+                imageData = UIImageJPEGRepresentation(image, ratio);
+            }
         }
-        NSLog(@"Image Size:%dkB", (int)imageData.length / 1024);
+        NSLog(@"Image Size: %dkB", (int)imageData.length / 1024);
         [hud showWithProgressMessage:@"正在上传"];
         [Helper callApiWithParams:@{ @"image" : [imageData base64EncodedStringWithOptions:0] } toURL:@"image" callback:^(NSArray *result, NSError *err) {
             if (err || result.count == 0) {
@@ -649,9 +646,9 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
     });
 }
 
-- (UIImage *)reSizeImage:(UIImage *)oriImage toSize:(CGSize)reSize{
-    UIGraphicsBeginImageContext(CGSizeMake(reSize.width, reSize.height));
-    [oriImage drawInRect:CGRectMake(0, 0, reSize.width, reSize.height)];
+- (UIImage *)reSizeImage:(UIImage *)oriImage toSize:(CGSize)newSize {
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(newSize.width, newSize.height), NO, 0); // opaque = NO
+    [oriImage drawInRect:CGRectMake(0, 0, newSize.width, newSize.height)];
     UIImage *reSizeImage = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
     return reSizeImage;

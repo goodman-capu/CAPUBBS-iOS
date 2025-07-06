@@ -11,6 +11,8 @@
 #import <CommonCrypto/CommonCrypto.h> // MD5
 #import "sys/utsname.h" // 设备型号
 
+#define LINE_BREAK @"\r\n"
+
 @implementation Helper
 
 #pragma mark Web Request
@@ -24,16 +26,6 @@
     NSString *extension = [[fileName pathExtension] lowercaseString];
     NSString *name = [extensions containsObject:extension] ? extension : @"folder";
     return [NSString stringWithFormat:@"/bbs/assets/fileicons-svg/%@.svg", name];
-}
-
-+ (NSString *)encodeURIComponent:(NSString *)string {
-    static NSCharacterSet *allowedCharacters = nil;
-    static dispatch_once_t onceCharsToken;
-    dispatch_once(&onceCharsToken, ^{
-        allowedCharacters = [NSCharacterSet characterSetWithCharactersInString:@"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._* "];
-    });
-    NSString *encoded = [string stringByAddingPercentEncodingWithAllowedCharacters:allowedCharacters];
-    return [encoded stringByReplacingOccurrencesOfString:@" " withString:@"+"];
 }
 
 /**
@@ -111,6 +103,7 @@
     NSString *postUrl = [NSString stringWithFormat:@"%@/api/client.php?ask=%@",CHEXIE, url];
 #ifdef DEBUG
     NSLog(@"🌐 Calling API: %@", url);
+//    postUrl = [NSString stringWithFormat:@"https://www.chexie.net/api/client_new.php?ask=%@", url];
 #endif
     NSMutableDictionary *requestParams = [@{
         @"os": @"ios",
@@ -120,25 +113,45 @@
         @"clientbuild": APP_BUILD,
         @"token": TOKEN
     } mutableCopy];
-    [requestParams addEntriesFromDictionary:params];
     
-    NSMutableURLRequest *request = [NSMutableURLRequest
-                                    requestWithURL:[NSURL URLWithString:postUrl]];
+    NSMutableDictionary *requestFiles = [NSMutableDictionary dictionary];
+    for (NSString *key in params) {
+        id value = params[key];
+        if ([value isKindOfClass:[NSData class]]) {
+            requestFiles[key] = value;
+        } else {
+            requestParams[key] = value;
+        }
+    }
+        
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:postUrl]];
     request.HTTPMethod = @"POST";
     request.timeoutInterval = 30;
     
-    // Convert parameters to x-www-form-urlencoded (or JSON, depending on server)
-    NSMutableArray *bodyParts = [NSMutableArray array];
-    [requestParams enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-        NSString *part = [NSString stringWithFormat:@"%@=%@",
-                          [self encodeURIComponent:key],
-                          [self encodeURIComponent:obj]];
-        [bodyParts addObject:part];
-    }];
-    NSString *bodyString = [bodyParts componentsJoinedByString:@"&"];
-    NSData *bodyData = [bodyString dataUsingEncoding:NSUTF8StringEncoding];
-    request.HTTPBody = bodyData;
-    [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
+    NSString *boundary = [NSString stringWithFormat:@"Boundary-%@", [[NSUUID UUID] UUIDString]];
+    [request setValue:[NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary] forHTTPHeaderField:@"Content-Type"];
+    
+    NSMutableData *body = [NSMutableData data];
+    // 添加普通字段
+    for (NSString *key in requestParams) {
+        [body appendData:[[NSString stringWithFormat:@"--%@%@", boundary, LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"%@", key, LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[LINE_BREAK dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[requestParams[key] dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[LINE_BREAK dataUsingEncoding:NSUTF8StringEncoding]];
+    }
+    // 添加文件字段
+    for (NSString *key in requestFiles) {
+        [body appendData:[[NSString stringWithFormat:@"--%@%@", boundary, LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"%@", key, key, LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[[NSString stringWithFormat:@"Content-Type: application/octet-stream%@", LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[LINE_BREAK dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:requestFiles[key]];
+        [body appendData:[LINE_BREAK dataUsingEncoding:NSUTF8StringEncoding]];
+    }
+    // 结束边界
+    [body appendData:[[NSString stringWithFormat:@"--%@--%@", boundary, LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
+    request.HTTPBody = body;
     
     [Downloader loadRequest:request progress:nil completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         if (error) {

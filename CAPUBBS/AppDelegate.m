@@ -15,7 +15,6 @@
 #import "MessageViewController.h"
 #import "ComposeViewController.h"
 #import <CoreSpotlight/CoreSpotlight.h>
-#import <MobileCoreServices/MobileCoreServices.h>
 
 @implementation PreviewItem
 @end
@@ -40,9 +39,7 @@
         navBar.standardAppearance = navBarAppearance;
         navBar.scrollEdgeAppearance = navBarAppearance;
         navBar.compactAppearance = navBarAppearance;
-        if (@available(iOS 15.0, *)) {
-            navBar.compactScrollEdgeAppearance = navBarAppearance;
-        }
+        navBar.compactScrollEdgeAppearance = navBarAppearance;
         navBar.tintColor = [UIColor whiteColor]; // buttons color
         
         UIToolbar *toolbar = [UIToolbar appearance];
@@ -51,10 +48,8 @@
         
         toolbar.standardAppearance = toolBarAppearance;
         toolbar.compactAppearance = toolBarAppearance;
-        if (@available(iOS 15.0, *)) {
-            toolbar.scrollEdgeAppearance = toolBarAppearance;
-            toolbar.compactScrollEdgeAppearance = toolBarAppearance;
-        }
+        toolbar.scrollEdgeAppearance = toolBarAppearance;
+        toolbar.compactScrollEdgeAppearance = toolBarAppearance;
         
         self.window.tintColor = BLUE;
         [UISwitch appearance].onTintColor = BLUE;
@@ -63,7 +58,7 @@
     [[UITextField appearance] setClearButtonMode:UITextFieldViewModeWhileEditing];
     [[UITextField appearance] setBackgroundColor:[UIColor lightTextColor]];
     [[UITextView appearance] setBackgroundColor:[UIColor lightTextColor]];
-    [[UITableViewCell appearance] setBackgroundColor:[UIColor colorWithWhite:1 alpha:0.8]];
+    [[UITableViewCell appearance] setBackgroundColor:[UIColor colorWithWhite:1 alpha:0.6]];
     
     NSDictionary *dict = @{
         // @"proxy" : @2,
@@ -122,15 +117,6 @@
     // Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
 }
 
-+ (UIWindow *)getKeyWindow {
-    for (UIWindow *window in [UIApplication sharedApplication].windows) {
-        if (window.isKeyWindow) {
-            return window;
-        }
-    }
-    return nil;
-}
-
 - (void)applicationDidBecomeActive:(UIApplication *)application {
     NSLog(@"Become Active");
     // 返回后自动登录
@@ -146,7 +132,7 @@
     dispatch_once(&addTapListenerToken, ^{
         UITapGestureRecognizer *globalTapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleGlobalTap:)];
         globalTapGesture.cancelsTouchesInView = NO;
-        [[AppDelegate getKeyWindow] addGestureRecognizer:globalTapGesture];
+        [[UIApplication sharedApplication].delegate.window addGestureRecognizer:globalTapGesture];
     });
     
 #ifdef DEBUG
@@ -163,7 +149,7 @@
 + (UIViewController *)getTopViewController {
     __block UIViewController *topVC = nil;
     dispatch_main_sync_safe(^{
-        UIWindow *keyWindow = [self getKeyWindow];
+        UIWindow *keyWindow = [UIApplication sharedApplication].delegate.window;
         if (!keyWindow) {
             return;
         }
@@ -692,7 +678,7 @@
         NSString *title = dict[@"title"];
         NSString *author = dict[@"author"] ?: @"";
         NSString *text = dict[@"text"] ?: @"";
-        CSSearchableItemAttributeSet *attr = [[CSSearchableItemAttributeSet alloc] initWithItemContentType:(NSString *)kUTTypeText];
+        CSSearchableItemAttributeSet *attr = [[CSSearchableItemAttributeSet alloc] initWithContentType:UTTypeText];
         attr.title = title;
         if (text.length > 0) {
             if (author.length > 0) {

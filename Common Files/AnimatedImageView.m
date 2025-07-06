@@ -7,7 +7,6 @@
 //
 
 #import "AnimatedImageView.h"
-#import <MobileCoreServices/MobileCoreServices.h>
 
 @implementation AnimatedImageView {
     NSString * latestUrl;
@@ -169,22 +168,18 @@
     UIImage *resizeImage = oriImage;
     int maxWidth = 450; // 详细信息界面图片大小150 * 150 @3x模式下450 * 450可保证清晰
     if (oriImage.size.width > maxWidth) {
-        UIGraphicsBeginImageContext(CGSizeMake(maxWidth, maxWidth*oriImage.size.height/oriImage.size.width));
-        [oriImage drawInRect:CGRectMake(0, 0, maxWidth, maxWidth*oriImage.size.height/oriImage.size.width)];
+        CGFloat scaledHeight = maxWidth * oriImage.size.height / oriImage.size.width;
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(maxWidth, scaledHeight), NO, 0); // opaque = NO
+        [oriImage drawInRect:CGRectMake(0, 0, maxWidth, maxWidth * oriImage.size.height / oriImage.size.width)];
         resizeImage = UIGraphicsGetImageFromCurrentImageContext();
         UIGraphicsEndImageContext();
     }
     
-    CGImageAlphaInfo alphaInfo = CGImageGetAlphaInfo(oriImage.CGImage);
-    BOOL hasAlpha = (alphaInfo == kCGImageAlphaFirst ||
-                     alphaInfo == kCGImageAlphaLast ||
-                     alphaInfo == kCGImageAlphaPremultipliedFirst ||
-                     alphaInfo == kCGImageAlphaPremultipliedLast);
-    if (hasAlpha) { // 带透明信息的png不可转换成jpeg否则丢失透明性
+    if ([AnimatedImageView isAlpha:oriImage]) { // 带透明信息的png不可转换成jpeg否则丢失透明性
         return UIImagePNGRepresentation(resizeImage);
     } else {
         if (resizeImage.size.width >= maxWidth) {
-            return UIImageJPEGRepresentation(resizeImage, 0.75);
+            return UIImageJPEGRepresentation(resizeImage, 0.8);
         } else {
             return UIImageJPEGRepresentation(resizeImage, 1);
         }
@@ -199,6 +194,14 @@
     return animatedImage && animatedImage.sd_imageFrameCount > 1;
 }
 
++ (BOOL)isAlpha:(UIImage *)image {
+    CGImageAlphaInfo alphaInfo = CGImageGetAlphaInfo(image.CGImage);
+    return (alphaInfo == kCGImageAlphaFirst ||
+            alphaInfo == kCGImageAlphaLast ||
+            alphaInfo == kCGImageAlphaPremultipliedFirst ||
+            alphaInfo == kCGImageAlphaPremultipliedLast);
+}
+
 + (ImageFileType)fileType:(NSData *)imageData {
     if (!imageData || imageData.length == 0) {
         return ImageFileTypeUnknown;
@@ -209,38 +212,40 @@
         return ImageFileTypeUnknown;
     }
 
-    CFStringRef uti = CGImageSourceGetType(source);
+    CFStringRef utiString = CGImageSourceGetType(source);
     CFRelease(source);
 
-    if (!uti) {
+    if (!utiString) {
         return ImageFileTypeUnknown;
     }
 
-    if (UTTypeConformsTo(uti, kUTTypeJPEG)) {
+    UTType *type = [UTType typeWithIdentifier:(__bridge NSString *)utiString];
+    if (!type) {
+        return ImageFileTypeUnknown;
+    }
+
+    if ([type conformsToType:UTTypeJPEG]) {
         return ImageFileTypeJPEG;
     }
-    if (UTTypeConformsTo(uti, kUTTypePNG)) {
+    if ([type conformsToType:UTTypePNG]) {
         return ImageFileTypePNG;
     }
-    if (UTTypeConformsTo(uti, kUTTypeGIF)) {
+    if ([type conformsToType:UTTypeGIF]) {
         return ImageFileTypeGIF;
     }
-    if (UTTypeConformsTo(uti, (__bridge CFStringRef)@"public.heic")) {
+    if ([type conformsToType:UTTypeHEIC]) {
         return ImageFileTypeHEIC;
     }
-    if (UTTypeConformsTo(uti, (__bridge CFStringRef)@"public.heif")) {
+    if ([type conformsToType:UTTypeHEIF]) {
         return ImageFileTypeHEIF;
     }
-    if (@available(iOS 14.0, *)) {
-        // WebP 在 iOS 14+ 才原生支持，所以对于更早系统不要识别，不然无法渲染
-        if (UTTypeConformsTo(uti, (__bridge CFStringRef)@"public.webp") ||
-            UTTypeConformsTo(uti, (__bridge CFStringRef)@"org.webmproject.webp")) {
-            return ImageFileTypeWEBP;
-        }
+    if ([type conformsToType:UTTypeWebP]) {
+        return ImageFileTypeWEBP;
     }
 
     return ImageFileTypeUnknown;
 }
+
 
 + (NSString *)fileExtension:(ImageFileType)type {
     switch (type) {

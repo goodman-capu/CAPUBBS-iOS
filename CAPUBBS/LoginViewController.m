@@ -68,7 +68,7 @@
 }
 
 - (void)refreshControlValueChanged:(UIRefreshControl *)refreshControl {
-    control.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
+    refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
     [hud showWithProgressMessage:@"正在刷新"];
     // Reset to allow manual refresh
     newsRefreshTime = 0;

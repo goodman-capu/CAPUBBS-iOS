@@ -39,6 +39,7 @@
     control = [[UIRefreshControl alloc] init];
     [control addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
     [self.tableView addSubview:control];
+    
     if (@available(iOS 26.0, *)) {
     } else {
         self.segmentType.selectedSegmentTintColor = GREEN_DARK;
@@ -70,7 +71,7 @@
 }
 
 - (void)refreshControlValueChanged:(UIRefreshControl *)refreshControl {
-    control.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
+    refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
     [hud showWithProgressMessage:@"正在刷新"];
     [self getInfo];
 }

@@ -66,7 +66,7 @@
     BOOL loggedIn = [Helper checkLogin:NO];
     BOOL hasNoti = loggedIn && ![infoDict isEqual:@""] && [infoDict[@"newmsg"] integerValue] > 0;
     dispatch_main_async_safe(^{
-        self.buttonUser.image = [UIImage systemImageNamed:hasNoti ? @"envelope.badge" : @"envelope"];
+        self.buttonUser.image = [UIImage systemImageNamed:hasNoti ? @"bell.badge" : @"bell"];
         self.buttonUser.enabled = loggedIn;
     });
 }

@@ -45,7 +45,9 @@ static const CGFloat kWebViewMinHeight = 40;
     tempHeights = [[NSMutableArray alloc] init];
     HTMLStrings = [[NSMutableArray alloc] init];
     
+    self.refreshControl = [[UIRefreshControl alloc] init];
     [self.refreshControl addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
+    
     UITapGestureRecognizer *tapTwice = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(doubleTapWeb:)];
     [tapTwice setNumberOfTapsRequired:2];
     [self.tableView addGestureRecognizer:tapTwice];
@@ -690,7 +692,7 @@ static const CGFloat kWebViewMinHeight = 40;
 
 // 滚动时调用此方法
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
-    if (@available(iOS 26.0, *)) { // Luiquid glass
+    if (@available(iOS 26.0, *)) { // Liquid glass
         return;
     }
     // NSLog(@"scrollView.contentOffset:%f, %f", scrollView.contentOffset.x, scrollView.contentOffset.y);

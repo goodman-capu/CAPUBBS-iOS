@@ -46,6 +46,7 @@
     
     self.title = ([self isHotList] ? @"🔥论坛热点🔥" : [Helper getBoardTitle:self.bid]);
     oriTitle = self.title;
+    self.refreshControl = [[UIRefreshControl alloc] init];
     [self.refreshControl addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
     if (self.page <= 0) {
         self.page = 1;
@@ -108,8 +109,8 @@
     [self jumpTo:self.page];
 }
 
-- (void)refreshControlValueChanged:(UIRefreshControl*)sender{
-    self.refreshControl.attributedTitle=[[NSAttributedString alloc] initWithString:@"刷新"];
+- (void)refreshControlValueChanged:(UIRefreshControl *)refreshControl {
+    refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
     [self jumpTo:self.page];
 }
 

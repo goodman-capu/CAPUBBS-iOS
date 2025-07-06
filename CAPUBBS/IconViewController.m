@@ -8,7 +8,6 @@
 
 #import "IconViewController.h"
 #import "IconCell.h"
-#import <MobileCoreServices/MobileCoreServices.h>
 
 #define HAS_CUSTOM_ICON (newIconNum + oldIconNum == -2)
 #define OLD_ICON_TOTAL 212
@@ -226,7 +225,7 @@
     [alertController addAction:[UIAlertAction actionWithTitle:@"照片图库" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         UIImagePickerController *imagePicker = [[UIImagePickerController alloc] init];
         imagePicker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
-        imagePicker.mediaTypes = @[(NSString *)kUTTypeImage];
+        imagePicker.mediaTypes = @[UTTypeImage.identifier];
         imagePicker.allowsEditing = YES;
         imagePicker.delegate = self;
         [self presentViewControllerSafe:imagePicker];
@@ -236,7 +235,7 @@
             UIImagePickerController *imagePicker = [[UIImagePickerController alloc] init];
             imagePicker.sourceType = UIImagePickerControllerSourceTypeCamera;
             imagePicker.cameraDevice = UIImagePickerControllerCameraDeviceFront;
-            imagePicker.mediaTypes = @[(NSString *)kUTTypeImage];
+            imagePicker.mediaTypes = @[UTTypeImage.identifier];
             imagePicker.allowsEditing = YES;
             imagePicker.delegate = self;
             [self presentViewControllerSafe:imagePicker];
@@ -264,14 +263,30 @@
 - (void)compressAndUploadImage:(UIImage *)image {
     [hud showWithProgressMessage:@"正在压缩"];
     dispatch_global_default_async(^{
-        NSData * imageData = UIImageJPEGRepresentation(image, 1);
-        float maxLength = 200; // 压缩超过200K的图片
-        float ratio = 1.0;
-        while (imageData.length / 1024 >= maxLength && ratio >= 0.05) {
-            ratio *= 0.75;
-            imageData = UIImageJPEGRepresentation(image, ratio);
+        BOOL isAlpha = [AnimatedImageView isAlpha:image];
+        UIImage *resizedImage = image;
+        int maxWidth = isAlpha ? 400 : 800;
+        if (image.size.width > maxWidth) {
+            CGFloat scaledHeight = maxWidth * image.size.height / image.size.width;
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(maxWidth, scaledHeight), NO, 0); // opaque = NO
+            [image drawInRect:CGRectMake(0, 0, maxWidth, maxWidth * image.size.height / image.size.width)];
+            resizedImage = UIGraphicsGetImageFromCurrentImageContext();
+            UIGraphicsEndImageContext();
         }
-        NSLog(@"Icon Size:%dkB", (int)imageData.length / 1024);
+        
+        NSData *imageData;
+        if (isAlpha) { // 带透明信息的png不可转换成jpeg否则丢失透明性
+            imageData = UIImagePNGRepresentation(resizedImage);
+        } else {
+            imageData = UIImageJPEGRepresentation(image, 1);
+            float maxLength = IS_SUPER_USER ? 300 : 200; // 压缩超过200K / 300K的图片
+            float ratio = 1.0;
+            while (imageData.length >= maxLength * 1024 && ratio >= 0.1) {
+                ratio *= 0.8;
+                imageData = UIImageJPEGRepresentation(image, ratio);
+            }
+        }
+        NSLog(@"Icon Size: %dkB", (int)imageData.length / 1024);
         [hud showWithProgressMessage:@"正在上传"];
         [Helper callApiWithParams:@{ @"image" : [imageData base64EncodedStringWithOptions:0] } toURL:@"image" callback:^(NSArray *result, NSError *err) {
             if (err || result.count == 0) {

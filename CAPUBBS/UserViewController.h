@@ -15,7 +15,6 @@
     MBProgressHUD *hud;
     AnimatedImageView *backgroundView;
     int textSize;
-    UIRefreshControl *control;
     NSMutableArray *recentPost;
     NSMutableArray *recentReply;
     NSArray *labels;

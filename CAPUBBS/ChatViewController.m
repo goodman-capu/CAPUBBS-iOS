@@ -118,8 +118,8 @@
     }
 }
 
-- (void)refreshControlValueChanged:(UIRefreshControl *)sender {
-    self.refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
+- (void)refreshControlValueChanged:(UIRefreshControl *)refreshControl {
+    refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
     shouldShowHud = YES;
     [self loadChat];
 }
@@ -167,7 +167,7 @@
 }
 
 - (void)checkID:(BOOL)hudVisible {
-    [Helper callApiWithParams:@{@"uid":self.ID, @"recent":@"YES"} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:@{@"uid":self.ID} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
         if (err || result.count == 0) {
             return;
         }
