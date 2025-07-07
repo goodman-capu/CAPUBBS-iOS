@@ -22,6 +22,11 @@
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
+    if (!SIMPLE_VIEW) {
+        backgroundView = [[AnimatedImageView alloc] init];
+        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
+        self.tableView.backgroundView = backgroundView;
+    }
     
     if (self.iconData.length > 0) {
         [self refreshBackgroundViewAnimated:NO];
@@ -100,11 +105,6 @@
 - (void)refreshBackgroundViewAnimated:(BOOL)animated {
     if (SIMPLE_VIEW) {
         return;
-    }
-    if (!backgroundView) {
-        backgroundView = [[AnimatedImageView alloc] init];
-        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
-        self.tableView.backgroundView = backgroundView;
     }
     [backgroundView setImage:[UIImage imageWithData:self.iconData] blurred:YES animated:animated];
 }
@@ -321,6 +321,12 @@
             }
         }
     }];
+}
+
+#pragma mark - Text view delegate
+
+- (BOOL)textView:(UITextView *)textView shouldInteractWithURL:(NSURL *)URL inRange:(NSRange)characterRange interaction:(UITextItemInteraction)interaction {
+    return [AppDelegate textView:textView shouldInteractWithURL:URL inRange:characterRange interaction:interaction];
 }
 
 #pragma mark - Navigation

@@ -21,10 +21,10 @@
     self.view.backgroundColor = GRAY_PATTERN;
 
     [self.webViewContainer initiateWebViewWithToken:NO];
-    [self.webViewContainer.layer setBorderColor:GREEN_LIGHT.CGColor];
-    [self.webViewContainer.layer setBorderWidth:1.0];
-    [self.webViewContainer.layer setMasksToBounds:YES];
-    [self.webViewContainer.layer setCornerRadius:10.0];
+    self.webViewContainer.layer.borderColor = GREEN_LIGHT.CGColor;
+    self.webViewContainer.layer.borderWidth = 1;
+    self.webViewContainer.layer.masksToBounds = YES;
+    self.webViewContainer.layer.cornerRadius = 10;
     [self.webViewContainer.webView setNavigationDelegate:self];
     self.labelTitle.text = self.textTitle;
     NSString *sig = nil;
@@ -71,26 +71,22 @@
         return;
     }
     
-    if ([path hasPrefix:@"tel:"] || [path hasPrefix:@"sms:"] || [path hasPrefix:@"facetime:"] || [path hasPrefix:@"maps:"]) {
-        // Directly open
-        if ([[UIApplication sharedApplication] canOpenURL:url]) {
-            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
-        }
-        decisionHandler(WKNavigationActionPolicyCancel);
-        return;
-    }
-    
     if ([path hasPrefix:@"capubbs-attach:"]) {
         [self showAlertWithTitle:@"提示" message:@"预览模式中不会下载附件"];
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     }
     
-    WebViewController *dest = [self.storyboard instantiateViewControllerWithIdentifier:@"webview"];
-    CustomNavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
-    dest.URL = path;
-    navi.modalPresentationStyle = UIModalPresentationFullScreen;
-    [self presentViewControllerSafe:navi];
+    if (![Helper isHttpScheme:url.scheme]) {
+        // Directly open
+        if ([[UIApplication sharedApplication] canOpenURL:url]) {
+            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+            decisionHandler(WKNavigationActionPolicyCancel);
+            return;
+        }
+    }
+    
+    [AppDelegate openURL:path fullScreen:YES];
     decisionHandler(WKNavigationActionPolicyCancel);
 }
 

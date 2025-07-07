@@ -44,7 +44,7 @@
     [NOTIFICATION addObserver:self selector:@selector(doRefresh) name:@"refreshList" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(reloadTableView) name:@"collectionChanged" object:nil];
     
-    self.title = ([self isHotList] ? @"🔥论坛热点🔥" : [Helper getBoardTitle:self.bid]);
+    self.title = ([self isHotList] ? @"论坛热点" : [Helper getBoardTitle:self.bid]);
     oriTitle = self.title;
     self.refreshControl = [[UIRefreshControl alloc] init];
     [self.refreshControl addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
@@ -427,12 +427,7 @@
         [self presentViewControllerSafe:activityViewController];
     }]];
     [alertController addAction:[UIAlertAction actionWithTitle:@"打开网页版" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        WebViewController *dest = [self.storyboard instantiateViewControllerWithIdentifier:@"webview"];
-        CustomNavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
-        dest.URL = URL;
-        [navi setToolbarHidden:NO];
-        navi.modalPresentationStyle = UIModalPresentationFullScreen;
-        [self presentViewControllerSafe:navi];
+        [AppDelegate openURL:URL fullScreen:YES];
     }]];
     if (IS_SUPER_USER && ![self.bid isEqualToString:@"1"]) {
         [alertController addAction:[UIAlertAction actionWithTitle:@"抢沙发模式" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {

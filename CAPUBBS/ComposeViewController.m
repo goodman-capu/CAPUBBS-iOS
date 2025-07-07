@@ -22,10 +22,11 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
-    [self.textBody.layer setCornerRadius:6.0];
-    [self.textBody.layer setBorderColor:GREEN_LIGHT.CGColor];
-    [self.textBody.layer setBorderWidth:0.5];
-    [self.textBody setBackgroundColor:[UIColor colorWithWhite:1.0 alpha:0.5]];
+    self.textBody.layer.cornerRadius = 6;
+    self.textBody.layer.borderColor = GREEN_LIGHT.CGColor;
+    self.textBody.layer.borderWidth = 0.5;
+    self.textBody.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.5];
+    
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];

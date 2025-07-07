@@ -20,10 +20,12 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
-    [self.buttonEnter.layer setCornerRadius:10.0];
-    [self.buttonRegister.layer setCornerRadius:10.0];
-    [self.buttonLogin.layer setCornerRadius:10.0];
+    for (UIView *view in @[self.buttonEnter, self.buttonRegister, self.buttonLogin]) {
+        view.layer.cornerRadius = 10;
+    }
     [self.iconUser setRounded:YES];
+    self.labelNews.textColor = GREEN_TEXT;
+    self.buttonAddNews.tintColor = GREEN_TEXT;
     
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
@@ -489,26 +491,19 @@
     [alertController addAction:[UIAlertAction actionWithTitle:@"查看隐私政策"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        WebViewController *dest = [self.storyboard instantiateViewControllerWithIdentifier:@"webview"];
-        CustomNavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
-        dest.URL = [CHEXIE stringByAppendingString:@"/privacy"];
-        [navi setToolbarHidden:NO];
-        navi.modalPresentationStyle = UIModalPresentationPageSheet;
-        [self presentViewControllerSafe:navi];
+        [AppDelegate openURL:[CHEXIE stringByAppendingString:@"/privacy"] fullScreen:NO];
         // Show again
         [self showEULA];
     }]];
-    
-    [alertController addAction:[UIAlertAction actionWithTitle:@"我同意以上协议"
-                                              style:UIAlertActionStyleDefault
-                                            handler:^(UIAlertAction * _Nonnull action) {
-        [DEFAULTS setObject:@(YES) forKey:@"hasShownEULA"];
-    }]];
-    
     [alertController addAction:[UIAlertAction actionWithTitle:@"我拒绝以上协议"
                                               style:UIAlertActionStyleDestructive
                                             handler:^(UIAlertAction * _Nonnull action) {
         exit(0);
+    }]];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"我同意以上协议"
+                                              style:UIAlertActionStyleCancel
+                                            handler:^(UIAlertAction * _Nonnull action) {
+        [DEFAULTS setObject:@(YES) forKey:@"hasShownEULA"];
     }]];
     
     [self presentViewControllerSafe:alertController];

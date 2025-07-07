@@ -22,15 +22,21 @@
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
+    if (!SIMPLE_VIEW && self.isEdit) {
+        backgroundView = [[AnimatedImageView alloc] init];
+        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
+        self.tableView.backgroundView = backgroundView;
+        return;
+    }
     
     [NOTIFICATION addObserver:self selector:@selector(setUserIcon:) name:@"selectIcon" object:nil];
     
-    [self.labelUidGuide setTextColor:BLUE];
+    [self.labelUidGuide setTextColor:[UIColor tintColor]];
     for (UITextView *view in @[self.textIntro, self.textSig, self.textSig2, self.textSig3]) {
-        [view.layer setCornerRadius:6.0];
-        [view.layer setBorderColor:[UIColor colorWithWhite:0 alpha:0.2].CGColor];
-        [view.layer setBorderWidth:0.5];
-        [view setScrollsToTop:NO];
+        view.layer.cornerRadius = 6;
+        view.layer.borderColor = [UIColor colorWithWhite:0 alpha:0.2].CGColor;
+        view.layer.borderWidth = 0.5;
+        view.scrollsToTop = NO;
     }
     [self.icon setRounded:YES];
     if (self.isEdit) {
@@ -68,7 +74,7 @@
     [uid addAttribute:NSForegroundColorAttributeName value:[UIColor darkGrayColor] range:NSMakeRange(0, uid.length)];
     self.textUid.attributedText = uid;
     self.textUid.userInteractionEnabled = NO;
-    [self.labelUidGuide setText:@"用户名一经注册无法更改"];
+    [self.labelUidGuide setText:@"用户名注册后无法更改"];
     [self.labelUidGuide setTextColor:[UIColor darkGrayColor]];
     [self.imageUidAvailable setImage:SUCCESSMARK];
     self.cellUidGuide.userInteractionEnabled = NO;
@@ -412,11 +418,11 @@
             self.navigationItem.rightBarButtonItem.enabled = YES;
         } else {
             [self.imageUidAvailable setImage:FAILMARK];
-            [self.labelUidGuide setText:@"该ID已经存在！"];
+            [self.labelUidGuide setText:@"该ID已被注册！"];
             [self.labelUidGuide setTextColor:[UIColor redColor]];
             dispatch_main_after(1.0, ^{
                 [self.labelUidGuide setText:@"如何才能取一个好的ID？"];
-                [self.labelUidGuide setTextColor:BLUE];
+                [self.labelUidGuide setTextColor:[UIColor tintColor]];
             });
         }
     }];
@@ -459,11 +465,6 @@
 - (void)refreshBackgroundViewAnimated:(BOOL)animated {
     if (SIMPLE_VIEW || !self.isEdit || !self.iconData) {
         return;
-    }
-    if (!backgroundView) {
-        backgroundView = [[AnimatedImageView alloc] init];
-        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
-        self.tableView.backgroundView = backgroundView;
     }
     [backgroundView setImage:[UIImage imageWithData:self.iconData] blurred:YES animated:animated];
 }

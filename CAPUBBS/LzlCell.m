@@ -14,11 +14,12 @@
     [super awakeFromNib];
     // Initialization code
     self.backgroundColor = [UIColor clearColor];
+    self.textMain.backgroundColor = [UIColor clearColor];
     
-    [self.imageBottom setAlpha:0.8];
+    self.imageBottom.alpha = 0.8;
     [self.icon setRounded:YES];
-    [self.textPost.layer setCornerRadius:10.0];
-    [self.textPost setScrollsToTop:NO];
+    self.textPost.layer.cornerRadius = 10;
+    self.textPost.scrollsToTop = NO;
 }
 
 @end

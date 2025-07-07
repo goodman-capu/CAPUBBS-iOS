@@ -195,8 +195,7 @@
     
     NSDictionary *linkInfo = [Helper getLink:text];
     if ([linkInfo[@"bid"] length] > 0) {
-        AppDelegate *appDelegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
-        [appDelegate openLink:linkInfo postTitle:nil];
+        [AppDelegate openLink:linkInfo postTitle:nil];
         return;
     }
     
@@ -244,11 +243,12 @@
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
     // Get the new view controller using [segue destinationViewController].
     // Pass the selected object to the new view controller.
-    ListViewController *dest = [segue destinationViewController];
     if ([segue.identifier isEqualToString:@"hotlist"]) {
+        ListViewController *dest = [segue destinationViewController];
         dest.bid = @"hot";
     }
     if ([segue.identifier isEqualToString:@"postlist"]) {
+        ListViewController *dest = [segue destinationViewController];
         int number = (int)[self.collectionView indexPathForCell:(UICollectionViewCell *)sender].row;
         dest.bid = BOARDS[number];
     }

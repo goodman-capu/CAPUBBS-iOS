@@ -13,7 +13,6 @@
     NSUserActivity *activity;
     NSArray *data;
     MBProgressHUD *hud;
-    NSString *lzlUrl;
     NSString *lzlText;
     NSString *lzlAuthor;
     BOOL shouldShowHud;

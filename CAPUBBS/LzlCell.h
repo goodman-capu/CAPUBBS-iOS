@@ -15,7 +15,7 @@
 @property (weak, nonatomic) IBOutlet UIImageView *imageBottom;
 @property (weak, nonatomic) IBOutlet UILabel *textAuthor;
 @property (weak, nonatomic) IBOutlet UILabel *textTime;
-@property (weak, nonatomic) IBOutlet UILabel *textMain;
+@property (weak, nonatomic) IBOutlet UITextView *textMain;
 @property (weak, nonatomic) IBOutlet UITextView *textPost;
 @property (weak, nonatomic) IBOutlet UILabel *labelByte;
 

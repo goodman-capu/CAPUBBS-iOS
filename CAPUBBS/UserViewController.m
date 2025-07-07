@@ -26,6 +26,11 @@
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
+    if (!SIMPLE_VIEW) {
+        backgroundView = [[AnimatedImageView alloc] init];
+        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
+        self.tableView.backgroundView = backgroundView;
+    }
     
     textSize = [[DEFAULTS objectForKey:@"textSize"] intValue];
     if (self.iconData.length > 0) {
@@ -100,11 +105,6 @@
 - (void)refreshBackgroundViewAnimated:(BOOL)animated {
     if (SIMPLE_VIEW) {
         return;
-    }
-    if (!backgroundView) {
-        backgroundView = [[AnimatedImageView alloc] init];
-        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
-        self.tableView.backgroundView = backgroundView;
     }
     [backgroundView setImage:[UIImage imageWithData:self.iconData] blurred:YES animated:animated];
 }
@@ -326,18 +326,11 @@
     
     if ([path hasPrefix:@"tel:"] || [path hasPrefix:@"sms:"] || [path hasPrefix:@"facetime:"] || [path hasPrefix:@"maps:"]) {
         // Directly open
-        if ([[UIApplication sharedApplication] canOpenURL:url]) {
-            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
-        }
-        decisionHandler(WKNavigationActionPolicyCancel);
+        decisionHandler(WKNavigationActionPolicyAllow);
         return;
     }
     
-    WebViewController *dest = [self.storyboard instantiateViewControllerWithIdentifier:@"webview"];
-    CustomNavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
-    dest.URL = path;
-    navi.modalPresentationStyle = UIModalPresentationFullScreen;
-    [self presentViewControllerSafe:navi];
+    [AppDelegate openURL:path fullScreen:YES];
     decisionHandler(WKNavigationActionPolicyCancel);
 }
 

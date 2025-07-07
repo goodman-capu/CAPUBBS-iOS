@@ -28,6 +28,7 @@
 @property (weak, nonatomic) IBOutlet UIStepper *stepperSize;
 @property (weak, nonatomic) IBOutlet UISwitch *switchAutoSave;
 @property (weak, nonatomic) IBOutlet UISwitch *switchSimpleView;
+@property (weak, nonatomic) IBOutlet UISwitch *switchScript;
 @property (weak, nonatomic) IBOutlet UISwitch *switchChangeBackground;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *segmentDirection;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *segmentEditTool;

@@ -67,13 +67,13 @@
 #pragma mark <UICollectionViewDelegate>
 
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
-    if (indexPath.section == 1) {
+    if (indexPath.section == 0) {
         [NOTIFICATION postNotificationName:@"addContent" object:nil userInfo:@{
-            @"HTML" : [NSString stringWithFormat:@"[img]/bbsimg/expr/%ld.gif[/img]", (long)(indexPath.row + 1)]
+            @"HTML" : [NSString stringWithFormat:@"[img]/bbsimg/%ld.gif[/img]", (long)(indexPath.row + 1)]
         }];
     } else {
         [NOTIFICATION postNotificationName:@"addContent" object:nil userInfo:@{
-            @"HTML" : [NSString stringWithFormat:@"[img]/bbsimg/%ld.gif[/img]", (long)(indexPath.row + 1)]
+            @"HTML" : [NSString stringWithFormat:@"[img]/bbsimg/expr/%ld.gif[/img]", (long)(indexPath.row + 1)]
         }];
     }
     self.numberOfFaces++;

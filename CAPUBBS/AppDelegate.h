@@ -26,7 +26,12 @@
 
 @property (strong, nonatomic) UIWindow *window;
 
-- (void)openLink:(NSDictionary *)linkInfo postTitle:(NSString *)title;
++ (void)openLink:(NSDictionary *)linkInfo postTitle:(NSString *)title;
+
++ (void)openURL:(NSString *)url fullScreen:(BOOL)fullScreen;
+
+// A generic text view delegate method
++ (BOOL)textView:(UITextView *)textView shouldInteractWithURL:(NSURL *)URL inRange:(NSRange)characterRange interaction:(UITextItemInteraction)interaction;
 
 + (UIViewController *)getTopViewController;
 

@@ -14,6 +14,7 @@
 #import "CollectionViewController.h"
 #import "MessageViewController.h"
 #import "ComposeViewController.h"
+#import "WebViewController.h"
 #import <CoreSpotlight/CoreSpotlight.h>
 
 @implementation PreviewItem
@@ -26,7 +27,7 @@
     
     if (@available(iOS 26.0, *)) { // Liquid glass
         self.window.tintColor = GREEN_TINT;
-        [UISwitch appearance].onTintColor = GREEN_DARK;
+        [UISwitch appearance].onTintColor = GREEN_TINT;
     } else {
         UINavigationBar *navBar = [UINavigationBar appearance];
         UINavigationBarAppearance *navBarAppearance = [[UINavigationBarAppearance alloc] init];
@@ -60,11 +61,12 @@
     [[UITextView appearance] setBackgroundColor:[UIColor lightTextColor]];
     [[UITableViewCell appearance] setBackgroundColor:[UIColor colorWithWhite:1 alpha:0.6]];
     
-    NSDictionary *dict = @{
+    NSDictionary *defaults = @{
         // @"proxy" : @2,
         @"autoLogin" : @YES,
         @"vibrate" : @YES,
         @"picOnlyInWifi" : @NO,
+        @"disableScript" : @NO,
         @"changeBackground" : @YES,
         @"autoSave" : @YES,
         @"oppositeSwipe" : @YES,
@@ -75,15 +77,15 @@
         @"hotNum" : @(MAX_HOT_NUM / 2),
         @"checkUpdate" : @"2025-01-01",
     };
-    NSDictionary *group = @{
+    NSDictionary *groupDefaults = @{
         @"URL" : DEFAULT_SERVER_URL,
         @"token" : @"",
         @"userInfo" : @"",
         @"iconOnlyInWifi" : @NO,
-        @"simpleView" : @NO
+        @"simpleView" : @NO,
     };
-    [DEFAULTS registerDefaults:dict];
-    [GROUP_DEFAULTS registerDefaults:group];
+    [DEFAULTS registerDefaults:defaults];
+    [GROUP_DEFAULTS registerDefaults:groupDefaults];
     [self transferDefaults];
     wakeLogin = NO;
     
@@ -348,7 +350,7 @@
     return previewItem.previewFrame.bounds;
 }
 
-- (void)openLink:(NSDictionary *)linkInfo postTitle:(NSString *)title {
++ (void)openLink:(NSDictionary *)linkInfo postTitle:(NSString *)title {
     if ([linkInfo[@"bid"] length] == 0) {
         return;
     }
@@ -365,8 +367,51 @@
         @"page": linkInfo[@"p"],
     };
     dispatch_global_default_async(^{
-        [self _handleUrlRequestWithDictionary:naviDict];
+        AppDelegate *appDelegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
+        [appDelegate _handleUrlRequestWithDictionary:naviDict];
     });
+}
+
++ (void)openURL:(NSString *)url fullScreen:(BOOL)fullScreen {
+    dispatch_global_default_async(^{
+        AppDelegate *appDelegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
+        [appDelegate _handleUrlRequestWithDictionary:@{
+            @"open": @"web",
+            @"url": url,
+            @"fullScreen": @(fullScreen),
+        }];
+    });
+}
+
++ (BOOL)textView:(UITextView *)textView shouldInteractWithURL:(NSURL *)URL inRange:(NSRange)characterRange interaction:(UITextItemInteraction)interaction {
+    if (interaction == UITextItemInteractionPresentActions) {
+        return YES;
+    }
+    NSString *path = URL.absoluteString;
+    if ([path hasPrefix:@"mailto:"]) {
+        NSString *mailAddress = [path substringFromIndex:@"mailto:".length];
+        [NOTIFICATION postNotificationName:@"sendEmail" object:nil userInfo:@{
+            @"recipients": @[mailAddress]
+        }];
+        return NO;
+    }
+    
+    if ([path hasPrefix:@"tel:"] || [path hasPrefix:@"sms:"] || [path hasPrefix:@"facetime:"] || [path hasPrefix:@"maps:"]) {
+        // Directly open
+        return YES;
+    }
+    
+    if ([Helper isHttpScheme:URL.scheme]) {
+        NSDictionary *linkInfo = [Helper getLink:path];
+        if (linkInfo.count > 0 && [linkInfo[@"bid"] length] > 0) {
+            [self openLink:linkInfo postTitle:nil];
+        } else {
+            [self openURL:path fullScreen:YES];
+        }
+        return NO;
+    } else {
+        return YES;
+    }
 }
 
 - (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity restorationHandler:(void (^)(NSArray<id<UIUserActivityRestoring>> * _Nullable))restorationHandler {
@@ -399,7 +444,7 @@
     }
     // From universal link or handfoff
     if ([linkInfo[@"bid"] length] > 0) {
-        [self openLink:linkInfo postTitle:isCompose ? @"" : userActivity.title];
+        [AppDelegate openLink:linkInfo postTitle:isCompose ? @"" : userActivity.title];
         if (!isCompose) {
             return YES;
         }
@@ -643,12 +688,21 @@
             if (dict[@"naviTitle"]) {
                 dest.title = dict[@"naviTitle"];
             } else {
-                dest.title = @"加载中";
+                dest.title = @"帖子加载中";
             }
             
             dest.navigationItem.leftBarButtonItem = [AppDelegate getCloseButtonForTarget:self action:@selector(back)];
             UINavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
             navi.modalPresentationStyle = UIModalPresentationFullScreen;
+            [view presentViewControllerSafe:navi];
+        });
+    } else if ([open isEqualToString:@"web"]) {
+        dispatch_main_sync_safe(^{
+            WebViewController *dest = [self.window.rootViewController.storyboard instantiateViewControllerWithIdentifier:@"webview"];
+            dest.URL = dict[@"url"];
+            
+            UINavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
+            navi.modalPresentationStyle = [dict[@"fullScreen"] boolValue] ? UIModalPresentationFullScreen : UIModalPresentationPageSheet;
             [view presentViewControllerSafe:navi];
         });
     }

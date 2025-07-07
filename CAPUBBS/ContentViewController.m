@@ -908,10 +908,7 @@ static const CGFloat kWebViewMinHeight = 40;
     
     if ([path hasPrefix:@"tel:"] || [path hasPrefix:@"sms:"] || [path hasPrefix:@"facetime:"] || [path hasPrefix:@"maps:"]) {
         // Directly open
-        if ([[UIApplication sharedApplication] canOpenURL:url]) {
-            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
-        }
-        decisionHandler(WKNavigationActionPolicyCancel);
+        decisionHandler(WKNavigationActionPolicyAllow);
         return;
     }
     
@@ -1134,12 +1131,7 @@ static const CGFloat kWebViewMinHeight = 40;
         [self presentViewControllerSafe:activityViewController];
     }]];
     [alertController addAction:[UIAlertAction actionWithTitle:@"打开网页版" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        WebViewController *dest = [self.storyboard instantiateViewControllerWithIdentifier:@"webview"];
-        CustomNavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
-        dest.URL = [[self getCurrentUrl] absoluteString];
-        [navi setToolbarHidden:NO];
-        navi.modalPresentationStyle = UIModalPresentationFullScreen;
-        [self presentViewControllerSafe:navi];
+        [AppDelegate openURL:[[self getCurrentUrl] absoluteString] fullScreen:YES];
     }]];
     int biggerSize = textSize + 10;
     int smallerSize = textSize - 10;

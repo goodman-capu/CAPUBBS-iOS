@@ -28,6 +28,16 @@
     return [NSString stringWithFormat:@"/bbs/assets/fileicons-svg/%@.svg", name];
 }
 
++ (NSString *)encodeURIComponent:(NSString *)string {
+    static NSCharacterSet *allowedCharacters = nil;
+    static dispatch_once_t onceCharsToken;
+    dispatch_once(&onceCharsToken, ^{
+        allowedCharacters = [NSCharacterSet characterSetWithCharactersInString:@"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._* "];
+    });
+    NSString *encoded = [string stringByAddingPercentEncodingWithAllowedCharacters:allowedCharacters];
+    return [encoded stringByReplacingOccurrencesOfString:@" " withString:@"+"];
+}
+
 /**
  * 强制以UTF-8解码，并将所有无效的字节序列替换为指定内容
  * @param corruptData 从服务器接收的可能已损坏的NSData
@@ -128,30 +138,45 @@
     request.HTTPMethod = @"POST";
     request.timeoutInterval = 30;
     
-    NSString *boundary = [NSString stringWithFormat:@"Boundary-%@", [[NSUUID UUID] UUIDString]];
-    [request setValue:[NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary] forHTTPHeaderField:@"Content-Type"];
-    
-    NSMutableData *body = [NSMutableData data];
-    // 添加普通字段
-    for (NSString *key in requestParams) {
-        [body appendData:[[NSString stringWithFormat:@"--%@%@", boundary, LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"%@", key, LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[LINE_BREAK dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[requestParams[key] dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[LINE_BREAK dataUsingEncoding:NSUTF8StringEncoding]];
+    if (requestFiles.count == 0 ) {
+        // Convert parameters to x-www-form-urlencoded
+        NSMutableArray *bodyParts = [NSMutableArray array];
+        [requestParams enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+            NSString *part = [NSString stringWithFormat:@"%@=%@",
+                              [self encodeURIComponent:key],
+                              [self encodeURIComponent:obj]];
+            [bodyParts addObject:part];
+        }];
+        NSString *bodyString = [bodyParts componentsJoinedByString:@"&"];
+        NSData *bodyData = [bodyString dataUsingEncoding:NSUTF8StringEncoding];
+        request.HTTPBody = bodyData;
+        [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
+    } else {
+        NSString *boundary = [NSString stringWithFormat:@"Boundary-%@", [[NSUUID UUID] UUIDString]];
+        [request setValue:[NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary] forHTTPHeaderField:@"Content-Type"];
+        
+        NSMutableData *body = [NSMutableData data];
+        // 添加普通字段
+        for (NSString *key in requestParams) {
+            [body appendData:[[NSString stringWithFormat:@"--%@%@", boundary, LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"%@", key, LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:[LINE_BREAK dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:[requestParams[key] dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:[LINE_BREAK dataUsingEncoding:NSUTF8StringEncoding]];
+        }
+        // 添加文件字段
+        for (NSString *key in requestFiles) {
+            [body appendData:[[NSString stringWithFormat:@"--%@%@", boundary, LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"%@", key, key, LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:[[NSString stringWithFormat:@"Content-Type: application/octet-stream%@", LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:[LINE_BREAK dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:requestFiles[key]];
+            [body appendData:[LINE_BREAK dataUsingEncoding:NSUTF8StringEncoding]];
+        }
+        // 结束边界
+        [body appendData:[[NSString stringWithFormat:@"--%@--%@", boundary, LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
+        request.HTTPBody = body;
     }
-    // 添加文件字段
-    for (NSString *key in requestFiles) {
-        [body appendData:[[NSString stringWithFormat:@"--%@%@", boundary, LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"%@", key, key, LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[[NSString stringWithFormat:@"Content-Type: application/octet-stream%@", LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[LINE_BREAK dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:requestFiles[key]];
-        [body appendData:[LINE_BREAK dataUsingEncoding:NSUTF8StringEncoding]];
-    }
-    // 结束边界
-    [body appendData:[[NSString stringWithFormat:@"--%@--%@", boundary, LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
-    request.HTTPBody = body;
     
     [Downloader loadRequest:request progress:nil completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         if (error) {
@@ -291,6 +316,15 @@
 }
 
 + (NSString *)htmlStringWithText:(NSString *)text attachments:(NSArray *)attachements sig:(NSString *)sig textSize:(int)textSize {
+    if ([[DEFAULTS objectForKey:@"disableScript"] boolValue]) {
+        if (text.length > 0) {
+            text = [text stringByReplacingOccurrencesOfString:@"(?i)(<script\\b[^>]*?>[\\s\\S]*?<\\/script>)" withString:@"<font color='gray'>[脚本被禁止执行]</font>" options:NSRegularExpressionSearch range:NSMakeRange(0, text.length)];
+        }
+        if (sig.length > 0) {
+            sig = [sig stringByReplacingOccurrencesOfString:@"(?i)(<script\\b[^>]*?>[\\s\\S]*?<\\/script>)" withString:@"<font color='gray'>[脚本被禁止执行]</font>" options:NSRegularExpressionSearch range:NSMakeRange(0, sig.length)];
+        }
+    }
+    
     NSString *body = @"";
     if (text) {
         body = [NSString stringWithFormat:@"<div class='textblock'>%@</div>", text];
@@ -322,7 +356,7 @@
             body = [NSString stringWithFormat:@"%@<div class='attachblock'><span id='attachtipdark'>本帖包含以下%ld个附件：</span><div class='attachsdark'>%@</div></div>", body, attachEls.count, [attachEls componentsJoinedByString:@""]];
         }
     }
-    if (sig && sig.length > 0) {
+    if (sig.length > 0) {
         body = [NSString stringWithFormat:@"%@<div class='sigblock'>%@"
                 "<div class='sig'>%@</div></div>", body, text ? @"<span class='sigtip'>--------</span>" : @"", sig];
     }

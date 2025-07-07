@@ -19,7 +19,7 @@
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
     [self.webViewContainer initiateWebViewWithToken:YES];
-    [self.webViewContainer setBackgroundColor:[UIColor clearColor]];
+    self.webViewContainer.backgroundColor = [UIColor whiteColor];
     [self.webViewContainer.webView setNavigationDelegate:self];
     [self.webViewContainer.webView.scrollView setDelegate:self];
     [self.webViewContainer.webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionNew context:nil];
@@ -123,10 +123,7 @@
     
     if ([path hasPrefix:@"tel:"] || [path hasPrefix:@"sms:"] || [path hasPrefix:@"facetime:"] || [path hasPrefix:@"maps:"]) {
         // Directly open
-        if ([[UIApplication sharedApplication] canOpenURL:url]) {
-            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
-        }
-        decisionHandler(WKNavigationActionPolicyCancel);
+        decisionHandler(WKNavigationActionPolicyAllow);
         return;
     }
     

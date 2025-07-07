@@ -20,7 +20,7 @@
 
 - (void)layoutSubviews {
     [super layoutSubviews];
-    [self.layer setCornerRadius:self.frame.size.width / 15];
+    self.layer.cornerRadius = self.frame.size.width / 15;
 }
 
 @end

@@ -26,6 +26,7 @@
 @property (weak, nonatomic) IBOutlet UIButton *buttonLogin;
 @property (weak, nonatomic) IBOutlet UIButton *buttonRegister;
 @property (weak, nonatomic) IBOutlet UIButton *buttonEnter;
+@property (weak, nonatomic) IBOutlet UILabel *labelNews;
 @property (weak, nonatomic) IBOutlet UIButton *buttonAddNews;
 @property (weak, nonatomic) IBOutlet UITableView *tableview;
 

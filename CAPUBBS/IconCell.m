@@ -15,7 +15,7 @@
     // Initialization code
     self.backgroundColor = [UIColor clearColor];
     
-    [self.icon.layer setBorderColor:GREEN_LIGHT.CGColor];
+    self.icon.layer.borderColor = GREEN_LIGHT.CGColor;
     [self.icon setRounded:YES];
 }
 

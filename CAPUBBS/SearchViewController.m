@@ -24,6 +24,18 @@
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
+    if (!SIMPLE_VIEW) {
+        backgroundView = [[AnimatedImageView alloc] init];
+        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
+        [self.view addSubview:backgroundView];
+        [self.view sendSubviewToBack:backgroundView];
+        [backgroundView.layer setMasksToBounds:YES];
+        [backgroundView setTranslatesAutoresizingMaskIntoConstraints:NO];
+        int dir[4] = {NSLayoutAttributeTop, NSLayoutAttributeBottom, NSLayoutAttributeLeft, NSLayoutAttributeRight};
+        for (int i = 0; i < 4; i++) {
+            [self.view addConstraint:[NSLayoutConstraint constraintWithItem:backgroundView attribute:dir[i] relatedBy:NSLayoutRelationEqual toItem:self.view attribute:dir[i] multiplier:1.0 constant:0.0]];
+        }
+    }
     
     [self refreshBackgroundViewAnimated:NO];
     [self.inputText becomeFirstResponder];
@@ -46,18 +58,6 @@
 - (void)refreshBackgroundViewAnimated:(BOOL)animated {
     if (SIMPLE_VIEW) {
         return;
-    }
-    if (!backgroundView) {
-        backgroundView = [[AnimatedImageView alloc] init];
-        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
-        [self.view addSubview:backgroundView];
-        [self.view sendSubviewToBack:backgroundView];
-        [backgroundView.layer setMasksToBounds:YES];
-        [backgroundView setTranslatesAutoresizingMaskIntoConstraints:NO];
-        int dir[4] = {NSLayoutAttributeTop, NSLayoutAttributeBottom, NSLayoutAttributeLeft, NSLayoutAttributeRight};
-        for (int i = 0; i < 4; i++) {
-            [self.view addConstraint:[NSLayoutConstraint constraintWithItem:backgroundView attribute:dir[i] relatedBy:NSLayoutRelationEqual toItem:self.view attribute:dir[i] multiplier:1.0 constant:0.0]];
-        }
     }
     BOOL isAll = [self.bid isEqualToString:@"-1"];
     UIImage *image = isAll ? [UIImage imageWithColor:GREEN_BACK size:CGSizeMake(100, 100)] : [UIImage imageNamed:[@"b" stringByAppendingString:self.bid]];

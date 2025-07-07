@@ -18,6 +18,12 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
+    if (!SIMPLE_VIEW) {
+        backgroundView = [[AnimatedImageView alloc] init];
+        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
+        self.tableView.backgroundView = backgroundView;
+    }
+    
     if (self.iconData.length > 0) {
         [self refreshBackgroundViewAnimated:NO];
     } else {
@@ -43,11 +49,6 @@
 - (void)refreshBackgroundViewAnimated:(BOOL)animated {
     if (SIMPLE_VIEW) {
         return;
-    }
-    if (!backgroundView) {
-        backgroundView = [[AnimatedImageView alloc] init];
-        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
-        self.tableView.backgroundView = backgroundView;
     }
     [backgroundView setImage:[UIImage imageWithData:self.iconData] blurred:YES animated:animated];
 }
