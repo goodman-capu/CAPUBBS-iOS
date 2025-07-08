@@ -25,7 +25,7 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
     
-    if (@available(iOS 26.0, *)) { // Liquid glass
+    if (LIQUID_GLASS) {
         self.window.tintColor = GREEN_TINT;
         [UISwitch appearance].onTintColor = GREEN_TINT;
     } else {
@@ -161,6 +161,20 @@
         }
     });
     return topVC;
+}
+
++ (void)setPrefersLargeTitles:(UINavigationController *)navigationController {
+    if (LIQUID_GLASS) {
+        navigationController.navigationBar.prefersLargeTitles = YES;
+    }
+}
+
++ (UIStatusBarStyle)preferredStatusBarStyle {
+    if (LIQUID_GLASS) {
+        return UIStatusBarStyleDarkContent;
+    } else {
+        return UIStatusBarStyleLightContent;
+    }
 }
 
 + (UIBarButtonItem *)getCloseButtonForTarget:(id)target action:(SEL)action {

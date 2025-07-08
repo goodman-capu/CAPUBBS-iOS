@@ -20,6 +20,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    [AppDelegate setPrefersLargeTitles:self.navigationController];
     self.view.backgroundColor = GRAY_PATTERN;
     self.preferredContentSize = CGSizeMake(400, 1000);
     [self.iconUser setRounded:YES];

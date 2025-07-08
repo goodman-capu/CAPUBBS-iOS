@@ -326,7 +326,7 @@
     BOOL isCollection = [self isCollection:dict[@"bid"] tid:dict[@"tid"]];
     NSMutableArray *titlePrefixes = [NSMutableArray array];
     if (isCollection) {
-        if (@available(iOS 26.0, *)) {
+        if (LIQUID_GLASS) {
             [titlePrefixes addObject:@"💚"];
         } else {
             [titlePrefixes addObject:@"💙"];
@@ -433,7 +433,7 @@
         [alertController addAction:[UIAlertAction actionWithTitle:@"抢沙发模式" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             
             UIAlertController *alertControllerSofa = [UIAlertController alertControllerWithTitle:@"进入抢沙发模式" message:@"版面将持续刷新直至刷出非工作区新帖并且成功回复指定内容为止" preferredStyle:UIAlertControllerStyleAlert];
-            __weak typeof(alertController) weakAlertController = alertController; // 避免循环引用
+            __weak typeof(alertControllerSofa) weakAlertController = alertControllerSofa; // 避免循环引用
             [alertControllerSofa addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
                 textField.placeholder = @"请指定回复内容，默认为“沙发”";
             }];
@@ -443,11 +443,11 @@
             [alertControllerSofa addAction:[UIAlertAction actionWithTitle:@"开始"
                                                       style:UIAlertActionStyleDefault
                                                     handler:^(UIAlertAction * _Nonnull action) {
-                __strong typeof(weakAlertController) alertController = weakAlertController;
-                if (!alertController) {
+                __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+                if (!strongAlertController) {
                     return;
                 }
-                sofaContent = alertControllerSofa.textFields[0].text;
+                sofaContent = strongAlertController.textFields[0].text;
                 if ([sofaContent hasPrefix:@"fast"]) {
                     isFastRobSofa = YES;
                     sofaContent = [sofaContent substringFromIndex:@"fast".length];
@@ -484,11 +484,11 @@
     [alertController addAction:[UIAlertAction actionWithTitle:@"好"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        __strong typeof(weakAlertController) alertController = weakAlertController;
-        if (!alertController) {
+        __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+        if (!strongAlertController) {
             return;
         }
-        NSString *pageip = alertController.textFields[0].text;
+        NSString *pageip = strongAlertController.textFields[0].text;
         NSInteger pagen = [pageip integerValue];
         if (pagen <= 0 || pagen > [[data lastObject][@"pages"] integerValue]) {
             [self showAlertWithTitle:@"错误" message:@"输入不合法"];

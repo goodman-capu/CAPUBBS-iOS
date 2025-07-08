@@ -60,7 +60,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>我们需要访问您的相机，以便您拍照并上传，用于头像、发帖等展示内容。</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>我们需要访问您的照片图库，以便您选择图片并上传，用于头像、发帖等展示内容</string>
+	<string>我们需要访问您的照片图库，以便您保存所选的图片</string>
 	<key>NSUserActivityTypes</key>
 	<array>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER).list</string>

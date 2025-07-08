@@ -21,10 +21,10 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GREEN_BACK;
+    self.buttonBackgroundView.backgroundColor = [GREEN_BACK colorWithAlphaComponent:0.85];
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
-    self.buttonBackgroundView.backgroundColor = [GREEN_BACK colorWithAlphaComponent:0.85];
     
     if ([self.collectionView.collectionViewLayout isKindOfClass:[UICollectionViewFlowLayout class]]) {
         ((UICollectionViewFlowLayout *)self.collectionView.collectionViewLayout).sectionInsetReference = UICollectionViewFlowLayoutSectionInsetFromSafeArea;
@@ -167,11 +167,11 @@
     [alertController addAction:[UIAlertAction actionWithTitle:@"确认"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        __strong typeof(weakAlertController) alertController = weakAlertController;
-        if (!alertController) {
+        __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+        if (!strongAlertController) {
             return;
         }
-        [self multiAction:alertController.textFields[0].text];
+        [self multiAction:strongAlertController.textFields[0].text];
     }]];
     [self presentViewControllerSafe:alertController];
 }

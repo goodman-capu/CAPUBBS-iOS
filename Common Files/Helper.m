@@ -113,7 +113,7 @@
     NSString *postUrl = [NSString stringWithFormat:@"%@/api/client.php?ask=%@",CHEXIE, url];
 #ifdef DEBUG
     NSLog(@"🌐 Calling API: %@", url);
-//    postUrl = [NSString stringWithFormat:@"https://www.chexie.net/api/client_new.php?ask=%@", url];
+    postUrl = [NSString stringWithFormat:@"https://www.chexie.net/api/client_new.php?ask=%@", url];
 #endif
     NSMutableDictionary *requestParams = [@{
         @"os": @"ios",

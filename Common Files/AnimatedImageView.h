@@ -29,7 +29,6 @@ typedef NS_ENUM(int, ImageFileType) {
 - (NSString *)getUrl;
 + (NSString *)transIconURL:(NSString *)iconUrl;
 + (BOOL)isAnimated:(NSData *)imageData;
-+ (BOOL)isAlpha:(UIImage *)image;
 + (ImageFileType)fileType:(NSData *)imageData;
 + (NSString *)fileExtension:(ImageFileType)type;
 + (void)checkPath;

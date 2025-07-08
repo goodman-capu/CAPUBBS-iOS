@@ -25,6 +25,7 @@ static const CGFloat kWebViewMinHeight = 40;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    self.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeNever; // Do not show large title
     self.view.backgroundColor = GRAY_PATTERN;
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
@@ -383,11 +384,11 @@ static const CGFloat kWebViewMinHeight = 40;
     [alertController addAction:[UIAlertAction actionWithTitle:@"好"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        __strong typeof(weakAlertController) alertController = weakAlertController;
-        if (!alertController) {
+        __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+        if (!strongAlertController) {
             return;
         }
-        NSString *pageip = alertController.textFields[0].text;
+        NSString *pageip = strongAlertController.textFields[0].text;
         int pagen = [pageip intValue];
         if (pagen <= 0 || pagen > [[data lastObject] [@"pages"] integerValue]) {
             [self showAlertWithTitle:@"错误" message:@"输入不合法"];
@@ -692,7 +693,7 @@ static const CGFloat kWebViewMinHeight = 40;
 
 // 滚动时调用此方法
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
-    if (@available(iOS 26.0, *)) { // Liquid glass
+    if (LIQUID_GLASS) {
         return;
     }
     // NSLog(@"scrollView.contentOffset:%f, %f", scrollView.contentOffset.x, scrollView.contentOffset.y);

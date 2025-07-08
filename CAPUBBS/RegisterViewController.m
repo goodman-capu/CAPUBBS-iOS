@@ -26,12 +26,10 @@
         backgroundView = [[AnimatedImageView alloc] init];
         [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
         self.tableView.backgroundView = backgroundView;
-        return;
     }
     
     [NOTIFICATION addObserver:self selector:@selector(setUserIcon:) name:@"selectIcon" object:nil];
     
-    [self.labelUidGuide setTextColor:[UIColor tintColor]];
     for (UITextView *view in @[self.textIntro, self.textSig, self.textSig2, self.textSig3]) {
         view.layer.cornerRadius = 6;
         view.layer.borderColor = [UIColor colorWithWhite:0 alpha:0.2].CGColor;
@@ -315,11 +313,11 @@
                             });
                         }]];
                         [alertController addAction:[UIAlertAction actionWithTitle:@"确认" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                            __strong typeof(weakAlertController) alertController = weakAlertController;
-                            if (!alertController) {
+                            __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+                            if (!strongAlertController) {
                                 return;
                             }
-                            NSString *oldPassword = alertController.textFields[0].text;
+                            NSString *oldPassword = strongAlertController.textFields[0].text;
                             [self changePasswordWithOldPassword:oldPassword];
                         }]];
                         [self presentViewControllerSafe:alertController];

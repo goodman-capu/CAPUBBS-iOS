@@ -147,7 +147,7 @@
         ImageFileType imageType = [AnimatedImageView fileType:imageData];
         if (imageType != ImageFileTypeUnknown) {
             if (![AnimatedImageView isAnimated:imageData]) {
-                imageData = [self resizeImage:image];
+                imageData = [AnimatedImageView resizeImage:image];
             }
             // NSLog(@"Icon Type:%@, Size:%dkb", imageType, (int)(imageData.length/1024));
             [AnimatedImageView checkPath];
@@ -167,25 +167,22 @@
     }
 }
 
-- (NSData *)resizeImage:(UIImage *)oriImage {
++ (NSData *)resizeImage:(UIImage *)oriImage {
+    BOOL hasAlpha = [oriImage hasAlphaChannel:NO];
     UIImage *resizeImage = oriImage;
     int maxWidth = 450; // 详细信息界面图片大小150 * 150 @3x模式下450 * 450可保证清晰
     if (oriImage.size.width > maxWidth) {
         CGFloat scaledHeight = maxWidth * oriImage.size.height / oriImage.size.width;
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(maxWidth, scaledHeight), NO, 0); // opaque = NO
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(maxWidth, scaledHeight), !hasAlpha, 0);
         [oriImage drawInRect:CGRectMake(0, 0, maxWidth, maxWidth * oriImage.size.height / oriImage.size.width)];
         resizeImage = UIGraphicsGetImageFromCurrentImageContext();
         UIGraphicsEndImageContext();
     }
     
-    if ([AnimatedImageView isAlpha:oriImage]) { // 带透明信息的png不可转换成jpeg否则丢失透明性
+    if (hasAlpha) { // 带透明信息的png不可转换成jpeg否则丢失透明性
         return UIImagePNGRepresentation(resizeImage);
     } else {
-        if (resizeImage.size.width >= maxWidth) {
-            return UIImageJPEGRepresentation(resizeImage, 0.8);
-        } else {
-            return UIImageJPEGRepresentation(resizeImage, 1);
-        }
+        return UIImageJPEGRepresentation(resizeImage, 0.75);
     }
 }
 
@@ -195,14 +192,6 @@
     }
     SDAnimatedImage *animatedImage = [[SDAnimatedImage alloc] initWithData:imageData];
     return animatedImage && animatedImage.sd_imageFrameCount > 1;
-}
-
-+ (BOOL)isAlpha:(UIImage *)image {
-    CGImageAlphaInfo alphaInfo = CGImageGetAlphaInfo(image.CGImage);
-    return (alphaInfo == kCGImageAlphaFirst ||
-            alphaInfo == kCGImageAlphaLast ||
-            alphaInfo == kCGImageAlphaPremultipliedFirst ||
-            alphaInfo == kCGImageAlphaPremultipliedLast);
 }
 
 + (ImageFileType)fileType:(NSData *)imageData {

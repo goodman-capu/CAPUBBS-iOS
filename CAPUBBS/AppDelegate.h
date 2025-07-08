@@ -35,6 +35,10 @@
 
 + (UIViewController *)getTopViewController;
 
++ (void)setPrefersLargeTitles:(UINavigationController *)navigationController;
+
++ (UIStatusBarStyle)preferredStatusBarStyle;
+
 + (UIBarButtonItem *)getCloseButtonForTarget:(id)target action:(SEL)action;
 
 + (UIView *)keyboardToolViewWithLeftButtons:(NSArray<UIButton *> *)leftButtons rightButtons:(NSArray<UIButton *> *)rightButtons;

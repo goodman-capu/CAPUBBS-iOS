@@ -72,9 +72,7 @@
 - (void)refreshControlValueChanged:(UIRefreshControl *)refreshControl {
     refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
     [hud showWithProgressMessage:@"正在刷新"];
-    // Reset to allow manual refresh
-    newsRefreshTime = 0;
-    [self getNewsAndInfo];
+    [self getNewsAndInfo:YES];
 }
 
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
@@ -162,9 +160,7 @@
                         [self showAlertWithTitle:@"操作失败" message:result[0][@"msg"]];
                     }
                 }
-                dispatch_global_after(0.5, ^{
-                    [self getNewsAndInfo];
-                });
+                [self getNewsAndInfo:YES];
             }];
         }];
     }
@@ -188,12 +184,12 @@
     [alertController addAction:[UIAlertAction actionWithTitle:@"添加"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        __strong typeof(weakAlertController) alertController = weakAlertController;
-        if (!alertController) {
+        __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+        if (!strongAlertController) {
             return;
         }
-        NSString *text = alertController.textFields[0].text;
-        NSString *url = alertController.textFields[1].text;
+        NSString *text = strongAlertController.textFields[0].text;
+        NSString *url = strongAlertController.textFields[1].text;
         if (text.length == 0) {
             [self showAlertWithTitle:@"错误" message:@"您未填写公告的内容"];
             return;
@@ -216,9 +212,7 @@
                     [self showAlertWithTitle:@"操作失败" message:result[0][@"msg"]];
                 }
             }
-            dispatch_global_after(0.5, ^{
-                [self getNewsAndInfo];
-            });
+            [self getNewsAndInfo:YES];
         }];
     }]];
     [self presentViewControllerSafe:alertController];
@@ -311,7 +305,7 @@
             [self login:nil];
             enterLogin = NO;
         } else {
-            [self getNewsAndInfo];
+            [self getNewsAndInfo:NO];
             if ([Helper checkLogin:NO]) {
                 self.textUid.text = [username stringByAppendingString:@" ✅"];
                 NSMutableAttributedString *attr = [[NSMutableAttributedString alloc] initWithString:@"已登录"];
@@ -325,7 +319,7 @@
             }
         }
     } else {
-        [self getNewsAndInfo];
+        [self getNewsAndInfo:NO];
     }
 }
 
@@ -357,7 +351,7 @@
         //NSLog(@"%@",result);
         if (err || result.count == 0) {
             [hud hideWithFailureMessage:@"登录失败"];
-            [self getNewsAndInfo];
+            [self getNewsAndInfo:NO];
 //            [self showAlertWithTitle:@"登录失败" message:[err localizedDescription]];
             return ;
         }
@@ -387,7 +381,7 @@
         } else {
             [self showAlertWithTitle:@"登录失败" message:@"发生未知错误！"];
         }
-        [self getNewsAndInfo];
+        [self getNewsAndInfo:NO];
     }];
 }
 
@@ -413,10 +407,10 @@
     [DEFAULTS setObject:data forKey:@"ID"];
 }
 
-- (void)getNewsAndInfo {
+- (void)getNewsAndInfo:(BOOL)forceFetch {
     NSTimeInterval currentTime = [[NSDate date] timeIntervalSince1970];
     // 60 min interval between news refresh
-    if (newsRefreshTime > 0 && currentTime - newsRefreshTime < 60 * 60) {
+    if (!forceFetch && newsRefreshTime > 0 && currentTime - newsRefreshTime < 60 * 60) {
         NSLog(@"Skip Fetch News");
         return;
     }
@@ -449,37 +443,6 @@
     }
 }
 
-#pragma mark - Navigation
-
-// In a storyboard-based application, you will often want to do a little preparation before navigation
-- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
-    // Get the new view controller using [segue destinationViewController].
-    // Pass the selected object to the new view controller.
-    if ([segue.identifier isEqualToString:@"post"]) {
-        ContentViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
-        NSDictionary *dict = news[[self.tableview indexPathForCell:(UITableViewCell *)sender].row];
-        dest.bid = dict[@"bid"];
-        dest.tid = dict[@"tid"];
-        dest.title = dict[@"text"];
-        dest.navigationItem.leftBarButtonItem = [AppDelegate getCloseButtonForTarget:self action:@selector(done)];
-    }
-    if ([segue.identifier isEqualToString:@"web"]) {
-        WebViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
-        NSDictionary *dict = news[[self.tableview indexPathForCell:(UITableViewCell *)sender].row];
-        dest.URL = dict[@"url"];
-        dest.title = dict[@"text"];
-    }
-    if ([segue.identifier isEqualToString:@"account"]) {
-        UIViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
-        dest.navigationController.popoverPresentationController.sourceView = self.iconUser;
-        dest.navigationController.popoverPresentationController.sourceRect = self.iconUser.bounds;
-    }
-}
-
-- (void)done {
-    [self dismissViewControllerAnimated:YES completion:nil];
-}
-
 - (void)showEULA {
     if ([[DEFAULTS objectForKey:@"hasShownEULA"] boolValue]) {
         return;
@@ -507,6 +470,41 @@
     }]];
     
     [self presentViewControllerSafe:alertController];
+}
+
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+    if ([segue.identifier isEqualToString:@"post"]) {
+        ContentViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
+        NSDictionary *dict = news[[self.tableview indexPathForCell:(UITableViewCell *)sender].row];
+        dest.bid = dict[@"bid"];
+        dest.tid = dict[@"tid"];
+        dest.title = dict[@"text"];
+        dest.navigationItem.leftBarButtonItem = [AppDelegate getCloseButtonForTarget:self action:@selector(done)];
+    }
+    if ([segue.identifier isEqualToString:@"web"]) {
+        WebViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
+        NSDictionary *dict = news[[self.tableview indexPathForCell:(UITableViewCell *)sender].row];
+        dest.URL = dict[@"url"];
+        dest.title = dict[@"text"];
+    }
+    if ([segue.identifier isEqualToString:@"account"]) {
+        UIViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
+        dest.navigationController.popoverPresentationController.sourceView = self.iconUser;
+        dest.navigationController.popoverPresentationController.sourceRect = self.iconUser.bounds;
+    }
+    if ([segue.identifier isEqualToString:@"register"]) {
+        UIViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
+        [AppDelegate setPrefersLargeTitles:dest.navigationController];
+    }
+}
+
+- (void)done {
+    [self dismissViewControllerAnimated:YES completion:nil];
 }
 
 @end

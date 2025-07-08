@@ -1536,7 +1536,7 @@
             <objects>
                 <tableViewController storyboardIdentifier="content" useStoryboardIdentifierAsRestorationIdentifier="YES" id="XjO-Bt-H98" customClass="ContentViewController" sceneMemberID="viewController">
                     <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="grouped" separatorStyle="default" allowsSelection="NO" rowHeight="-1" estimatedRowHeight="500" sectionHeaderHeight="10" sectionFooterHeight="10" id="ZCD-u7-iXb">
-                        <rect key="frame" x="0.0" y="0.0" width="402" height="874"/>
+                        <rect key="frame" x="0.0" y="0.0" width="402" height="802"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" red="0.93725490196078431" green="0.93725490196078431" blue="0.95686274509803926" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <prototypes>
@@ -1871,15 +1871,15 @@ Cg
                         <viewControllerLayoutGuide type="bottom" id="QVb-WA-vjr"/>
                     </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="VBP-0A-h18">
-                        <rect key="frame" x="0.0" y="0.0" width="402" height="802"/>
+                        <rect key="frame" x="0.0" y="0.0" width="402" height="874"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="4by-4l-s7y" customClass="CustomWebViewContainer">
-                                <rect key="frame" x="0.0" y="56" width="402" height="746"/>
+                                <rect key="frame" x="0.0" y="106" width="402" height="768"/>
                                 <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                             </view>
                             <progressView opaque="NO" contentMode="scaleToFill" verticalHuggingPriority="750" progress="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="Mxg-Yu-l1N">
-                                <rect key="frame" x="0.0" y="56" width="402" height="3"/>
+                                <rect key="frame" x="0.0" y="106" width="402" height="3"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="3" id="s5o-Jw-36P"/>
                                 </constraints>
@@ -3105,6 +3105,7 @@ Cg
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="如何才能取一个好的ID？" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="KkE-EF-SGY">
                                                     <rect key="frame" x="81.666666666666671" y="15.333333333333334" width="168.33333333333331" height="19.333333333333329"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="16"/>
+                                                    <color key="textColor" systemColor="tintColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                             </subviews>
@@ -3984,7 +3985,7 @@ Cg
             </objects>
             <point key="canvasLocation" x="786" y="647"/>
         </scene>
-        <!--用户登录-->
+        <!--Internal Login View Controller-->
         <scene sceneID="giO-KI-p2L">
             <objects>
                 <viewController id="fhh-dM-Z0I" customClass="InternalLoginViewController" sceneMemberID="viewController">
@@ -4073,7 +4074,7 @@ Cg
                             <constraint firstItem="REJ-rU-aBt" firstAttribute="centerX" secondItem="az6-lI-icX" secondAttribute="centerX" id="rTr-Pm-KIj"/>
                         </constraints>
                     </view>
-                    <navigationItem key="navigationItem" title="用户登录" id="VQ5-9E-hYH"/>
+                    <navigationItem key="navigationItem" id="VQ5-9E-hYH"/>
                     <connections>
                         <outlet property="buttonLogin" destination="ZGE-LN-2u0" id="iLd-Cu-rdp"/>
                         <outlet property="textPass" destination="zB6-l2-rOI" id="5t5-tZ-Vh6"/>
@@ -5177,12 +5178,12 @@ Cg
                 <navigationController automaticallyAdjustsScrollViewInsets="NO" toolbarHidden="NO" id="FTr-67-wVh" customClass="CustomNavigationController" sceneMemberID="viewController">
                     <toolbarItems/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="jpI-uk-B3P">
-                        <rect key="frame" x="0.0" y="0.0" width="402" height="56"/>
+                        <rect key="frame" x="0.0" y="62" width="402" height="44"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </navigationBar>
                     <nil name="viewControllers"/>
                     <toolbar key="toolbar" opaque="NO" clearsContextBeforeDrawing="NO" contentMode="scaleToFill" id="B6c-mi-6kD">
-                        <rect key="frame" x="0.0" y="719" width="402" height="49"/>
+                        <rect key="frame" x="0.0" y="791" width="402" height="49"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </toolbar>
                     <connections>
@@ -5258,15 +5259,15 @@ Cg
     </scenes>
     <inferredMetricsTieBreakers>
         <segue reference="GJl-5Z-q6I"/>
-        <segue reference="30P-vY-89P"/>
-        <segue reference="YKe-kj-cjm"/>
+        <segue reference="1FG-aY-9gA"/>
+        <segue reference="WVF-MN-bM8"/>
         <segue reference="WAY-us-5fo"/>
         <segue reference="zES-xi-3kG"/>
         <segue reference="vdh-wV-eVI"/>
         <segue reference="akm-dg-fMD"/>
         <segue reference="g7o-PX-3NP"/>
         <segue reference="IjX-G8-SY1"/>
-        <segue reference="bUD-VL-hk4"/>
+        <segue reference="fQO-XK-dvT"/>
         <segue reference="ZOD-sm-t80"/>
         <segue reference="UWO-DD-ehb"/>
         <segue reference="P8Y-Av-Bkc"/>
@@ -5275,7 +5276,7 @@ Cg
         <segue reference="ftB-bq-E4r"/>
         <segue reference="nfk-GM-114"/>
         <segue reference="5wZ-RT-jhw"/>
-        <segue reference="kGD-nG-mgk"/>
+        <segue reference="eXX-RG-pPJ"/>
         <segue reference="jCl-fG-hwJ"/>
         <segue reference="nvR-pU-fEO"/>
         <segue reference="ZFk-VU-EwR"/>
@@ -5327,16 +5328,19 @@ Cg
             <color white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="secondaryLabelColor">
-            <color red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.23529411764705882" green="0.23529411764705882" blue="0.2627450980392157" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="systemGrayColor">
-            <color red="0.5568627451" green="0.5568627451" blue="0.57647058819999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.55686274509803924" green="0.55686274509803924" blue="0.57647058823529407" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemRedColor">
-            <color red="1" green="0.23137254900000001" blue="0.18823529410000001" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="1" green="0.23137254901960785" blue="0.18823529411764706" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </systemColor>
+        <systemColor name="tintColor">
+            <color red="0.0" green="0.47843137254901963" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>

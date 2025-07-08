@@ -267,11 +267,11 @@ static dispatch_once_t onceSharedDataSource;
     [alertController addAction:[UIAlertAction actionWithTitle:@"确定"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * action) {
-        __strong typeof(weakAlertController) alertController = weakAlertController;
-        if (!alertController) {
+        __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+        if (!strongAlertController) {
             return;
         }
-        NSString *input = alertController.textFields.firstObject.text;
+        NSString *input = strongAlertController.textFields[0].text;
         if (!safeHandler(input)) {
             [self showTimeoutMessage];
         }

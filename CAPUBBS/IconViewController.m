@@ -198,18 +198,18 @@
 //            textField.keyboardType = UIKeyboardTypeURL;
 //            textField.placeholder = @"链接";
 //        }];
-//        __weak typeof(alertController) weakAlertController = alertController; // 避免循环引用
+//        __weak typeof(alertControllerLink) weakAlertController = alertControllerLink; // 避免循环引用
 //        [alertControllerLink addAction:[UIAlertAction actionWithTitle:@"取消"
 //                                                                style:UIAlertActionStyleCancel
 //                                                              handler:nil]];
 //        [alertControllerLink addAction:[UIAlertAction actionWithTitle:@"确认"
 //                                                                style:UIAlertActionStyleDefault
 //                                                              handler:^(UIAlertAction * _Nonnull action) {
-//            __strong typeof(weakAlertController) alertController = weakAlertController;
-//            if (!alertController) {
+//            __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+//            if (!strongAlertController) {
 //                return;
 //            }
-//            NSString *url = alertControllerLink.textFields.firstObject.text;
+//            NSString *url = strongAlertController.textFields[0].text;
 //            if (url.length > 0) {
 //                [NOTIFICATION postNotificationName:@"selectIcon" object:nil userInfo:@{
 //                    @"num" : @"-1",
@@ -263,43 +263,50 @@
 - (void)compressAndUploadImage:(UIImage *)image {
     [hud showWithProgressMessage:@"正在压缩"];
     dispatch_global_default_async(^{
-        BOOL isAlpha = [AnimatedImageView isAlpha:image];
+        BOOL hasAlpha = [image hasAlphaChannel:YES];
         UIImage *resizedImage = image;
-        int maxWidth = isAlpha ? 400 : 800;
+        int maxWidth = hasAlpha ? 300 : 500;
         if (image.size.width > maxWidth) {
             CGFloat scaledHeight = maxWidth * image.size.height / image.size.width;
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(maxWidth, scaledHeight), NO, 0); // opaque = NO
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(maxWidth, scaledHeight), !hasAlpha, 0);
             [image drawInRect:CGRectMake(0, 0, maxWidth, maxWidth * image.size.height / image.size.width)];
             resizedImage = UIGraphicsGetImageFromCurrentImageContext();
             UIGraphicsEndImageContext();
         }
         
         NSData *imageData;
-        if (isAlpha) { // 带透明信息的png不可转换成jpeg否则丢失透明性
+        if (hasAlpha) { // 带透明信息的png不可转换成jpeg否则丢失透明性
             imageData = UIImagePNGRepresentation(resizedImage);
         } else {
-            imageData = UIImageJPEGRepresentation(image, 1);
-            float maxLength = IS_SUPER_USER ? 300 : 200; // 压缩超过200K / 300K的图片
-            float ratio = 1.0;
-            while (imageData.length >= maxLength * 1024 && ratio >= 0.1) {
-                ratio *= 0.8;
+            float maxLength = IS_SUPER_USER ? 200 : 150;
+            float ratio = 0.75;
+            imageData = UIImageJPEGRepresentation(image, ratio);
+            while (imageData.length >= maxLength * 1024 && ratio >= 0.2) {
+                ratio *= 0.75;
                 imageData = UIImageJPEGRepresentation(image, ratio);
             }
         }
-        NSLog(@"Icon Size: %dkB", (int)imageData.length / 1024);
+        NSLog(@"Upload Icon Size: %dkB", (int)imageData.length / 1024);
+        if (imageData.length > 512 * 1024) { // 512KB
+            [hud hideWithFailureMessage:@"文件太大"];
+            return;
+        }
+        
+        NSString *extension = [AnimatedImageView fileExtension:[AnimatedImageView fileType:imageData]];
         [hud showWithProgressMessage:@"正在上传"];
-        [Helper callApiWithParams:@{ @"image" : [imageData base64EncodedStringWithOptions:0] } toURL:@"image" callback:^(NSArray *result, NSError *err) {
+        [Helper callApiWithParams:@{@"type": @"icon", @"extension":extension, @"file": imageData} toURL:@"upload" callback:^(NSArray *result, NSError *err) {
             if (err || result.count == 0) {
                 [hud hideWithFailureMessage:@"上传失败"];
                 return;
             }
-            if ([result[0][@"code"] isEqualToString:@"-1"]) {
+            int code = [result[0][@"code"] intValue];
+            if (code == -1) {
                 [hud hideWithSuccessMessage:@"上传成功"];
-                NSString *url = result[0][@"imgurl"];
+                NSString *url = result[0][@"url"];
                 [NOTIFICATION postNotificationName:@"selectIcon" object:nil userInfo:@{ @"URL" : url }];
                 [self.navigationController popViewControllerAnimated:YES];
             } else {
-                [hud hideWithFailureMessage:@"上传失败"];
+                [hud hideWithFailureMessage:code == 1 ? @"文件太大" : @"上传失败"];
             }
         }];
     });

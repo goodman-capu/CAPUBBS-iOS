@@ -422,9 +422,6 @@
 
 // 滚动时调用此方法
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
-    if (@available(iOS 26.0, *)) { // Liquid glass
-        return;
-    }
     // NSLog(@"scrollView.contentOffset:%f, %f", scrollView.contentOffset.x, scrollView.contentOffset.y);
     if (!isAtEnd && scrollView.contentOffset.y >= scrollView.contentSize.height - scrollView.frame.size.height) {
         [self.navigationController setToolbarHidden:NO animated:YES];
