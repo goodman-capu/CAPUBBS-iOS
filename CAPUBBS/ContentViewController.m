@@ -373,11 +373,11 @@ static const CGFloat kWebViewMinHeight = 40;
     [alertController addAction:[UIAlertAction actionWithTitle:@"好"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        __strong typeof(weakAlertController) alertController = weakAlertController;
-        if (!alertController) {
+        __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+        if (!strongAlertController) {
             return;
         }
-        NSString *pageip = alertController.textFields[0].text;
+        NSString *pageip = strongAlertController.textFields[0].text;
         int pagen = [pageip intValue];
         if (pagen <= 0 || pagen > [[data lastObject] [@"pages"] integerValue]) {
             [self showAlertWithTitle:@"错误" message:@"输入不合法"];

@@ -199,18 +199,18 @@
 //            textField.keyboardType = UIKeyboardTypeURL;
 //            textField.placeholder = @"链接";
 //        }];
-//        __weak typeof(alertController) weakAlertController = alertController; // 避免循环引用
+//        __weak typeof(alertControllerLink) weakAlertController = alertControllerLink; // 避免循环引用
 //        [alertControllerLink addAction:[UIAlertAction actionWithTitle:@"取消"
 //                                                                style:UIAlertActionStyleCancel
 //                                                              handler:nil]];
 //        [alertControllerLink addAction:[UIAlertAction actionWithTitle:@"确认"
 //                                                                style:UIAlertActionStyleDefault
 //                                                              handler:^(UIAlertAction * _Nonnull action) {
-//            __strong typeof(weakAlertController) alertController = weakAlertController;
-//            if (!alertController) {
+//            __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+//            if (!strongAlertController) {
 //                return;
 //            }
-//            NSString *url = alertControllerLink.textFields.firstObject.text;
+//            NSString *url = strongAlertController.textFields[0].text;
 //            if (url.length > 0) {
 //                [NOTIFICATION postNotificationName:@"selectIcon" object:nil userInfo:@{
 //                    @"num" : @"-1",

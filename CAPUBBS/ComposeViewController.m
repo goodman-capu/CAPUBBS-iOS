@@ -429,7 +429,7 @@
         UIAlertController *alertControllerLink = [UIAlertController alertControllerWithTitle:@"插入照片"
                                                                        message:@"请输入图片链接"
                                                                 preferredStyle:UIAlertControllerStyleAlert];
-        __weak typeof(alertController) weakAlertController = alertController; // 避免循环引用
+        __weak typeof(alertControllerLink) weakAlertController = alertControllerLink; // 避免循环引用
         [alertControllerLink addTextFieldWithConfigurationHandler:^(UITextField *textField) {
             textField.placeholder = @"链接";
             textField.keyboardType = UIKeyboardTypeURL;
@@ -442,11 +442,11 @@
         [alertControllerLink addAction:[UIAlertAction actionWithTitle:@"插入"
                                                   style:UIAlertActionStyleDefault
                                                 handler:^(UIAlertAction * _Nonnull action) {
-            __strong typeof(weakAlertController) alertController = weakAlertController;
-            if (!alertController) {
+            __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+            if (!strongAlertController) {
                 return;
             }
-            NSString *url = alertControllerLink.textFields[0].text;
+            NSString *url = strongAlertController.textFields[0].text;
             [self.textBody insertText:[NSString stringWithFormat:@"[img]%@[/img]", url]];
             [self.textBody becomeFirstResponder];
             
@@ -726,12 +726,12 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
     [alertController addAction:[UIAlertAction actionWithTitle:@"插入"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        __strong typeof(weakAlertController) alertController = weakAlertController;
-        if (!alertController) {
+        __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+        if (!strongAlertController) {
             return;
         }
-        NSString *user = alertController.textFields[0].text;
-        NSString *body = alertController.textFields[1].text;
+        NSString *user = strongAlertController.textFields[0].text;
+        NSString *body = strongAlertController.textFields[1].text;
         if (user.length == 0) {
             [self showAlertWithTitle:@"错误" message:@"用户不能为空"];
             return;
@@ -772,12 +772,12 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
     [alertController addAction:[UIAlertAction actionWithTitle:@"插入"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        __strong typeof(weakAlertController) alertController = weakAlertController;
-        if (!alertController) {
+        __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+        if (!strongAlertController) {
             return;
         }
-        NSString *title = alertController.textFields[0].text;
-        NSString *url = alertController.textFields[1].text;
+        NSString *title = strongAlertController.textFields[0].text;
+        NSString *url = strongAlertController.textFields[1].text;
         if (url.length == 0) {
             [self showAlertWithTitle:@"错误" message:@"网址不能为空"];
             return;

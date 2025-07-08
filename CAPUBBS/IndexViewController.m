@@ -167,11 +167,11 @@
     [alertController addAction:[UIAlertAction actionWithTitle:@"确认"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        __strong typeof(weakAlertController) alertController = weakAlertController;
-        if (!alertController) {
+        __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+        if (!strongAlertController) {
             return;
         }
-        [self multiAction:alertController.textFields[0].text];
+        [self multiAction:strongAlertController.textFields[0].text];
     }]];
     [self presentViewControllerSafe:alertController];
 }

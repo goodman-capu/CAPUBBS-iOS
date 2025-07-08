@@ -88,52 +88,57 @@ static char kIsAttemptingToPresentKey;
 }
 
 - (BOOL)_tryPresentNextVc {
-    if ([self _isAttemptingToPresent] || self.presentedViewController) {
-        return NO;
-    }
-    
-    NSMutableArray *queue = [self _getVcQueue];
-    if (queue.count == 0) {
-        if ([self _getPresentTimer]) {
-            [[self _getPresentTimer] invalidate];
-            [self _setPresentTimer:nil];
+    __block BOOL result = NO;
+    dispatch_main_sync_safe(^{
+        NSMutableArray *queue = [self _getVcQueue];
+        if (queue.count == 0) {
+            if ([self _getPresentTimer]) {
+                [[self _getPresentTimer] invalidate];
+                [self _setPresentTimer:nil];
+            }
+            result = NO;
+            return;
         }
-        return NO;
-    }
-    
-    [self _setAttemptingToPresent:YES];
-    UIViewController *item = queue.firstObject;
-    [queue removeObjectAtIndex:0];
-    dispatch_main_async_safe(^{
+        
+        if ([self _isAttemptingToPresent] || self.presentedViewController) {
+            result = NO;
+            return;
+        }
+        
+        [self _setAttemptingToPresent:YES];
+        UIViewController *item = queue.firstObject;
+        [queue removeObjectAtIndex:0];
         [self presentViewController:item animated:YES completion:^{
             [self _setAttemptingToPresent:NO];
         }];
+        result = YES;
     });
-    return YES;
-}
-
-- (void)_timerCheck {
-    [self _tryPresentNextVc];
+    return result;
 }
 
 - (void)presentViewControllerSafe:(UIViewController *)view {
-    [[self _getVcQueue] addObject:view];
-    if ([self _tryPresentNextVc]) {
+    if (!view) {
         return;
     }
-    if (![self _getPresentTimer]) {
-        // 使用 weakSelf 防止循环引用导致不能 dealloc
-        __weak typeof(self) weakSelf = self;
-        NSTimer *timer = [NSTimer scheduledTimerWithTimeInterval:0.1 repeats:YES block:^(NSTimer * _Nonnull timer) {
-            __strong typeof(weakSelf) strongSelf = weakSelf;
-            if (strongSelf) {
-                [strongSelf _timerCheck];
-            } else {
-                [timer invalidate];
-            }
-        }];
-        [self _setPresentTimer:timer];
-    }
+    dispatch_main_async_safe(^{
+        [[self _getVcQueue] addObject:view];
+        if ([self _tryPresentNextVc]) {
+            return;
+        }
+        if (![self _getPresentTimer]) {
+            // 使用 weakSelf 防止循环引用导致不能 dealloc
+            __weak typeof(self) weakSelf = self;
+            NSTimer *timer = [NSTimer scheduledTimerWithTimeInterval:0.1 repeats:YES block:^(NSTimer * _Nonnull timer) {
+                __strong typeof(weakSelf) strongSelf = weakSelf;
+                if (strongSelf) {
+                    [strongSelf _tryPresentNextVc];
+                } else {
+                    [timer invalidate];
+                }
+            }];
+            [self _setPresentTimer:timer];
+        }
+    });
 }
 
 - (void)showAlertWithTitle:(NSString *)title

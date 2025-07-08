@@ -197,11 +197,11 @@
     // 设置 Auto Layout 约束
     [NSLayoutConstraint activateConstraints:@[
         // 左侧 stack 靠左
-        [leftStack.leadingAnchor constraintEqualToAnchor:keyboardToolView.leadingAnchor constant:16],
+        [leftStack.leadingAnchor constraintEqualToAnchor:keyboardToolView.safeAreaLayoutGuide.leadingAnchor constant:16],
         [leftStack.centerYAnchor constraintEqualToAnchor:keyboardToolView.centerYAnchor],
 
         // 右侧 stack 靠右
-        [rightStack.trailingAnchor constraintEqualToAnchor:keyboardToolView.trailingAnchor constant:-16],
+        [rightStack.trailingAnchor constraintEqualToAnchor:keyboardToolView.safeAreaLayoutGuide.trailingAnchor constant:-16],
         [rightStack.centerYAnchor constraintEqualToAnchor:keyboardToolView.centerYAnchor],
     ]];
 

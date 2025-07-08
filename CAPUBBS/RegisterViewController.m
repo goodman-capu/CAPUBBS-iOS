@@ -310,11 +310,11 @@
                             });
                         }]];
                         [alertController addAction:[UIAlertAction actionWithTitle:@"确认" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                            __strong typeof(weakAlertController) alertController = weakAlertController;
-                            if (!alertController) {
+                            __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+                            if (!strongAlertController) {
                                 return;
                             }
-                            NSString *oldPassword = alertController.textFields[0].text;
+                            NSString *oldPassword = strongAlertController.textFields[0].text;
                             [self changePasswordWithOldPassword:oldPassword];
                         }]];
                         [self presentViewControllerSafe:alertController];

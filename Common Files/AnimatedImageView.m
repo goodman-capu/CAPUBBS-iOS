@@ -75,6 +75,9 @@
 
 - (void)_setGifWithData:(NSData *)data internal:(BOOL)internal {
     SDAnimatedImage *image = [[SDAnimatedImage alloc] initWithData:data];
+    // Loop forever
+    self.shouldCustomLoopCount = YES;
+    self.animationRepeatCount = 0;
     if (internal) {
         [self setImageInternal:image];
     } else {

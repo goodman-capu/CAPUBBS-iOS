@@ -68,11 +68,11 @@
     [alertController addAction:[UIAlertAction actionWithTitle:@"开始"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        __strong typeof(weakAlertController) alertController = weakAlertController;
-        if (!alertController) {
+        __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+        if (!strongAlertController) {
             return;
         }
-        NSString *userName = alertController.textFields[0].text;
+        NSString *userName = strongAlertController.textFields[0].text;
         if (userName.length == 0) {
             [self showAlertWithTitle:@"错误" message:@"用户名不能为空" confirmTitle:@"重试" confirmAction:^(UIAlertAction *action) {
                 [self askForUserId];
