@@ -9,6 +9,7 @@
 #import <UIKit/UIKit.h>
 
 @interface TextViewController : CustomTableViewController<UITextViewDelegate> {
+    MBProgressHUD *hud;
     int color;
     NSArray *colors;
     NSArray *colorNames;
@@ -19,7 +20,7 @@
     BOOL isItalics;
     BOOL isUnderscore;
     BOOL isDelete;
-    MBProgressHUD *hud;
+    int numberOfInserts;
 }
 
 @property (weak, nonatomic) IBOutlet UISegmentedControl *segmentColor;
@@ -32,5 +33,8 @@
 @property (weak, nonatomic) IBOutlet UILabel *labelPreview;
 @property (weak, nonatomic) IBOutlet UITextView *textInput;
 @property NSString *defaultText;
+
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonUndo;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonAdd;
 
 @end

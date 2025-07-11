@@ -18,6 +18,9 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
+    if (LIQUID_GLASS) {
+        self.toolbarItems = @[self.buttonBack, self.buttonForward, [UIBarButtonItem flexibleSpaceItem], self.buttonShare, self.buttonSafari];
+    }
     [self.webViewContainer initiateWebViewWithToken:YES];
     self.webViewContainer.backgroundColor = [UIColor whiteColor];
     [self.webViewContainer.webView setNavigationDelegate:self];

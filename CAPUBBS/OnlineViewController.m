@@ -108,11 +108,13 @@
 //        [self showAlertWithTitle:@"加载失败" message:@"当前功能暂不可用！"];
     } else {
         [hud hideWithSuccessMessage:@"加载成功"];
-        if (data.count == 0) {
-            [self showAlertWithTitle:@"当前没有人在线！" message:nil];
-        }
+        
 //        NSLog(@"%@", data);
-        [self.tableView reloadData];
+        if ([self.tableView numberOfRowsInSection:0] == 0) {
+            [self.tableView reloadData];
+        } else {
+            [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationFade];
+        }
     }
 }
 
@@ -166,7 +168,7 @@
     if (data.count > 0) {
         return [NSString stringWithFormat:@"当前共%d人在线", (int)data.count];
     } else {
-        return nil;
+        return data ? @"当前没有人在线" : nil;
     }
 }
 

@@ -14,8 +14,6 @@
 
 @implementation CustomWebViewContainer
 
-static NSMutableDictionary *sharedProcessPools = nil;
-static dispatch_once_t onceSharedProcessPool;
 static NSMutableDictionary *sharedDataSources = nil;
 static dispatch_once_t onceSharedDataSource;
 
@@ -82,19 +80,6 @@ static dispatch_once_t onceSharedDataSource;
     });
 }
 
-+ (WKProcessPool *)sharedProcessPoolWithToken:(BOOL)hasToken {
-    dispatch_once(&onceSharedProcessPool, ^{
-        sharedProcessPools = [[NSMutableDictionary alloc] init];
-    });
-    @synchronized (sharedProcessPools) {
-        NSNumber *key = @(hasToken);
-        if (!sharedProcessPools[key]) {
-            sharedProcessPools[key] = [[WKProcessPool alloc] init];
-        }
-        return sharedProcessPools[key];
-    }
-}
-
 + (WKWebsiteDataStore *)sharedDataSourceWithToken:(BOOL)hasToken {
     dispatch_once(&onceSharedDataSource, ^{
         sharedDataSources = [[NSMutableDictionary alloc] init];
@@ -126,7 +111,6 @@ static dispatch_once_t onceSharedDataSource;
 }
 
 - (void)initiateWebViewWithToken:(BOOL)hasToken {
-    WKProcessPool *processPool = [CustomWebViewContainer sharedProcessPoolWithToken:hasToken];
     WKWebsiteDataStore *dataStore = [CustomWebViewContainer sharedDataSourceWithToken:hasToken];
     if (hasToken) {
         NSURL *url = [NSURL URLWithString:CHEXIE];
@@ -148,7 +132,7 @@ static dispatch_once_t onceSharedDataSource;
     if (_webView) {
         WKWebViewConfiguration *config = _webView.configuration;
         // No need to update here
-        if (config.processPool == processPool && config.websiteDataStore == dataStore) {
+        if (config.websiteDataStore == dataStore) {
             return;
         }
         
@@ -161,7 +145,6 @@ static dispatch_once_t onceSharedDataSource;
     
     WKWebViewConfiguration *config = [[WKWebViewConfiguration alloc] init];
     config.dataDetectorTypes = WKDataDetectorTypeAll;
-    config.processPool = processPool;
     config.websiteDataStore = dataStore;
     config.allowsInlineMediaPlayback = YES;
     

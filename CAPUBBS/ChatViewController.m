@@ -159,9 +159,7 @@
             [self checkID:NO];
         }
         [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationAutomatic];
-        dispatch_main_after(0.5, ^{
-            [self scrollTableView];
-        });
+        [self scrollTableView:NO];
         shouldShowHud = NO;
     }];
 }
@@ -194,8 +192,8 @@
     }];
 }
 
-- (void)scrollTableView {
-    [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:1] atScrollPosition:UITableViewScrollPositionBottom animated:YES];
+- (void)scrollTableView:(BOOL)animated {
+    [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:1] atScrollPosition:UITableViewScrollPositionBottom animated:animated];
     if (self.directTalk == YES) {
         dispatch_main_after(0.5, ^{
             [self.textSend becomeFirstResponder];
@@ -258,15 +256,34 @@
     return cell;
 }
 
-- (IBAction)buttonBack:(id)sender {
+- (BOOL)shouldDisableClose {
+    return self.textSend.text.length > 0;
+}
+
+- (IBAction)done:(id)sender {
+    if ([self shouldDisableClose]) {
+        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"确定退出" message:@"您有尚未发送的聊天内容，确定继续退出？" preferredStyle:UIAlertControllerStyleActionSheet];
+        [alertController addAction:[UIAlertAction actionWithTitle:@"退出" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+            [self dismiss];
+        }]];
+        [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
+        if ([sender isKindOfClass:[UIBarButtonItem class]]) {
+            alertController.popoverPresentationController.barButtonItem = sender;
+        }
+        [self presentViewControllerSafe:alertController];
+    } else {
+        [self dismiss];
+    }
+}
+
+- (void)dismiss {
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
+
 - (IBAction)startCompose:(id)sender {
-    [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:1] atScrollPosition:UITableViewScrollPositionBottom animated:YES];
-    dispatch_main_after(0.5, ^{
-        [self.textSend becomeFirstResponder];
-    });
+    self.directTalk = YES;
+    [self scrollTableView:YES];
 }
 
 - (IBAction)buttonSend:(id)sender {
@@ -327,6 +344,14 @@
 
 - (BOOL)textView:(UITextView *)textView shouldInteractWithURL:(NSURL *)URL inRange:(NSRange)characterRange interaction:(UITextItemInteraction)interaction {
     return [AppDelegate textView:textView shouldInteractWithURL:URL inRange:characterRange interaction:interaction];
+}
+
+- (void)textViewDidChange:(UITextView *)textView {
+    if (textView != self.textSend) {
+        return;
+    }
+    // 如果有输入文字，不允许点击外部关闭
+    self.modalInPresentation = [self shouldDisableClose];
 }
 
 #pragma mark - Navigation

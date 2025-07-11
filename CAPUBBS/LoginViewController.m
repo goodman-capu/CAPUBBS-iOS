@@ -494,8 +494,7 @@
     }
     if ([segue.identifier isEqualToString:@"account"]) {
         UIViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
-        dest.navigationController.popoverPresentationController.sourceView = self.iconUser;
-        dest.navigationController.popoverPresentationController.sourceRect = self.iconUser.bounds;
+        [AppDelegate setAdaptiveSheetFor:dest source:sender];
     }
     if ([segue.identifier isEqualToString:@"register"]) {
         UIViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];

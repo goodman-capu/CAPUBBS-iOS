@@ -30,6 +30,11 @@
     
     [NOTIFICATION addObserver:self selector:@selector(setUserIcon:) name:@"selectIcon" object:nil];
     
+//    if (LIQUID_GLASS) {
+//        for (UITextField *view in @[self.textUid, self.textPsd, self.textPsdSure, self.textEmail, self.textQQ, self.textFrom]) {
+//            view.layer.cornerRadius = 16;
+//        }
+//    }
     for (UITextView *view in @[self.textIntro, self.textSig, self.textSig2, self.textSig3]) {
         view.layer.cornerRadius = 6;
         view.layer.borderColor = [UIColor colorWithWhite:0 alpha:0.2].CGColor;
@@ -48,7 +53,7 @@
     }
     
     // 不允许点击外部关闭
-    [self setModalInPresentation:YES];
+    self.modalInPresentation = YES;
     
     // Uncomment the following line to preserve selection between presentations.
     // self.clearsSelectionOnViewWillAppear = NO;

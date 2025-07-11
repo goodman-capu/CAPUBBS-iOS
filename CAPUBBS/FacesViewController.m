@@ -18,15 +18,22 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
+    self.preferredContentSize = CGSizeMake(400, 0);
     
     previewImageView = [[AnimatedImageView alloc] init];
-    self.numberOfFaces = 0;
+    numberOfInserts = 0;
+    [self updateInfo];
     // Uncomment the following line to preserve selection between presentations
     // self.clearsSelectionOnViewWillAppear = NO;
     
     // Register cell classes
     
     // Do any additional setup after loading the view.
+}
+
+- (void)updateInfo {
+    self.title = numberOfInserts > 0 ? [NSString stringWithFormat:@"已插入%d个表情", numberOfInserts] : @"插入表情";
+    self.buttonUndo.enabled = numberOfInserts > 0;
 }
 
 #pragma mark <UICollectionViewDataSource>
@@ -76,8 +83,8 @@
             @"HTML" : [NSString stringWithFormat:@"[img]/bbsimg/expr/%ld.gif[/img]", (long)(indexPath.row + 1)]
         }];
     }
-    self.numberOfFaces++;
-    self.title = [NSString stringWithFormat:@"已插入%d个表情", self.numberOfFaces];
+    numberOfInserts++;
+    [self updateInfo];
 }
 
 - (void)collectionView:(UICollectionView *)collectionView didHighlightItemAtIndexPath:(NSIndexPath *)indexPath {
@@ -110,6 +117,16 @@
         [previewImageView removeFromSuperview];
         [previewImageView setAlpha:1.0];
     }];
+}
+
+- (IBAction)done:(id)sender {
+    [self dismissViewControllerAnimated:YES completion:nil];
+}
+
+- (IBAction)undo:(id)sender {
+    [NOTIFICATION postNotificationName:@"undo" object:nil];
+    numberOfInserts--;
+    [self updateInfo];
 }
 
 @end

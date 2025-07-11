@@ -17,7 +17,6 @@
     NSString *chatID;
     BOOL isBackground;
     BOOL isVisible;
-    BOOL isFirstTime;
     BOOL messageRefreshing;
     long originalSegment;
 }
@@ -25,7 +24,7 @@
 @property (weak, nonatomic) IBOutlet UIView *segmentBackgroundView;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *segmentType;
 @property (weak, nonatomic) IBOutlet UITableView *tableView;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *barFreeSpace;
+@property (strong, nonatomic) IBOutlet UIBarButtonItem *flexSpace;
 @property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonPrevious;
 @property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonAdd;
 @property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonNext;

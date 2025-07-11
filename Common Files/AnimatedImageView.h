@@ -12,12 +12,14 @@
 
 typedef NS_ENUM(int, ImageFileType) {
     ImageFileTypeUnknown = 0,
+    ImageFileTypeSVG,
     ImageFileTypeJPEG,
     ImageFileTypePNG,
     ImageFileTypeGIF,
     ImageFileTypeHEIC,
     ImageFileTypeHEIF,
-    ImageFileTypeWEBP  // iOS 14+
+    ImageFileTypeWEBP,
+    ImageFileTypeAVIF, // iOS 16+
 };
 
 @interface AnimatedImageView : SDAnimatedImageView

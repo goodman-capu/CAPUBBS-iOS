@@ -48,14 +48,18 @@
     }
     
     [NOTIFICATION addObserver:self selector:@selector(keyboardChange:) name:UIKeyboardWillChangeFrameNotification object:nil];
-    [NOTIFICATION addObserver:self selector:@selector(keyboardChange:) name:UIKeyboardDidChangeFrameNotification object:nil];
     [NOTIFICATION addObserver:self selector:@selector(insertContent:) name:@"addContent" object:nil];
+    [NOTIFICATION addObserver:self selector:@selector(undo:) name:@"undo" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(done:) name:@"publishContent" object:nil];
 
     if (self.tid.length == 0) {
         self.title = @"发表新帖";
         if ([BOARDS containsObject:self.bid]) {
-            [self.textTitle becomeFirstResponder];
+            if (self.defaultTitle.length > 0) {
+                [self.textBody becomeFirstResponder];
+            } else {
+                [self.textTitle becomeFirstResponder];
+            }
         }
     } else {
         if (self.isEdit) {
@@ -139,9 +143,23 @@
     activity.title = self.title;
 }
 
+- (BOOL)shouldDisableClose {
+    NSString *title = self.textTitle.text;
+    NSString *content = self.textBody.text;
+    if (content.length > 0 && ![content isEqualToString:self.defaultContent] &&
+        ![content isEqualToString:[DEFAULTS objectForKey:@"savedBody"]]) {
+        return YES;
+    }
+    if (title.length > 0 && ![title isEqualToString:self.defaultTitle] &&
+        ![title isEqualToString:[DEFAULTS objectForKey:@"savedTitle"]]) {
+        return YES;
+    }
+    return NO;
+}
+
 - (void)updateDismissable {
     // 如果有输入文字，不允许点击外部关闭
-    [self setModalInPresentation:[self shouldShowDismissWarning]];
+    self.modalInPresentation = [self shouldDisableClose];
 }
 
 - (BOOL)checkBoard {
@@ -226,8 +244,8 @@
     ] rightButtons:@[
         [AppDelegate keyboardToolButtonWithTitle:@"🔔" target:self action:@selector(addAt:)],
         [AppDelegate keyboardToolButtonWithTitle:@"🔗" target:self action:@selector(addLink:)],
-        [AppDelegate keyboardToolButtonWithTitle:@"🎨" target:self action:@selector(changeText)],
-        [AppDelegate keyboardToolButtonWithTitle:@"😀" target:self action:@selector(addFace)],
+        [AppDelegate keyboardToolButtonWithTitle:@"🎨" target:self action:@selector(addText:)],
+        [AppDelegate keyboardToolButtonWithTitle:@"😀" target:self action:@selector(addFace:)],
         [AppDelegate keyboardToolButtonWithTitle:@"📷" target:self action:@selector(addPic:)]
     ]];
     
@@ -251,10 +269,19 @@
     [self.textBody reloadInputViews];
 }
 
+- (void)insert:(NSString *)content {
+    [[self.textBody undoManager] beginUndoGrouping];
+    [self.textBody insertText:content];
+    [[self.textBody undoManager] endUndoGrouping];
+}
+
 - (void)insertContent:(NSNotification *)notification {
+    [self insert:notification.userInfo[@"HTML"]];
+}
+
+- (void)undo:(NSNotification *)notification {
     dispatch_main_async_safe(^{
-        [self.textBody insertText:notification.userInfo[@"HTML"]];
-        [self.textBody becomeFirstResponder];
+        [[self.textBody undoManager] undo];
     });
 }
 
@@ -399,7 +426,7 @@
 }
 
 - (IBAction)cancel:(id)sender {
-    if ([self shouldShowDismissWarning]) {
+    if ([self shouldDisableClose]) {
         UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"确定退出" message:@"您有尚未发表的内容，建议先保存草稿，确定继续退出？" preferredStyle:UIAlertControllerStyleActionSheet];
         [alertController addAction:[UIAlertAction actionWithTitle:@"退出" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
             [self dismiss];
@@ -415,6 +442,9 @@
 }
 
 - (IBAction)addPic:(id)sender {
+    if (self.presentedViewController) {
+        return;
+    }
     NSString *text = [self.textBody.text substringWithRange:self.textBody.selectedRange];
     if (text.length > 0) {
         NSRange range = self.textBody.selectedRange;
@@ -446,9 +476,8 @@
                 return;
             }
             NSString *url = strongAlertController.textFields[0].text;
-            [self.textBody insertText:[NSString stringWithFormat:@"[img]%@[/img]", url]];
+            [self insert:[NSString stringWithFormat:@"[img]%@[/img]", url]];
             [self.textBody becomeFirstResponder];
-            
         }]];
         [self presentViewControllerSafe:alertControllerLink];
     }]];
@@ -477,7 +506,7 @@
     [self presentViewControllerSafe:alertController];
 }
 
-- (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary *)info {
+- (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(nonnull NSDictionary<UIImagePickerControllerInfoKey,id> *)info {
     [picker dismissViewControllerAnimated:YES completion:nil];
     UIImage *image = info[UIImagePickerControllerOriginalImage];
     [self.textTitle resignFirstResponder];
@@ -485,7 +514,7 @@
     [self uploadOneImage:image withCallback:^(NSString *url) {
         dispatch_main_async_safe((^{
             if (url) {
-                [self.textBody insertText:[NSString stringWithFormat:@"\n[img]%@[/img]\n",url]];
+                [self insert:[NSString stringWithFormat:@"\n[img]%@[/img]\n",url]];
             }
             [self.textBody becomeFirstResponder];
         }));
@@ -527,7 +556,7 @@
     [self uploadOneImage:images[index] withCallback:^(NSString *url) {
         dispatch_main_async_safe((^{
             if (url) {
-                [self.textBody insertText:[NSString stringWithFormat:@"[img]%@[/img]",url]];
+                [self insert:[NSString stringWithFormat:@"[img]%@[/img]",url]];
             }
             [self uploadImages:images index:index + 1];
         }));
@@ -535,7 +564,7 @@
 }
 
 - (void)uploadOneImage:(UIImage *)image withCallback:(void (^)(NSString *url))callback {
-    if (!image || image.size.width <= 0 || image.size.height <= 0) {
+    if (!image || image.size.width == 0 || image.size.height == 0) {
         [self showAlertWithTitle:@"警告" message:@"图片不合法，无法获取长度 / 宽度！" confirmTitle:@"好" confirmAction:^(UIAlertAction *action) {
             callback(nil);
         }];
@@ -672,6 +701,9 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
 }
 
 - (IBAction)saveDraft:(id)sender {
+    if (self.presentedViewController) {
+        return;
+    }
     [self showAlertWithTitle:@"确认保存" message:@"保存草稿会覆盖之前的存档\n确定要继续吗？" confirmTitle:@"保存" confirmAction:^(UIAlertAction *action) {
         [self save];
         [hud showAndHideWithSuccessMessage:@"保存成功"];
@@ -679,6 +711,9 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
 }
 
 - (IBAction)restoreDraft:(id)sender {
+    if (self.presentedViewController) {
+        return;
+    }
     if ([[DEFAULTS objectForKey:@"savedTitle"] length] == 0 && [[DEFAULTS objectForKey:@"savedBody"] length] == 0) {
         [self showAlertWithTitle:@"错误" message:@"您还没有保存草稿"];
     } else {
@@ -713,9 +748,12 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
 }
 
 - (IBAction)addAt:(id)sender {
+    if (self.presentedViewController) {
+        return;
+    }
     NSString *text = [self.textBody.text substringWithRange:self.textBody.selectedRange];
     if (text.length > 0) {
-        [self.textBody insertText:[NSString stringWithFormat:@"[at]%@[/at]", text]];
+        [self insert:[NSString stringWithFormat:@"[at]%@[/at]", text]];
         return;
     }
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"插入@/引用"
@@ -744,21 +782,20 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
             [self showAlertWithTitle:@"错误" message:@"用户不能为空"];
             return;
         }
-        if (body.length == 0) {
-            [self.textBody insertText:[NSString stringWithFormat:@"[at]%@[/at]", user]];
-        } else {
-            [self.textBody insertText:[NSString stringWithFormat:@"[quote=%@]%@[/quote]\n", user, body]];
-        }
+        [self insert:body.length == 0 ? [NSString stringWithFormat:@"[at]%@[/at]", user] : [NSString stringWithFormat:@"[quote=%@]%@[/quote]\n", user, body]];
     }]];
     [self presentViewControllerSafe:alertController];
 }
 
 - (IBAction)addLink:(id)sender {
+    if (self.presentedViewController) {
+        return;
+    }
     NSString *text = [self.textBody.text substringWithRange:self.textBody.selectedRange];
     if (text.length > 0) {
         NSString *textLower = text.lowercaseString;
         if ([textLower hasPrefix:@"http://"] || [textLower hasPrefix:@"https://"] || [textLower hasPrefix:@"/"]) {
-            [self.textBody insertText:[NSString stringWithFormat:@"[url]%@[/url]", text]];
+            [self insert:[NSString stringWithFormat:@"[url]%@[/url]", text]];
             return;
         }
     }
@@ -790,17 +827,23 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
             [self showAlertWithTitle:@"错误" message:@"网址不能为空"];
             return;
         }
-        [self.textBody insertText:title.length > 0 ? [NSString stringWithFormat:@"[url=%@]%@[/url]", url, title] : [NSString stringWithFormat:@"[url]%@[/url]", url]];
+        [self insert:title.length > 0 ? [NSString stringWithFormat:@"[url=%@]%@[/url]", url, title] : [NSString stringWithFormat:@"[url]%@[/url]", url]];
     }]];
     [self presentViewControllerSafe:alertController];
 }
 
-- (void)changeText {
-    [self performSegueWithIdentifier:@"addText" sender:nil];
+- (void)addText:(id)sender {
+    if (self.presentedViewController) {
+        return;
+    }
+    [self performSegueWithIdentifier:@"addText" sender:sender];
 }
 
-- (void)addFace {
-    [self performSegueWithIdentifier:@"addFace" sender:nil];
+- (void)addFace:(id)sender {
+    if (self.presentedViewController) {
+        return;
+    }
+    [self performSegueWithIdentifier:@"addFace" sender:sender];
 }
 
 -(void)clearWithFunction:(NSString *(^)(NSString *text))function {
@@ -954,8 +997,18 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
         dest.attachments = self.attachments;
         dest.sig = (int)self.segmentSig.selectedSegmentIndex;
     }
+    if ([segue.identifier isEqualToString:@"addText"] || [segue.identifier isEqualToString:@"addFace"]) {
+        UIViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
+        UIView *source;
+        if (toolbarEditor == 0 && sender && [sender isKindOfClass:[UIView class]]) {
+            source = sender;
+        } else {
+            source = self.buttonTools;
+        }
+        [AppDelegate setAdaptiveSheetFor:dest source:source];
+    }
     if ([segue.identifier isEqualToString:@"addText"]) {
-        TextViewController *dest = [segue destinationViewController];
+        TextViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
         dest.defaultText = [self.textBody.text substringWithRange:self.textBody.selectedRange];
     }
     // Get the new view controller using [segue destinationViewController].

@@ -35,6 +35,8 @@
 
 + (UIViewController *)getTopViewController;
 
++ (void)setAdaptiveSheetFor:(UIViewController *)viewController source:(UIView *)source;
+
 + (void)setPrefersLargeTitles:(UINavigationController *)navigationController;
 
 + (UIStatusBarStyle)preferredStatusBarStyle;

@@ -170,7 +170,7 @@
 + (NSData *)resizeImage:(UIImage *)oriImage {
     BOOL hasAlpha = [oriImage hasAlphaChannel:NO];
     UIImage *resizeImage = oriImage;
-    int maxWidth = 450; // 详细信息界面图片大小150 * 150 @3x模式下450 * 450可保证清晰
+    int maxWidth = 300; // 详细信息界面图片大小100 * 100 3x模式下可保证清晰
     if (oriImage.size.width > maxWidth) {
         CGFloat scaledHeight = maxWidth * oriImage.size.height / oriImage.size.width;
         UIGraphicsBeginImageContextWithOptions(CGSizeMake(maxWidth, scaledHeight), !hasAlpha, 0);
@@ -198,6 +198,11 @@
     if (!imageData || imageData.length == 0) {
         return ImageFileTypeUnknown;
     }
+    
+    NSString *textPrefix = [[NSString alloc] initWithData:[imageData subdataWithRange:NSMakeRange(0, MIN(1024, imageData.length))] encoding:NSUTF8StringEncoding];
+    if ([[textPrefix lowercaseString] containsString:@"<svg"]) {
+        return ImageFileTypeSVG;
+    }
 
     CGImageSourceRef source = CGImageSourceCreateWithData((__bridge CFDataRef)imageData, NULL);
     if (!source) {
@@ -205,13 +210,12 @@
     }
 
     CFStringRef utiString = CGImageSourceGetType(source);
+    UTType *type = nil;
+    if (utiString) {
+        type = [UTType typeWithIdentifier:(__bridge NSString *)utiString];
+    }
     CFRelease(source);
 
-    if (!utiString) {
-        return ImageFileTypeUnknown;
-    }
-
-    UTType *type = [UTType typeWithIdentifier:(__bridge NSString *)utiString];
     if (!type) {
         return ImageFileTypeUnknown;
     }
@@ -234,6 +238,12 @@
     if ([type conformsToType:UTTypeWebP]) {
         return ImageFileTypeWEBP;
     }
+    // Only iOS 16+ supports native avif rendering
+    if (@available(iOS 16.0, *)) {
+        if ([type conformsToType:[UTType typeWithIdentifier:@"public.avif"]]) {
+            return ImageFileTypeAVIF;
+        }
+    }
 
     return ImageFileTypeUnknown;
 }
@@ -241,6 +251,8 @@
 
 + (NSString *)fileExtension:(ImageFileType)type {
     switch (type) {
+        case ImageFileTypeSVG:
+            return @"svg";
         case ImageFileTypeJPEG:
             return @"jpg";
         case ImageFileTypePNG:
@@ -253,6 +265,8 @@
             return @"heif";
         case ImageFileTypeWEBP:
             return @"webp";
+        case ImageFileTypeAVIF:
+            return @"avif";
         case ImageFileTypeUnknown:
         default:
             return nil;

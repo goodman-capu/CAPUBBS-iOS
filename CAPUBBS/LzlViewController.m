@@ -72,20 +72,28 @@
     [self loadData];
 }
 
+- (BOOL)shouldDisableClose {
+    return self.textPost.text.length > 0;
+}
+
 - (IBAction)back:(id)sender {
-    if (self.textPost.text.length == 0) {
-        [self dismissViewControllerAnimated:YES completion:nil];
-    } else {
+    if ([self shouldDisableClose]) {
         UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"确定退出" message:@"您有尚未发表的楼中楼，建议先保存草稿，确定继续退出？" preferredStyle:UIAlertControllerStyleActionSheet];
         [alertController addAction:[UIAlertAction actionWithTitle:@"退出" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
-            [self dismissViewControllerAnimated:YES completion:nil];
+            [self dismiss];
         }]];
         [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
         if ([sender isKindOfClass:[UIBarButtonItem class]]) {
             alertController.popoverPresentationController.barButtonItem = sender;
         }
         [self presentViewControllerSafe:alertController];
+    } else {
+        [self dismiss];
     }
+}
+
+- (void)dismiss {
+    [self dismissViewControllerAnimated:YES completion:nil];
 }
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
@@ -311,7 +319,7 @@
         currentText = [regex stringByReplacingMatchesInString:currentText options:0 range:NSMakeRange(0, currentText.length) withTemplate:@""];
         self.textPost.text = [NSString stringWithFormat:@"回复 @%@: %@", lzlAuthor, currentText];
     }
-    dispatch_main_async_safe(^{
+    dispatch_main_after(0.5, ^{
         [self.textPost becomeFirstResponder];
     });
 }
@@ -341,8 +349,8 @@
     if (textView != self.textPost) {
         return;
     }
-    int length = (int)textView.text.length;
-    self.labelByte.text = [NSString stringWithFormat:@"%d/140", length];
+    NSUInteger length = textView.text.length;
+    self.labelByte.text = [NSString stringWithFormat:@"%ld/140", length];
     if (length <= 120) {
         [self.labelByte setTextColor:[UIColor darkGrayColor]];
     } else if (length <= 140) {
@@ -351,7 +359,7 @@
         [self.labelByte setTextColor:[UIColor redColor]];
     }
     // 如果有输入文字，不允许点击外部关闭
-    [self setModalInPresentation:length > 0];
+    self.modalInPresentation = [self shouldDisableClose];
 }
 
 #pragma mark - Navigation

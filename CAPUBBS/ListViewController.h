@@ -15,7 +15,6 @@
     MBProgressHUD *hudSofa;
     NSUserActivity *activity;
     int failCount;
-    BOOL isFirstTime;
     BOOL isLast;
     BOOL isRobbingSofa;
     BOOL isFastRobSofa;

@@ -217,7 +217,20 @@ static const CGFloat kWebViewMinHeight = 40;
                     [cell.webViewContainer.webView loadHTMLString:EMPTY_HTML baseURL:nil];
                 }
             }
-            [self.tableView reloadData];
+            if ([self.tableView numberOfRowsInSection:0] == 0) {
+                [self.tableView reloadData];
+            } else {
+                UITableViewRowAnimation rowAnimation = UITableViewRowAnimationNone;
+                if (!SIMPLE_VIEW) {
+                    if (oldPage > pageNum) {
+                        rowAnimation = UITableViewRowAnimationRight;
+                    }
+                    if (oldPage < pageNum) {
+                        rowAnimation = UITableViewRowAnimationLeft;
+                    }
+                }
+                [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:rowAnimation];
+            }
             if (data.count != 0) {
                 if (self.willScrollToBottom) {
                     self.willScrollToBottom = NO;
@@ -522,7 +535,7 @@ static const CGFloat kWebViewMinHeight = 40;
     // 使用 weakSelf 防止循环引用导致不能 dealloc
     __weak typeof(self) weakSelf = self;
     // Do not trigger immediately, the webview might still be showing the previous content.
-    cell.webviewUpdateTimer = [NSTimer scheduledTimerWithTimeInterval:0.2 repeats:YES block:^(NSTimer * _Nonnull timer) {
+    cell.webviewUpdateTimer = [NSTimer scheduledTimerWithTimeInterval:0.1 repeats:YES block:^(NSTimer * _Nonnull timer) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) {
             [timer invalidate];
@@ -752,7 +765,7 @@ static const CGFloat kWebViewMinHeight = 40;
         } completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
             ImageFileType type = [AnimatedImageView fileType:data];
             if (error || type == ImageFileTypeUnknown) {
-                [hud hideWithFailureMessage:!error ? errorMessage : @"未知图片格式"];
+                [hud hideWithFailureMessage:error ? errorMessage : @"未知图片格式"];
                 return;
             }
             [hud hideWithSuccessMessage:@"图片加载成功"];
@@ -1446,21 +1459,17 @@ static const CGFloat kWebViewMinHeight = 40;
         isEdit = NO;
     } else if ([segue.identifier isEqualToString:@"lzl"]) {
         LzlViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
-        UIView *origin;
+        UIView *source;
         if ([sender isKindOfClass:[UIButton class]]) {
-            origin = sender;
-            selectedIndex = origin.tag;
+            source = sender;
+            selectedIndex = source.tag;
         } else if (selectedIndex >= 0) {
             ContentCell *cell = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:selectedIndex inSection:0]];
             if (cell) {
-                origin = cell.buttonLzl;
+                source = cell.buttonLzl;
             }
         }
-        if (origin) {
-            dest.navigationController.modalPresentationStyle = UIModalPresentationPopover;
-            dest.navigationController.popoverPresentationController.sourceView = origin;
-            dest.navigationController.popoverPresentationController.sourceRect = origin.bounds;
-        }
+        [AppDelegate setAdaptiveSheetFor:dest source:source];
         dest.fid = data[selectedIndex][@"fid"];
         dest.URL = [NSURL URLWithString:[NSString stringWithFormat:@"%@#%@", [[self getCurrentUrl] absoluteString], data[selectedIndex][@"floor"]]];
         if (data[selectedIndex][@"lzldetail"]) {
@@ -1470,12 +1479,10 @@ static const CGFloat kWebViewMinHeight = 40;
         }
     } else if ([segue.identifier isEqualToString:@"userInfo"]) {
         UserViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
+        [AppDelegate setAdaptiveSheetFor:dest source:sender];
         if ([sender isKindOfClass:[UIButton class]]) {
             UIButton *button = sender;
             dest.ID = data[button.tag][@"author"];
-            dest.navigationController.modalPresentationStyle = UIModalPresentationPopover;
-            dest.navigationController.popoverPresentationController.sourceView = button;
-            dest.navigationController.popoverPresentationController.sourceRect = button.bounds;
             ContentCell *cell = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForItem:button.tag inSection:0]];
             if (cell && ![cell.icon.image isEqual:PLACEHOLDER]) {
                 dest.iconData = UIImagePNGRepresentation(cell.icon.image);

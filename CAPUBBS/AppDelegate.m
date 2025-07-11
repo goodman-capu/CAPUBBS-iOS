@@ -138,7 +138,8 @@
     });
     
 #ifdef DEBUG
-//    [self openLink:[Helper getLink:@"https://www.chexie.net/bbs/content/?p=25&bid=4&tid=19837#293"] postTitle:nil];
+//    [AppDelegate openLink:[Helper getLink:@"https://www.chexie.net/bbs/content/?p=25&bid=4&tid=19837#298"] postTitle:nil];
+//    [self _handleUrlRequestWithDictionary:@{@"open": @"compose", @"bid": @"9", @"title": @"Test"}];
 #endif
     
     // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
@@ -163,6 +164,42 @@
     return topVC;
 }
 
++ (void)setAdaptiveSheetFor:(UIViewController *)viewController source:(UIView *)source {
+    if (!viewController || !viewController.navigationController) {
+        return;
+    }
+    UINavigationController *navi = viewController.navigationController;
+    UISheetPresentationController *sheetPC;
+    if (source && ([source isKindOfClass:[UIView class]] || [source isKindOfClass:[UIBarButtonItem class]])) {
+        navi.modalPresentationStyle = UIModalPresentationPopover;
+        UIPopoverPresentationController *popoverPC = navi.popoverPresentationController;
+        if (popoverPC) {
+            if ([source isKindOfClass:[UIBarButtonItem class]]) {
+                popoverPC.barButtonItem = (UIBarButtonItem *)source;
+            } else {
+                popoverPC.sourceView = source;
+                popoverPC.sourceRect = source.bounds;
+            }
+            sheetPC = popoverPC.adaptiveSheetPresentationController;
+        }
+    } else {
+        // This is not adaptive, but the best fallback we can do (sheet on iPhone but not iPad)
+        // The modal presentation style is form / page sheet by default
+        if (viewController.traitCollection.horizontalSizeClass == UIUserInterfaceSizeClassCompact ||
+            viewController.traitCollection.verticalSizeClass == UIUserInterfaceSizeClassCompact) {
+            sheetPC = navi.sheetPresentationController;
+        }
+    }
+    if (!sheetPC) {
+        return;
+    }
+    sheetPC.detents = @[[UISheetPresentationControllerDetent mediumDetent], [UISheetPresentationControllerDetent largeDetent]];
+    sheetPC.prefersGrabberVisible = YES;
+    sheetPC.prefersScrollingExpandsWhenScrolledToEdge = NO;
+    sheetPC.prefersEdgeAttachedInCompactHeight = YES;
+    sheetPC.widthFollowsPreferredContentSizeWhenEdgeAttached = YES;
+}
+
 + (void)setPrefersLargeTitles:(UINavigationController *)navigationController {
     if (LIQUID_GLASS) {
         navigationController.navigationBar.prefersLargeTitles = YES;
@@ -183,9 +220,22 @@
 
 + (UIView *)keyboardToolViewWithLeftButtons:(NSArray<UIButton *> *)leftButtons
                                 rightButtons:(NSArray<UIButton *> *)rightButtons {
+    UIView *wrapperView = [[UIView alloc] init];
+    wrapperView.translatesAutoresizingMaskIntoConstraints = NO;
+    wrapperView.frame = CGRectMake(0, 0, 0, 40); // Only height matters here
+    
     UIView *keyboardToolView = [[UIView alloc] init];
     keyboardToolView.translatesAutoresizingMaskIntoConstraints = NO;
-    keyboardToolView.frame = CGRectMake(0, 0, UIScreen.mainScreen.bounds.size.width, 40);
+    keyboardToolView.layer.cornerRadius = 18;
+    keyboardToolView.backgroundColor = [UIColor systemBackgroundColor];
+    
+    [wrapperView addSubview:keyboardToolView];
+    [NSLayoutConstraint activateConstraints:@[
+        [keyboardToolView.leadingAnchor constraintEqualToAnchor:wrapperView.leadingAnchor constant:4],
+        [keyboardToolView.trailingAnchor constraintEqualToAnchor:wrapperView.trailingAnchor constant:-4],
+        [keyboardToolView.topAnchor constraintEqualToAnchor:wrapperView.topAnchor],
+        [keyboardToolView.bottomAnchor constraintEqualToAnchor:wrapperView.bottomAnchor constant:-4],
+    ]];
 
     // 左侧 Stack
     UIStackView *leftStack = [[UIStackView alloc] initWithArrangedSubviews:leftButtons];
@@ -202,18 +252,17 @@
     [keyboardToolView addSubview:leftStack];
     [keyboardToolView addSubview:rightStack];
 
-    // 设置 Auto Layout 约束
     [NSLayoutConstraint activateConstraints:@[
         // 左侧 stack 靠左
-        [leftStack.leadingAnchor constraintEqualToAnchor:keyboardToolView.safeAreaLayoutGuide.leadingAnchor constant:16],
+        [leftStack.leadingAnchor constraintEqualToAnchor:keyboardToolView.safeAreaLayoutGuide.leadingAnchor constant:12],
         [leftStack.centerYAnchor constraintEqualToAnchor:keyboardToolView.centerYAnchor],
 
         // 右侧 stack 靠右
-        [rightStack.trailingAnchor constraintEqualToAnchor:keyboardToolView.safeAreaLayoutGuide.trailingAnchor constant:-16],
+        [rightStack.trailingAnchor constraintEqualToAnchor:keyboardToolView.safeAreaLayoutGuide.trailingAnchor constant:-12],
         [rightStack.centerYAnchor constraintEqualToAnchor:keyboardToolView.centerYAnchor],
     ]];
 
-    return keyboardToolView;
+    return wrapperView;
 }
 
 + (UIButton *)keyboardToolButtonWithTitle:(NSString *)title target:(id)target action:(SEL)action {
@@ -380,21 +429,25 @@
         @"bid": linkInfo[@"bid"],
         @"page": linkInfo[@"p"],
     };
-    dispatch_global_default_async(^{
+    dispatch_main_async_safe(^{
         AppDelegate *appDelegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
-        [appDelegate _handleUrlRequestWithDictionary:naviDict];
+        dispatch_global_default_async(^{
+            [appDelegate _handleUrlRequestWithDictionary:naviDict];
+        });
     });
 }
 
 + (void)openURL:(NSString *)url fullScreen:(BOOL)fullScreen {
-    dispatch_global_default_async(^{
+    dispatch_main_async_safe((^{
         AppDelegate *appDelegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
-        [appDelegate _handleUrlRequestWithDictionary:@{
-            @"open": @"web",
-            @"url": url,
-            @"fullScreen": @(fullScreen),
-        }];
-    });
+        dispatch_global_default_async(^{
+            [appDelegate _handleUrlRequestWithDictionary:@{
+                @"open": @"web",
+                @"url": url,
+                @"fullScreen": @(fullScreen),
+            }];
+        });
+    }));
 }
 
 + (BOOL)textView:(UITextView *)textView shouldInteractWithURL:(NSURL *)URL inRange:(NSRange)characterRange interaction:(UITextItemInteraction)interaction {
@@ -443,9 +496,7 @@
                 @"tid": collectionParts[2],
                 @"naviTitle": collectionParts[3]
             };
-            dispatch_global_default_async(^{
-                [self _handleUrlRequestWithDictionary:naviDict];
-            });
+            [self _handleUrlRequestWithDictionary:naviDict];
             return YES;
         }
     }

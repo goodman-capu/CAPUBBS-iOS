@@ -151,6 +151,10 @@
 
 - (void)getInformation {
     [self setDefault];
+    if (self.ID.length == 0) {
+        [hud showAndHideWithFailureMessage:@"用户名不合法"];
+        return;
+    }
     [hud showWithProgressMessage:@"查询中"];
     [Helper callApiWithParams:@{@"uid": self.ID, @"recent": @"YES", @"raw": @"YES"} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
         if (self.refreshControl.isRefreshing) {

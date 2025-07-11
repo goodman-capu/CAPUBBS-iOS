@@ -8,6 +8,14 @@
 
 @implementation MBProgressHUD (Custom)
 
+- (void)configStyle {
+    self.minSize = CGSizeMake(100, 0);
+    CALayer *layer = self.bezelView.layer;
+    layer.cornerRadius = 12;
+    layer.borderColor = [UIColor colorWithWhite:0 alpha:0.1].CGColor;
+    layer.borderWidth = 1;
+}
+
 - (void)updateToProgress:(float)progress {
     dispatch_main_async_safe(^{
         self.mode = MBProgressHUDModeDeterminate;
@@ -19,6 +27,7 @@
     dispatch_main_async_safe(^{
         self.label.text = message;
         self.mode = MBProgressHUDModeIndeterminate;
+        [self configStyle];
         [self showAnimated:YES];
     });
 }
@@ -28,6 +37,7 @@
         self.label.text = message;
         self.mode = MBProgressHUDModeCustomView;
         self.customView = [[UIImageView alloc] initWithImage:image];
+        [self configStyle];
         [self showAnimated:YES];
         [self hideAnimated:YES afterDelay:delay];
     });

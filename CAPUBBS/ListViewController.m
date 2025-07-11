@@ -32,13 +32,18 @@
     hudSofa = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hudSofa];
     
-    if (![self isHotList] && !SIMPLE_VIEW) {
-        AnimatedImageView *backgroundView = [[AnimatedImageView alloc] init];
-        [backgroundView setImage:[UIImage imageNamed:[@"b" stringByAppendingString:self.bid]] blurred:YES animated:NO];
-        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
-        self.tableView.backgroundView = backgroundView;
+    if ([self isHotList]) {
+        if (LIQUID_GLASS) {
+            self.toolbarItems = @[self.buttonAction, self.buttonCompose];
+        }
+    } else {
+        if (!SIMPLE_VIEW) {
+            AnimatedImageView *backgroundView = [[AnimatedImageView alloc] init];
+            [backgroundView setImage:[UIImage imageNamed:[@"b" stringByAppendingString:self.bid]] blurred:YES animated:NO];
+            [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
+            self.tableView.backgroundView = backgroundView;
+        }
     }
-    isFirstTime = YES;
     [self.tableView addGestureRecognizer:[[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)]];
     
     [NOTIFICATION addObserver:self selector:@selector(doRefresh) name:@"refreshList" object:nil];
@@ -162,12 +167,20 @@
                 activity.webpageURL = [self getCurrentUrl];
                 self.buttonForward.enabled = !isLast;
                 self.buttonJump.enabled = ([pages integerValue] > 1);
-                if (isFirstTime) {
+                if ([self.tableView numberOfRowsInSection:0] == 0) {
                     [self.tableView reloadData];
                 } else {
-                    [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationAutomatic];
+                    UITableViewRowAnimation rowAnimation = UITableViewRowAnimationFade;
+                    if (!SIMPLE_VIEW) {
+                        if (oldPage > pageNum) {
+                            rowAnimation = UITableViewRowAnimationRight;
+                        }
+                        if (oldPage < pageNum) {
+                            rowAnimation = UITableViewRowAnimationLeft;
+                        }
+                    }
+                    [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:rowAnimation];
                 }
-                isFirstTime = NO;
                 if (data.count > 0) {
                     [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UITableViewScrollPositionTop animated:YES];
                 }
@@ -202,12 +215,11 @@
                     [data addObjectsFromArray:hotResult];
                     [GROUP_DEFAULTS setObject:@(globalTopCount) forKey:@"globalTopCount"];
                     [GROUP_DEFAULTS setObject:data forKey:@"hotPosts"];
-                    if (isFirstTime) {
+                    if ([self.tableView numberOfRowsInSection:0] == 0) {
                         [self.tableView reloadData];
                     } else {
-                        [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationAutomatic];
+                        [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationFade];
                     }
-                    isFirstTime = NO;
                     [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UITableViewScrollPositionTop animated:YES];
                 }
                 [self checkRobSofa];

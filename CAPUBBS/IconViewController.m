@@ -246,10 +246,35 @@
     [self presentViewControllerSafe:alertController];
 }
 
-- (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary *)info {
+- (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(nonnull NSDictionary<UIImagePickerControllerInfoKey,id> *)info {
     [picker dismissViewControllerAnimated:YES completion:nil];
-    UIImage *image = info[UIImagePickerControllerEditedImage];
-    if (!image || image.size.width <= 0 || image.size.height <= 0) {
+
+    UIImage *finalImage = nil;
+    UIImage *originalImage = info[UIImagePickerControllerOriginalImage];
+    NSValue *cropRectValue = info[UIImagePickerControllerCropRect];
+
+    // 尝试手动裁剪原始图片以保留透明度
+    if (originalImage && cropRectValue && [originalImage hasAlphaChannel:YES]) {
+        CGRect cropRect = [cropRectValue CGRectValue];
+        CGImageRef croppedImageRef = CGImageCreateWithImageInRect(originalImage.CGImage, cropRect);
+
+        if (croppedImageRef) {
+            finalImage = [UIImage imageWithCGImage:croppedImageRef
+                                              scale:originalImage.scale
+                                        orientation:originalImage.imageOrientation];
+            CGImageRelease(croppedImageRef);
+        }
+    }
+
+    // Fallback使用系统编辑过的图片
+    if (!finalImage) {
+        finalImage = info[UIImagePickerControllerEditedImage];
+    }
+    [self handleChosenImage:finalImage];
+}
+
+- (void)handleChosenImage:(UIImage *)image {
+    if (!image || image.size.width == 0 || image.size.height == 0) {
         [self showAlertWithTitle:@"警告" message:@"图片不合法，无法获取长度 / 宽度！"];
     } else if (image.size.width / image.size.height > 4.0 / 3.0 || image.size.width / image.size.height < 3.0 / 4.0) {
         [self showAlertWithTitle:@"警告" message:@"所选图片偏离正方形\n建议裁剪处理后使用" confirmTitle:@"继续上传" confirmAction:^(UIAlertAction *action) {

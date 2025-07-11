@@ -7,6 +7,7 @@
                 return;
             }
             const imgSrc = target.src || target.dataset._originalSrc;
+            const alt = target.alt || '';
             if (!imgSrc) {
                 return;
             }
@@ -42,7 +43,7 @@
                         loading: false,
                         src: imgSrc,
                         data: base64data,
-                        alt: target.alt || ''
+                        alt: alt,
                     });
                 };
                 reader.onerror = () => {
@@ -51,6 +52,7 @@
                         loading: false,
                         src: imgSrc,
                         error: reader.error?.message || '图片格式错误',
+                        alt: alt,
                     });
                 };
                 reader.readAsDataURL(blob);
@@ -67,6 +69,7 @@
                     loading: false,
                     src: imgSrc,
                     error: message,
+                    alt: alt,
                 });
             })
             .finally(() => {
