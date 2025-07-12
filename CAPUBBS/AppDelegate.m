@@ -182,7 +182,7 @@
     UIView *keyboardToolView = [[UIView alloc] init];
     keyboardToolView.translatesAutoresizingMaskIntoConstraints = NO;
     keyboardToolView.layer.cornerRadius = 18;
-    keyboardToolView.backgroundColor = [UIColor systemBackgroundColor];
+    keyboardToolView.backgroundColor = [UIColor whiteColor];
     
     [wrapperView addSubview:keyboardToolView];
     [NSLayoutConstraint activateConstraints:@[
