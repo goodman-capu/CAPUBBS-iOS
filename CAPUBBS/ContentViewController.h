@@ -12,7 +12,7 @@
 @interface ContentViewController : CustomTableViewController<WKNavigationDelegate, WKScriptMessageHandler> {
     MBProgressHUD *hud;
     NSUserActivity *activity;
-    NSMutableArray *data;
+    NSArray *data;
     int page;
     int textSize;
     BOOL isEdit;

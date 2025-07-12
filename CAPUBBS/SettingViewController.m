@@ -23,10 +23,10 @@
     [AppDelegate setPrefersLargeTitles:self.navigationController];
     self.view.backgroundColor = GRAY_PATTERN;
     self.preferredContentSize = CGSizeMake(400, 1000);
-    [self.iconUser setRounded:YES];
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
+    [self.iconUser setRounded:YES];
     
     [NOTIFICATION addObserver:self selector:@selector(userChanged) name:@"userChanged" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(refreshInfo) name:@"infoRefreshed" object:nil];

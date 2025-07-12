@@ -21,9 +21,6 @@
 @interface CustomCollectionViewController : UICollectionViewController
 @end
 
-@interface CustomMailComposeViewController : MFMailComposeViewController
-@end
-
 @interface CustomSearchController : UISearchController
 @end
 
@@ -69,9 +66,6 @@
 @end
 
 @interface CustomCollectionViewController (Customize)
-@end
-
-@interface CustomMailComposeViewController (Customize)
 @end
 
 @interface CustomSearchController (Customize)

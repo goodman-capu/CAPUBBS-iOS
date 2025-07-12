@@ -385,6 +385,7 @@
     }
     if ([segue.identifier isEqualToString:@"chat"]) {
         ChatViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
+        [AppDelegate setAdaptiveSheetFor:dest popoverSource:nil halfScreen:NO];
         if (sender == nil) {
             dest.ID = chatID;
             dest.directTalk = YES;
@@ -433,13 +434,17 @@
     }
     if ([segue.identifier isEqualToString:@"userInfo"]) {
         UserViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
-        [AppDelegate setAdaptiveSheetFor:dest source:sender];
+        [AppDelegate setAdaptiveSheetFor:dest popoverSource:sender halfScreen:YES];
         UIButton *button = sender;
         dest.ID = data[button.tag + 1][@"username"];
         MessageCell *cell = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForItem:button.tag inSection:0]];
         if (cell && ![cell.imageIcon.image isEqual:PLACEHOLDER]) {
             dest.iconData = UIImagePNGRepresentation(cell.imageIcon.image);
         }
+    }
+    if ([segue.identifier isEqualToString:@"setting"]) {
+        UIViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
+        [AppDelegate setAdaptiveSheetFor:dest popoverSource:sender halfScreen:NO];
     }
 }
 

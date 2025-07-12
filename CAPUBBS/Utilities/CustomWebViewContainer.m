@@ -336,10 +336,12 @@ static dispatch_once_t onceSharedDataSource;
 
 @implementation WKWebView (Custom)
 
-- (void)setWeakScriptMessageHandler:(id<WKScriptMessageHandler>)delegate forName:(NSString *)handlerName {
-    [self.configuration.userContentController removeScriptMessageHandlerForName:handlerName];
+- (void)setWeakScriptMessageHandler:(id<WKScriptMessageHandler>)delegate forNames:(NSArray<NSString *> *)handlerNames {
     WeakScriptMessageDelegate *weakDelegate = [delegate isKindOfClass:[WeakScriptMessageDelegate class]] ? delegate : [[WeakScriptMessageDelegate alloc] initWithDelegate:delegate];
-    [self.configuration.userContentController addScriptMessageHandler:weakDelegate name:handlerName];
+    for (NSString *handlerName in handlerNames) {
+        [self.configuration.userContentController removeScriptMessageHandlerForName:handlerName];
+        [self.configuration.userContentController addScriptMessageHandler:weakDelegate name:handlerName];
+    }
 }
 
 @end

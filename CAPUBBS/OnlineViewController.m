@@ -21,7 +21,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
-    self.preferredContentSize = CGSizeMake(400, 0);
+    self.preferredContentSize = CGSizeMake(400, 650);
     
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
@@ -54,7 +54,7 @@
 }
 
 - (void)loadOnline:(NSString *)HTMLString {
-    data = [[NSMutableArray alloc] init];
+    data = [NSMutableArray array];
     NSArray *keys = @[@"user", @"time", @"ip", @"board", @"type"];
     BOOL fail = NO;
     if (self.refreshControl.isRefreshing) {
@@ -216,6 +216,7 @@
     if ([segue.identifier isEqualToString:@"web"]) {
         WebViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
         dest.URL = [NSString stringWithFormat:@"%@/bbs/online", CHEXIE];
+        [AppDelegate setAdaptiveSheetFor:dest popoverSource:nil halfScreen:NO];
     }
     // Get the new view controller using [segue destinationViewController].
     // Pass the selected object to the new view controller.

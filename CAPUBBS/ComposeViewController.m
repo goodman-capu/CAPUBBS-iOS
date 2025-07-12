@@ -1005,7 +1005,7 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
         } else {
             source = self.buttonTools;
         }
-        [AppDelegate setAdaptiveSheetFor:dest source:source];
+        [AppDelegate setAdaptiveSheetFor:dest popoverSource:source halfScreen:YES];
     }
     if ([segue.identifier isEqualToString:@"addText"]) {
         TextViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];

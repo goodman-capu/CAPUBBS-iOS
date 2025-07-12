@@ -229,7 +229,7 @@
             [self.buttonAddNews setHidden:YES];
         } else {
             [self refreshUserInfo];
-            if (userInfoRefreshing == NO) {
+            if (!userInfoRefreshing) {
                 userInfoRefreshing = YES;
                 [Helper callApiWithParams:@{@"uid": UID} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
                     userInfoRefreshing = NO;
@@ -401,7 +401,7 @@
             }
         }
     }
-    if (findID == NO) {
+    if (!findID) {
         [data addObject:nowDict];
     }
     [DEFAULTS setObject:data forKey:@"ID"];
@@ -456,7 +456,9 @@
                                             handler:^(UIAlertAction * _Nonnull action) {
         [AppDelegate openURL:[CHEXIE stringByAppendingString:@"/privacy"] fullScreen:NO];
         // Show again
-        [self showEULA];
+        dispatch_main_after(0.1, ^{
+            [self showEULA];
+        });
     }]];
     [alertController addAction:[UIAlertAction actionWithTitle:@"我拒绝以上协议"
                                               style:UIAlertActionStyleDestructive
@@ -494,11 +496,12 @@
     }
     if ([segue.identifier isEqualToString:@"account"]) {
         UIViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
-        [AppDelegate setAdaptiveSheetFor:dest source:sender];
+        [AppDelegate setAdaptiveSheetFor:dest popoverSource:sender halfScreen:YES];
     }
     if ([segue.identifier isEqualToString:@"register"]) {
         UIViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
         [AppDelegate setPrefersLargeTitles:dest.navigationController];
+        [AppDelegate setAdaptiveSheetFor:dest popoverSource:nil halfScreen:NO];
     }
 }
 

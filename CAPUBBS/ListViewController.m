@@ -158,7 +158,7 @@
                     self.tableView.userInteractionEnabled = NO;
                     [hud hideWithFailureMessage:@"读取失败"];
                 } else {
-                    data = [NSMutableArray arrayWithArray:result];
+                    data = result;
                     isLast = [data[0][@"nextpage"] isEqualToString:@"false"];
                     self.title = [NSString stringWithFormat:@"%@(%ld/%@)", oriTitle, self.page, [data lastObject][@"pages"]];
                     [hud hideWithSuccessMessage:@"读取成功"];
@@ -210,9 +210,10 @@
                 } else {
                     [hud hideWithSuccessMessage:@"读取成功"];
                     
-                    data = [NSMutableArray arrayWithArray:topResult];
-                    globalTopCount = data.count;
-                    [data addObjectsFromArray:hotResult];
+                    NSMutableArray *tmpData = [NSMutableArray arrayWithArray:topResult];
+                    globalTopCount = topResult.count;
+                    [tmpData addObjectsFromArray:hotResult];
+                    data = [tmpData copy];
                     [GROUP_DEFAULTS setObject:@(globalTopCount) forKey:@"globalTopCount"];
                     [GROUP_DEFAULTS setObject:data forKey:@"hotPosts"];
                     if ([self.tableView numberOfRowsInSection:0] == 0) {
@@ -250,7 +251,7 @@
                         isNew = YES;
                     }
                 }
-                if (isNew == YES) {
+                if (isNew) {
                     NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
                     [formatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
                     NSTimeZone *beijingTimeZone = [NSTimeZone timeZoneWithName:@"Asia/Shanghai"];
@@ -292,15 +293,15 @@
         if (err || result.count == 0) {
             fail = YES;
         }
-        if (fail == NO && ![result[0][@"code"] isEqualToString:@"0"]) {
+        if (!fail && ![result[0][@"code"] isEqualToString:@"0"]) {
             fail = YES;
         }
-        if (fail == NO) {
+        if (fail) {
+            failCount++;
+        } else {
             [self showAlertWithTitle:@"抢沙发成功" message:[NSString stringWithFormat:@"您成功在帖子“%@”中抢到了沙发", [postInfo objectForKey:@"text"]]];
             isRobbingSofa = NO;
             [hudSofa hideWithSuccessMessage:@"抢沙发成功"];
-        } else {
-            failCount++;
         }
         dispatch_main_after(0.5, ^{
             [self refresh];
@@ -619,7 +620,9 @@
     [Helper callApiWithParams:dict toURL:@"delete" callback:^(NSArray *result, NSError *err) {
         if (result.count > 0 && [result[0][@"code"] integerValue] == 0) {
             [hud hideWithSuccessMessage:@"操作成功"];
-            [data removeObjectAtIndex:selectedRow];
+            NSMutableArray *tmpData = [NSMutableArray arrayWithArray:data];
+            [tmpData removeObjectAtIndex:selectedRow];
+            data = [tmpData copy];
             [self.tableView deleteRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:selectedRow inSection:0]] withRowAnimation:UITableViewRowAnimationFade];
             dispatch_main_after(0.5, ^{
                 [self refresh];
@@ -647,15 +650,17 @@
 #pragma mark - Navigation
 
 // In a storyboard-based application, you will often want to do a little preparation before navigation
-- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
-{
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
     if ([segue.identifier isEqualToString:@"compose"]) {
         ComposeViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
+        [AppDelegate setAdaptiveSheetFor:dest popoverSource:nil halfScreen:NO];
         dest.bid = self.bid;
-    } else if ([segue.identifier isEqualToString:@"search"]) {
+    }
+    if ([segue.identifier isEqualToString:@"search"]) {
         SearchViewController *dest = [segue destinationViewController];
         dest.bid = [self isHotList] ? @"-1" : self.bid;
-    } else if ([segue.identifier isEqualToString:@"post"]) {
+    }
+    if ([segue.identifier isEqualToString:@"post"]) {
         ContentViewController *dest = [segue destinationViewController];
         NSIndexPath *indexPath = [self.tableView indexPathForCell:(UITableViewCell *)sender];
         NSDictionary *dict = data[indexPath.row];
@@ -667,6 +672,10 @@
         }
         dest.title = [Helper restoreTitle:dict[@"text"]];
         dest.isCollection = [self isCollection:dict[@"bid"] tid:dict[@"tid"]];
+    }
+    if ([segue.identifier isEqualToString:@"viewOnline"]) {
+        UIViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
+        [AppDelegate setAdaptiveSheetFor:dest popoverSource:sender halfScreen:NO];
     }
 
     // Get the new view controller using [segue destinationViewController].

@@ -9,7 +9,7 @@
 #import <UIKit/UIKit.h>
 
 @interface ListViewController : CustomTableViewController {
-    NSMutableArray *data;
+    NSArray *data;
     NSInteger globalTopCount;
     MBProgressHUD *hud;
     MBProgressHUD *hudSofa;

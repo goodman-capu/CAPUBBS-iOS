@@ -139,6 +139,7 @@
     request.timeoutInterval = 30;
     
     if (requestFiles.count == 0 ) {
+        [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
         // Convert parameters to x-www-form-urlencoded
         NSMutableArray *bodyParts = [NSMutableArray array];
         [requestParams enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
@@ -150,7 +151,6 @@
         NSString *bodyString = [bodyParts componentsJoinedByString:@"&"];
         NSData *bodyData = [bodyString dataUsingEncoding:NSUTF8StringEncoding];
         request.HTTPBody = bodyData;
-        [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
     } else {
         NSString *boundary = [NSString stringWithFormat:@"Boundary-%@", [[NSUUID UUID] UUIDString]];
         [request setValue:[NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary] forHTTPHeaderField:@"Content-Type"];
@@ -180,7 +180,7 @@
     
     [Downloader loadRequest:request progress:nil completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         if (error) {
-            NSLog(@"API error: %@", error);
+            NSLog(@"⚠️ API error: %@", error);
             dispatch_main_async_safe(^{
                 block(nil, error);
             });

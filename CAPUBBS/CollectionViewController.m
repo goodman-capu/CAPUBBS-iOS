@@ -155,7 +155,7 @@
     }
     
     if (!sortData) {
-        sortData = [[NSMutableArray alloc] init];
+        sortData = [NSMutableArray array];
     }
     
     if (sortType == SORT_BY_POST_DATE) {
@@ -184,7 +184,7 @@
 - (void)indexByKeyword:(NSString *)keyword {
     [sortData removeAllObjects];
     NSString *nowValue;
-    NSMutableArray *nowArray = [[NSMutableArray alloc] init];
+    NSMutableArray *nowArray = [NSMutableArray array];
     for (NSDictionary *dict in data) {
         NSString *value = dict[keyword];
         if (value.length == 0) {
@@ -508,7 +508,7 @@
 // 搜索时触发的方法
 - (void)updateSearchResultsForSearchController:(UISearchController *)searchController {
     if (!searchData) {
-        searchData = [[NSMutableArray alloc] init];
+        searchData = [NSMutableArray array];
     }
     [searchData removeAllObjects];
     NSString *word = searchController.searchBar.text;

@@ -114,3 +114,26 @@
     });
     observer.observe(document.body, { childList: true, subtree: true });
 })();
+
+// Observe height. ResizeObserver / MutationObserver don't work reliably.
+// requestAnimationFrame is the best reliable option we have.
+(() => {
+    window._lastReportedHeight = -1; // override to >= 0 to start reporting
+    const postHeightToHandler = () => {
+        requestAnimationFrame(postHeightToHandler);
+        if (window._lastReportedHeight < 0) {
+            return;
+        }
+        const bodyWrapper = document.getElementById('body-wrapper');
+        if (!bodyWrapper) {
+            return;
+        }
+        const height = bodyWrapper.scrollHeight;
+        if (Math.abs(height - window._lastReportedHeight) < 1) {
+            return;
+        }
+        window._lastReportedHeight = height;
+        window.webkit.messageHandlers.heightHandler.postMessage(height);
+    };
+    requestAnimationFrame(postHeightToHandler);
+})();

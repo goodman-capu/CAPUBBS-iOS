@@ -48,10 +48,6 @@
 
 @end
 
-@implementation CustomMailComposeViewController
-
-@end
-
 @implementation CustomSearchController
 
 @end
@@ -211,14 +207,6 @@ static char kIsAttemptingToPresentKey;
 @end
 
 @implementation CustomCollectionViewController (Customize)
-
-- (UIStatusBarStyle)preferredStatusBarStyle {
-    return [AppDelegate preferredStatusBarStyle];
-}
-
-@end
-
-@implementation CustomMailComposeViewController (Customize)
 
 - (UIStatusBarStyle)preferredStatusBarStyle {
     return [AppDelegate preferredStatusBarStyle];

@@ -9,6 +9,8 @@
 #import <UIKit/UIKit.h>
 #import <MessageUI/MessageUI.h>
 #import <QuickLook/QuickLook.h>
+#import <WebKit/WebKit.h>
+#import <MBProgressHUD/MBProgressHUD.h>
 
 @interface PreviewItem : NSObject <QLPreviewItem>
 
@@ -33,9 +35,11 @@
 // A generic text view delegate method
 + (BOOL)textView:(UITextView *)textView shouldInteractWithURL:(NSURL *)URL inRange:(NSRange)characterRange interaction:(UITextItemInteraction)interaction;
 
++ (void)handleImageClickWithMessage:(WKScriptMessage *)message hud:(MBProgressHUD *)hud;
+
 + (UIViewController *)getTopViewController;
 
-+ (void)setAdaptiveSheetFor:(UIViewController *)viewController source:(UIView *)source;
++ (void)setAdaptiveSheetFor:(UIViewController *)viewController popoverSource:(UIView *)source halfScreen:(BOOL)halfScreen;
 
 + (void)setPrefersLargeTitles:(UINavigationController *)navigationController;
 

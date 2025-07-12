@@ -20,7 +20,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
-    self.preferredContentSize = CGSizeMake(400, 0);
+    self.preferredContentSize = CGSizeMake(400, 650);
     if (!IS_SUPER_USER) {
         self.navigationItem.rightBarButtonItems = @[self.buttonLogout];
     }

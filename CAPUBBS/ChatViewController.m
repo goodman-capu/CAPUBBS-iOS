@@ -19,6 +19,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
+    self.preferredContentSize = CGSizeMake(400, 650);
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
@@ -32,9 +33,9 @@
         [self refreshBackgroundViewAnimated:NO];
     }
     
-    if (self.shouldHideInfo == YES) {
+    if (self.shouldHideInfo) {
         self.navigationItem.rightBarButtonItems = nil;
-    } else if (self.directTalk == YES) {
+    } else if (self.directTalk) {
         self.navigationItem.rightBarButtonItems = @[self.buttonInfo];
     }
     shouldShowHud = YES;
@@ -194,7 +195,7 @@
 
 - (void)scrollTableView:(BOOL)animated {
     [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:1] atScrollPosition:UITableViewScrollPositionBottom animated:animated];
-    if (self.directTalk == YES) {
+    if (self.directTalk) {
         dispatch_main_after(0.5, ^{
             [self.textSend becomeFirstResponder];
         });
@@ -239,7 +240,7 @@
             cell = [tableView dequeueReusableCellWithIdentifier:@"chatOther" forIndexPath:indexPath];
             [cell.imageChat setImage:[[UIImage imageNamed:@"balloon_green"] stretchableImageWithLeftCapWidth:15 topCapHeight:15]];
             [cell.imageIcon setUrl:dict[@"icon"]];
-            cell.buttonIcon.userInteractionEnabled = (self.shouldHideInfo == NO);
+            cell.buttonIcon.userInteractionEnabled = !self.shouldHideInfo;
         } else {
             cell = [tableView dequeueReusableCellWithIdentifier:@"chatSelf" forIndexPath:indexPath];
             [cell.imageChat setImage:[[UIImage imageNamed:@"balloon_white_reverse"] stretchableImageWithLeftCapWidth:15 topCapHeight:15]];

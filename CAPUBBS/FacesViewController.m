@@ -18,7 +18,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
-    self.preferredContentSize = CGSizeMake(400, 0);
+    self.preferredContentSize = CGSizeMake(400, 650);
     
     previewImageView = [[AnimatedImageView alloc] init];
     numberOfInserts = 0;
@@ -113,7 +113,7 @@
     [UIView animateWithDuration:0.5 delay:0.0 options:UIViewAnimationOptionAllowUserInteraction animations:^{
         [cell setAlpha:1.0];
         [previewImageView setAlpha:0.0];
-    }completion:^(BOOL finished) {
+    } completion:^(BOOL finished) {
         [previewImageView removeFromSuperview];
         [previewImageView setAlpha:1.0];
     }];

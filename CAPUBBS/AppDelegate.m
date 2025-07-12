@@ -164,7 +164,7 @@
     return topVC;
 }
 
-+ (void)setAdaptiveSheetFor:(UIViewController *)viewController source:(UIView *)source {
++ (void)setAdaptiveSheetFor:(UIViewController *)viewController popoverSource:(UIView *)source halfScreen:(BOOL)halfScreen {
     if (!viewController || !viewController.navigationController) {
         return;
     }
@@ -186,16 +186,19 @@
         // This is not adaptive, but the best fallback we can do (sheet on iPhone but not iPad)
         // The modal presentation style is form / page sheet by default
         if (viewController.traitCollection.horizontalSizeClass == UIUserInterfaceSizeClassCompact ||
-            viewController.traitCollection.verticalSizeClass == UIUserInterfaceSizeClassCompact) {
+            viewController.traitCollection.verticalSizeClass == UIUserInterfaceSizeClassCompact ||
+            !halfScreen) {
             sheetPC = navi.sheetPresentationController;
         }
     }
     if (!sheetPC) {
         return;
     }
-    sheetPC.detents = @[[UISheetPresentationControllerDetent mediumDetent], [UISheetPresentationControllerDetent largeDetent]];
-    sheetPC.prefersGrabberVisible = YES;
-    sheetPC.prefersScrollingExpandsWhenScrolledToEdge = NO;
+    if (halfScreen) {
+        sheetPC.detents = @[[UISheetPresentationControllerDetent mediumDetent], [UISheetPresentationControllerDetent largeDetent]];
+        sheetPC.prefersGrabberVisible = YES;
+        sheetPC.prefersScrollingExpandsWhenScrolledToEdge = NO;
+    }
     sheetPC.prefersEdgeAttachedInCompactHeight = YES;
     sheetPC.widthFollowsPreferredContentSizeWhenEdgeAttached = YES;
 }
@@ -297,7 +300,7 @@
 - (void)sendEmail:(NSNotification *)notification {
     NSDictionary *mailInfo = notification.userInfo;
     if ([MFMailComposeViewController canSendMail]) {
-        MFMailComposeViewController *mail = [[CustomMailComposeViewController alloc] init];
+        MFMailComposeViewController *mail = [[MFMailComposeViewController alloc] init];
         mail.mailComposeDelegate = self;
         [mail setToRecipients:mailInfo[@"recipients"]];
         if (mailInfo[@"subject"]) {
@@ -479,6 +482,65 @@
     } else {
         return YES;
     }
+}
+
++ (void)handleImageClickWithMessage:(WKScriptMessage *)message hud:(MBProgressHUD *)hud {
+    NSDictionary *payload = message.body;
+    if ([payload[@"loading"] boolValue]) {
+        [hud showWithProgressMessage:@"图片加载中"];
+        return;
+    }
+    NSString *base64Data = payload[@"data"] ?: @"";
+    NSString *imgSrc = payload[@"src"] ?: @"";
+    NSURL *imageUrl = [NSURL safeURLWithString:imgSrc];
+    NSString *alt = payload[@"alt"] ?: @"";
+    // 去掉前缀
+    NSRange range = [base64Data rangeOfString:@","];
+    if (range.location != NSNotFound) {
+        NSString *alt = payload[@"alt"];
+        NSString *base64String = [base64Data substringFromIndex:range.location + 1];
+        NSData *imageData = [[NSData alloc] initWithBase64EncodedString:base64String options:0];
+        ImageFileType type = [AnimatedImageView fileType:imageData];
+        if (type != ImageFileTypeUnknown) {
+            [hud hideWithSuccessMessage:@"图片加载成功"];
+            NSString *fileName = [Helper fileNameFromURL:imageUrl] ?: [[Helper md5:imgSrc] stringByAppendingPathExtension:[AnimatedImageView fileExtension:type]];
+            [self presentImage:imageData fileName:fileName title:alt];
+            return;
+        }
+    }
+    
+    NSString *errorMessage = payload[@"error"] ?: @"图片加载失败";
+    // Try reload in app to overcome CORS. (Most external sites will fail the js fetch request)
+    if (imageUrl) {
+        [hud showWithProgressMessage:@"图片加载中"];
+        [Downloader loadURL:imageUrl progress:^(float progress, NSUInteger expectedBytes) {
+            [hud updateToProgress:progress];
+        } completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+            ImageFileType type = [AnimatedImageView fileType:data];
+            if (error || type == ImageFileTypeUnknown) {
+                [hud hideWithFailureMessage:error ? errorMessage : @"未知图片格式"];
+                return;
+            }
+            [hud hideWithSuccessMessage:@"图片加载成功"];
+            NSString *fileName;
+            if (response.suggestedFilename && response.suggestedFilename.pathExtension.length > 0) {
+                fileName = response.suggestedFilename;
+            } else {
+                fileName = [Helper fileNameFromURL:imageUrl] ?: [[Helper md5:imgSrc] stringByAppendingPathExtension:[AnimatedImageView fileExtension:type]];
+            }
+            [self presentImage:data fileName:fileName title:alt];
+        }];
+    } else {
+        [hud hideWithFailureMessage:errorMessage];
+    }
+}
+
++ (void)presentImage:(NSData *)imageData fileName:(NSString *)fileName title:(NSString *)alt {
+    [NOTIFICATION postNotificationName:@"previewFile" object:nil userInfo:@{
+        @"fileData": imageData,
+        @"fileName": fileName,
+        @"fileTitle": alt.length > 0 ? alt : @"查看图片"
+    }];
 }
 
 - (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity restorationHandler:(void (^)(NSArray<id<UIUserActivityRestoring>> * _Nullable))restorationHandler {
@@ -719,6 +781,7 @@
                 
                 UINavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
                 navi.modalPresentationStyle = UIModalPresentationPageSheet;
+                [AppDelegate setAdaptiveSheetFor:dest popoverSource:nil halfScreen:NO];
                 [view presentViewControllerSafe:navi];
             });
         }];
@@ -767,7 +830,12 @@
             dest.URL = dict[@"url"];
             
             UINavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
-            navi.modalPresentationStyle = [dict[@"fullScreen"] boolValue] ? UIModalPresentationFullScreen : UIModalPresentationPageSheet;
+            if ([dict[@"fullScreen"] boolValue]) {
+                navi.modalPresentationStyle = UIModalPresentationFullScreen;
+            } else {
+                navi.modalPresentationStyle = UIModalPresentationPageSheet;
+                [AppDelegate setAdaptiveSheetFor:dest popoverSource:nil halfScreen:NO];
+            }
             [view presentViewControllerSafe:navi];
         });
     }
@@ -785,7 +853,7 @@
 }
 
 - (void)updateCollection {
-    NSMutableArray *seachableItems = [[NSMutableArray alloc] init];
+    NSMutableArray *seachableItems = [NSMutableArray array];
     NSArray *collections = [DEFAULTS objectForKey:@"collection"];
     if (!collections || collections.count == 0) {
         [[CSSearchableIndex defaultSearchableIndex] deleteSearchableItemsWithDomainIdentifiers:@[BUNDLE_IDENTIFIER] completionHandler:nil];
@@ -849,7 +917,7 @@
     }
     
     if (![[DEFAULTS objectForKey:@"transportID3.3"] boolValue]) { // 3.3之后版本ID储存采用一个Dictionary
-        NSMutableArray *IDs = [[NSMutableArray alloc] init];
+        NSMutableArray *IDs = [NSMutableArray array];
         for (int i = 0; i < MAX_ID_NUM; i++) {
             NSString *uid = [DEFAULTS objectForKey:[NSString stringWithFormat:@"id%d", i]];
             if (uid.length > 0) {

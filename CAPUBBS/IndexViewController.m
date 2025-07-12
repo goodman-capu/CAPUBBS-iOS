@@ -98,15 +98,14 @@
 
 - (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath {
     if (cellWidth == 0 || cellHeight == 0) {
-        // iPhone 5s及之前:320 iPhone 6:375 iPhone 6 Plus:414 iPad:768 iPad Pro:1024
         UIEdgeInsets safeArea = collectionView.safeAreaInsets;
         CGFloat safeAreaWidth = (safeArea.left + safeArea.right) / 2;
         CGFloat width = collectionView.bounds.size.width;
         int num = width / 450 + 2;
-        fontSize = 15 + num;
         cellSpace = (0.1 + 0.025 * num) * (width / num);
         cellMargin = MAX(0, cellSpace - safeAreaWidth);
         cellWidth = (width - cellSpace * (num - 1) - (cellMargin + safeAreaWidth) * 2) / num;
+        fontSize = MIN(10 + cellWidth / 25, 20);
         cellHeight = cellWidth * (11.0 / 15.0) + 2 * fontSize;
     }
     return CGSizeMake(cellWidth, cellHeight);
@@ -251,6 +250,10 @@
         ListViewController *dest = [segue destinationViewController];
         int number = (int)[self.collectionView indexPathForCell:(UICollectionViewCell *)sender].row;
         dest.bid = BOARDS[number];
+    }
+    if ([segue.identifier isEqualToString:@"setting"]) {
+        UIViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
+        [AppDelegate setAdaptiveSheetFor:dest popoverSource:sender halfScreen:NO];
     }
 }
 

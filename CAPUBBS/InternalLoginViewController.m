@@ -33,7 +33,7 @@
 
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
-    if (shouldPop == NO) {
+    if (!shouldPop) {
         if (self.textUid.text.length > 0 && self.textPass.text.length > 0) {
             [self login:nil];
         }

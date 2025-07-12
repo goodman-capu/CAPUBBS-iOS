@@ -101,7 +101,7 @@
     
     if (data.length > 0 && ![oldInfo hasPrefix:@"loading"]) { // 缓存存在的话直接加载缓存
         dispatch_main_async_safe(^{
-            if (SIMPLE_VIEW == YES) {
+            if (SIMPLE_VIEW) {
                 [self setImageInternal:[UIImage imageWithData:data]];
             } else {
                 [self _setGifWithData:data internal:YES];
@@ -170,7 +170,7 @@
 + (NSData *)resizeImage:(UIImage *)oriImage {
     BOOL hasAlpha = [oriImage hasAlphaChannel:NO];
     UIImage *resizeImage = oriImage;
-    int maxWidth = 300; // 详细信息界面图片大小100 * 100 3x模式下可保证清晰
+    int maxWidth = 300; // 详细信息界面图片大小80 * 80，3x模式下可保证清晰
     if (oriImage.size.width > maxWidth) {
         CGFloat scaledHeight = maxWidth * oriImage.size.height / oriImage.size.width;
         UIGraphicsBeginImageContextWithOptions(CGSizeMake(maxWidth, scaledHeight), !hasAlpha, 0);

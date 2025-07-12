@@ -181,7 +181,7 @@
     [UIView animateWithDuration:0.5 delay:0.0 options:UIViewAnimationOptionAllowUserInteraction animations:^{
         [cell setAlpha:1.0];
         [previewImageView setAlpha:0.0];
-    }completion:^(BOOL finished) {
+    } completion:^(BOOL finished) {
         [previewImageView removeFromSuperview];
         [previewImageView setAlpha:1.0];
     }];
@@ -256,12 +256,29 @@
     // 尝试手动裁剪原始图片以保留透明度
     if (originalImage && cropRectValue && [originalImage hasAlphaChannel:YES]) {
         CGRect cropRect = [cropRectValue CGRectValue];
-        CGImageRef croppedImageRef = CGImageCreateWithImageInRect(originalImage.CGImage, cropRect);
 
+        // 1. 创建一个基于图片大小的图形上下文（先将图片“标准化”，修正其方向）
+        UIGraphicsBeginImageContextWithOptions(originalImage.size, NO, originalImage.scale);
+        
+        // 2. 将原始图片绘制到上下文中。-[UIImage drawInRect:] 会自动处理好 imageOrientation
+        [originalImage drawInRect:CGRectMake(0, 0, originalImage.size.width, originalImage.size.height)];
+        
+        // 3. 从当前上下文中获取一张方向已经校正好的新图片
+        UIImage *normalizedImage = UIGraphicsGetImageFromCurrentImageContext();
+        
+        // 4. 关闭图形上下文
+        UIGraphicsEndImageContext();
+
+        // 5. 现在，我们可以在方向正常的图片上安全地使用 cropRect 进行裁剪
+        // 注意：因为我们是针对校正后的图片进行裁剪，所以其 CGImage 的尺寸和 cropRect 的坐标系是匹配的
+        CGImageRef croppedImageRef = CGImageCreateWithImageInRect(normalizedImage.CGImage, cropRect);
+        
         if (croppedImageRef) {
+            // 6. 用裁剪后的 CGImage 创建最终的 UIImage
+            // 这里使用 originalImage 的 scale 和 orientation 是安全的，因为 normalizedImage 已经是 Up 方向了
             finalImage = [UIImage imageWithCGImage:croppedImageRef
                                               scale:originalImage.scale
-                                        orientation:originalImage.imageOrientation];
+                                        orientation:UIImageOrientationUp];
             CGImageRelease(croppedImageRef);
         }
     }
@@ -270,6 +287,11 @@
     if (!finalImage) {
         finalImage = info[UIImagePickerControllerEditedImage];
     }
+    // 最后Fallback使用原图
+    if (!finalImage) {
+        finalImage = originalImage;
+    }
+    
     [self handleChosenImage:finalImage];
 }
 
@@ -319,7 +341,7 @@
         
         NSString *extension = [AnimatedImageView fileExtension:[AnimatedImageView fileType:imageData]];
         [hud showWithProgressMessage:@"正在上传"];
-        [Helper callApiWithParams:@{@"type": @"icon", @"extension":extension, @"file": imageData} toURL:@"upload" callback:^(NSArray *result, NSError *err) {
+        [Helper callApiWithParams:@{@"type": @"icon", @"extension": extension, @"file": imageData} toURL:@"upload" callback:^(NSArray *result, NSError *err) {
             if (err || result.count == 0) {
                 [hud hideWithFailureMessage:@"上传失败"];
                 return;
