@@ -154,6 +154,15 @@ static const CGFloat kWebViewMinHeight = 40;
             [hud hideWithFailureMessage:@"加载失败"];
             return;
         }
+        
+        NSUInteger originalDataCount = data.count;
+        for (int i = 0; i < originalDataCount; i++) {
+            ContentCell *cell = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:i inSection:0]];
+            if (cell) {
+                [cell invalidateTimer];
+            }
+        }
+        
         data = [NSMutableArray array];
         for (NSDictionary *entry in result) {
             NSMutableDictionary *fixedEntry = [NSMutableDictionary dictionaryWithDictionary:entry];
@@ -200,19 +209,18 @@ static const CGFloat kWebViewMinHeight = 40;
         NSString *titleText = data.firstObject[@"title"];
         self.title = [Helper restoreTitle:titleText];
         BOOL isLast = [data[0][@"nextpage"] isEqualToString:@"false"];
-        self.buttonForward.enabled = !isLast;
-        self.buttonLatest.enabled = !isLast;
-        self.buttonJump.enabled = ([[data lastObject][@"pages"] integerValue] > 1);
-        self.buttonCompose.enabled = [Helper checkLogin:NO];
         [self clearHeightsAndHTMLCaches:^{
+            self.buttonForward.enabled = !isLast;
+            self.buttonLatest.enabled = !isLast;
+            self.buttonJump.enabled = ([[data lastObject][@"pages"] integerValue] > 1);
+            self.buttonCompose.enabled = [Helper checkLogin:NO];
             [hud hideWithSuccessMessage:@"加载成功"];
-            for (int i = 0; i < data.count; i++) {
+            for (int i = 0; i < originalDataCount; i++) {
                 ContentCell *cell = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:i inSection:0]];
                 if (cell) {
                     if (cell.webViewContainer.webView.isLoading) {
                         [cell.webViewContainer.webView stopLoading];
                     }
-                    [cell invalidateTimer];
                     // 加载空HTML以快速清空，防止reuse后还短暂显示之前的内容
                     [cell.webViewContainer.webView loadHTMLString:EMPTY_HTML baseURL:nil];
                 }
@@ -738,7 +746,7 @@ static const CGFloat kWebViewMinHeight = 40;
         } completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
             ImageFileType type = [AnimatedImageView fileType:data];
             if (error || type == ImageFileTypeUnknown) {
-                [hud hideWithFailureMessage:!error ? errorMessage : @"未知图片格式"];
+                [hud hideWithFailureMessage:error ? errorMessage : @"未知图片格式"];
                 return;
             }
             [hud hideWithSuccessMessage:@"图片加载成功"];
@@ -1412,17 +1420,9 @@ static const CGFloat kWebViewMinHeight = 40;
             dest.floor = [NSString stringWithFormat:@"%d",[data[selectedIndex][@"floor"] intValue]];
             dest.attachments = data[selectedIndex][@"attach"];
             if ([data[selectedIndex][@"author"] isEqualToString:UID]) {
-                NSString *sig = data[selectedIndex][@"sig"];
-                if ([data[selectedIndex][@"sig"] length] > 0) {
-                    for (int i = 1; i <= 3; i++) {
-                        NSString *key = [NSString stringWithFormat:@"sig%d", i];
-                        if ([USERINFO[key] isEqualToString:sig]) {
-                            dest.defaultSigIndex = [NSString stringWithFormat:@"%d", i];
-                            break;
-                        }
-                    }
-                } else {
-                    dest.defaultSigIndex = @"0";
+                NSString *sig = data[selectedIndex][@"signum"];
+                if (sig && [sig isEqualToString:[NSString stringWithFormat:@"%d", [sig intValue]]]) {
+                    dest.defaultSigIndex = sig;
                 }
             } else {
                 dest.showEditOthersAlert = YES;

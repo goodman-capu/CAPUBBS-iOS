@@ -272,19 +272,21 @@
             imageData = UIImageJPEGRepresentation(image, ratio);
         }
         NSLog(@"Icon Size:%dkB", (int)imageData.length / 1024);
+        NSString *extension = [AnimatedImageView fileExtension:[AnimatedImageView fileType:imageData]];
         [hud showWithProgressMessage:@"正在上传"];
-        [Helper callApiWithParams:@{ @"image" : [imageData base64EncodedStringWithOptions:0] } toURL:@"image" callback:^(NSArray *result, NSError *err) {
+        [Helper callApiWithParams:@{@"type": @"icon", @"extension": extension, @"file": imageData} toURL:@"upload" callback:^(NSArray *result, NSError *err) {
             if (err || result.count == 0) {
                 [hud hideWithFailureMessage:@"上传失败"];
                 return;
             }
-            if ([result[0][@"code"] isEqualToString:@"-1"]) {
+            int code = [result[0][@"code"] intValue];
+            if (code == -1) {
                 [hud hideWithSuccessMessage:@"上传成功"];
-                NSString *url = result[0][@"imgurl"];
+                NSString *url = result[0][@"url"];
                 [NOTIFICATION postNotificationName:@"selectIcon" object:nil userInfo:@{ @"URL" : url }];
                 [self.navigationController popViewControllerAnimated:YES];
             } else {
-                [hud hideWithFailureMessage:@"上传失败"];
+                [hud hideWithFailureMessage:code == 1 ? @"文件太大" : @"上传失败"];
             }
         }];
     });

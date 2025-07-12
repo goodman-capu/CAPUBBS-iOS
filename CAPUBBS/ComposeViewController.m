@@ -12,6 +12,7 @@
 #import "PreviewViewController.h"
 #import "TextViewController.h"
 #import "ContentViewController.h"
+#import "AnimatedImageView.h"
 
 @interface ComposeViewController ()
 
@@ -633,19 +634,21 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
             imageData = UIImageJPEGRepresentation(image, ratio);
         }
         NSLog(@"Image Size:%dkB", (int)imageData.length / 1024);
+        NSString *extension = [AnimatedImageView fileExtension:[AnimatedImageView fileType:imageData]];
         [hud showWithProgressMessage:@"正在上传"];
-        [Helper callApiWithParams:@{ @"image" : [imageData base64EncodedStringWithOptions:0] } toURL:@"image" callback:^(NSArray *result, NSError *err) {
+        [Helper callApiWithParams:@{@"type": @"image", @"extension": extension, @"file": imageData} toURL:@"upload" callback:^(NSArray *result, NSError *err) {
             if (err || result.count == 0) {
                 [hud hideWithFailureMessage:@"上传失败"];
                 callback(nil);
+                return;
+            }
+            int code = [result[0][@"code"] intValue];
+            if (code == -1) {
+                [hud hideWithSuccessMessage:@"上传成功"];
+                callback(result[0][@"url"]);
             } else {
-                if ([result[0][@"code"] isEqualToString:@"-1"]) {
-                    [hud hideWithSuccessMessage:@"上传完成"];
-                    callback([result firstObject][@"imgurl"]);
-                } else {
-                    [hud hideWithFailureMessage:@"上传失败"];
-                    callback(nil);
-                }
+                [hud hideWithFailureMessage:code == 1 ? @"文件太大" : @"上传失败"];
+                callback(nil);
             }
         }];
     });

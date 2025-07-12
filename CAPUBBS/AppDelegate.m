@@ -175,37 +175,49 @@
 
 + (UIView *)keyboardToolViewWithLeftButtons:(NSArray<UIButton *> *)leftButtons
                                 rightButtons:(NSArray<UIButton *> *)rightButtons {
+    UIView *wrapperView = [[UIView alloc] init];
+    wrapperView.translatesAutoresizingMaskIntoConstraints = NO;
+    wrapperView.frame = CGRectMake(0, 0, 0, 40); // Only height matters here
+    
     UIView *keyboardToolView = [[UIView alloc] init];
     keyboardToolView.translatesAutoresizingMaskIntoConstraints = NO;
-    keyboardToolView.frame = CGRectMake(0, 0, UIScreen.mainScreen.bounds.size.width, 40);
+    keyboardToolView.layer.cornerRadius = 18;
+    keyboardToolView.backgroundColor = [UIColor systemBackgroundColor];
+    
+    [wrapperView addSubview:keyboardToolView];
+    [NSLayoutConstraint activateConstraints:@[
+        [keyboardToolView.leadingAnchor constraintEqualToAnchor:wrapperView.leadingAnchor constant:4],
+        [keyboardToolView.trailingAnchor constraintEqualToAnchor:wrapperView.trailingAnchor constant:-4],
+        [keyboardToolView.topAnchor constraintEqualToAnchor:wrapperView.topAnchor],
+        [keyboardToolView.bottomAnchor constraintEqualToAnchor:wrapperView.bottomAnchor constant:-4],
+    ]];
 
     // 左侧 Stack
     UIStackView *leftStack = [[UIStackView alloc] initWithArrangedSubviews:leftButtons];
     leftStack.axis = UILayoutConstraintAxisHorizontal;
-    leftStack.spacing = 16;
+    leftStack.spacing = 12;
     leftStack.translatesAutoresizingMaskIntoConstraints = NO;
 
     // 右侧 Stack
     UIStackView *rightStack = [[UIStackView alloc] initWithArrangedSubviews:rightButtons];
     rightStack.axis = UILayoutConstraintAxisHorizontal;
-    rightStack.spacing = 16;
+    rightStack.spacing = 12;
     rightStack.translatesAutoresizingMaskIntoConstraints = NO;
 
     [keyboardToolView addSubview:leftStack];
     [keyboardToolView addSubview:rightStack];
 
-    // 设置 Auto Layout 约束
     [NSLayoutConstraint activateConstraints:@[
         // 左侧 stack 靠左
-        [leftStack.leadingAnchor constraintEqualToAnchor:keyboardToolView.safeAreaLayoutGuide.leadingAnchor constant:16],
+        [leftStack.leadingAnchor constraintEqualToAnchor:keyboardToolView.safeAreaLayoutGuide.leadingAnchor constant:12],
         [leftStack.centerYAnchor constraintEqualToAnchor:keyboardToolView.centerYAnchor],
 
         // 右侧 stack 靠右
-        [rightStack.trailingAnchor constraintEqualToAnchor:keyboardToolView.safeAreaLayoutGuide.trailingAnchor constant:-16],
+        [rightStack.trailingAnchor constraintEqualToAnchor:keyboardToolView.safeAreaLayoutGuide.trailingAnchor constant:-12],
         [rightStack.centerYAnchor constraintEqualToAnchor:keyboardToolView.centerYAnchor],
     ]];
 
-    return keyboardToolView;
+    return wrapperView;
 }
 
 + (UIButton *)keyboardToolButtonWithTitle:(NSString *)title target:(id)target action:(SEL)action {
