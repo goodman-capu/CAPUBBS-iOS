@@ -46,6 +46,7 @@
             self.navigationItem.rightBarButtonItems = @[self.buttoonEdit];
         } else {
             self.navigationItem.rightBarButtonItems = @[self.buttonChat];
+            self.buttonChat.enabled = [Helper checkLogin:NO];
         }
     }
     if ([self.ID isEqualToString:UID]) {

@@ -24,6 +24,7 @@
 @interface AppDelegate : UIResponder <UIApplicationDelegate, MFMailComposeViewControllerDelegate, QLPreviewControllerDelegate, QLPreviewControllerDataSource> {
     NSArray<PreviewItem *> *previewItems;
     BOOL wakeLogin;
+    NSDateFormatter *formatter;
 }
 
 @property (strong, nonatomic) UIWindow *window;
@@ -38,6 +39,8 @@
 + (void)handleImageClickWithMessage:(WKScriptMessage *)message hud:(MBProgressHUD *)hud;
 
 + (UIViewController *)getTopViewController;
+
++ (UIViewController *)viewControllerForView:(UIView *)view;
 
 + (void)setAdaptiveSheetFor:(UIViewController *)viewController popoverSource:(UIView *)source halfScreen:(BOOL)halfScreen;
 

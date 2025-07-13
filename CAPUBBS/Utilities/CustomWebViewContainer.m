@@ -7,6 +7,7 @@
 //
 
 #import "CustomWebViewContainer.h"
+#import "WebViewController.h"
 //#import <CommonCrypto/CommonCrypto.h>
 
 // Just a random UUID
@@ -285,10 +286,13 @@ static dispatch_once_t onceSharedDataSource;
         if ([sourceUrl.host isEqualToString:newUrl.host]) {
             // Same host, navigate directly
             [webView loadRequest:navigationAction.request];
+        } else if (![[AppDelegate viewControllerForView:webView] isKindOfClass:[WebViewController class]]) {
+            [AppDelegate openURL:newUrl.absoluteString fullScreen:YES];
         } else if ([[UIApplication sharedApplication] canOpenURL:newUrl]) {
             // Ask for user confirmation
-            [[AppDelegate getTopViewController] showAlertWithTitle:@"是否跳转至" message:newUrl.absoluteString confirmTitle:@"确定" confirmAction:^(UIAlertAction *action) {
-                NSString *scheme = newUrl.scheme.lowercaseString;
+            NSString *scheme = newUrl.scheme.lowercaseString;
+            NSString *displayUrl = newUrl.host ? [NSString stringWithFormat:@"%@://%@", scheme, newUrl.host] : newUrl.absoluteString;
+            [[AppDelegate getTopViewController] showAlertWithTitle:@"是否跳转至" message:displayUrl confirmTitle:@"确定" confirmAction:^(UIAlertAction *action) {
                 if ([Helper isHttpScheme:scheme]) {
                     [webView loadRequest:navigationAction.request];
                 } else {

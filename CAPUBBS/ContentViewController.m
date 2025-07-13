@@ -462,7 +462,7 @@
 - (CGFloat)tableView:(UITableView *)tableView estimatedHeightForRowAtIndexPath:(nonnull NSIndexPath *)indexPath {
     CGFloat lzlHeight = [self getLzlHeightForRow:indexPath.row];
     CGFloat webViewHeight = [self getWebViewHeightForRow:indexPath.row];
-    return 106 + lzlHeight + webViewHeight;
+    return 109 + lzlHeight + webViewHeight;
 }
 
 - (ContentCell *)getCellForView:(UIView *)view withRow:(NSUInteger)row {

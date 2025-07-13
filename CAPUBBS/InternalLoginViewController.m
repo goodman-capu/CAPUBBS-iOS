@@ -24,7 +24,7 @@
     
     self.textUid.text = self.defaultUid;
     self.textPass.text = self.defaultPass;
-    self.buttonLogin.layer.cornerRadius = 10;
+    self.buttonLogin.layer.cornerRadius = self.buttonLogin.frame.size.height / 2;
     if (self.textUid.text.length == 0) {
         [self.textUid becomeFirstResponder];
     }

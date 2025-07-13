@@ -9,11 +9,12 @@
 #import <UIKit/UIKit.h>
 
 @interface ListViewController : CustomTableViewController {
-    NSArray *data;
-    NSInteger globalTopCount;
     MBProgressHUD *hud;
     MBProgressHUD *hudSofa;
     NSUserActivity *activity;
+    NSArray *data;
+    NSInteger globalTopCount;
+    NSDateFormatter *formatter;
     int failCount;
     BOOL isLast;
     BOOL isRobbingSofa;

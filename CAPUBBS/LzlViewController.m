@@ -194,13 +194,13 @@
     if (indexPath.section == 0) {
         [self.textPost resignFirstResponder];
         UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"选择操作" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-        if ([Helper checkLogin:NO]) {
-            [alertController addAction:[UIAlertAction actionWithTitle:@"回复" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                [tableView deselectRowAtIndexPath:indexPath animated:YES];
-                lzlAuthor = data[indexPath.row][@"author"];
-                [self directPost:nil];
-            }]];
-        }
+        UIAlertAction *replyAction = [UIAlertAction actionWithTitle:@"回复" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            [tableView deselectRowAtIndexPath:indexPath animated:YES];
+            lzlAuthor = data[indexPath.row][@"author"];
+            [self directPost:nil];
+        }];
+        replyAction.enabled = [Helper checkLogin:NO];
+        [alertController addAction:replyAction];
         if ([self tableView:tableView canEditRowAtIndexPath:indexPath]) {
             [alertController addAction:[UIAlertAction actionWithTitle:@"删除" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
                 [tableView deselectRowAtIndexPath:indexPath animated:YES];

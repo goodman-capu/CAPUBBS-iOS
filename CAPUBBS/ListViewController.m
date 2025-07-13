@@ -56,6 +56,12 @@
     if (self.page <= 0) {
         self.page = 1;
     }
+    
+    formatter = [[NSDateFormatter alloc] init];
+    [formatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
+    NSTimeZone *beijingTimeZone = [NSTimeZone timeZoneWithName:@"Asia/Shanghai"];
+    [formatter setTimeZone:beijingTimeZone];
+    
     [self jumpTo:self.page];
 }
 
@@ -161,6 +167,7 @@
                     data = result;
                     isLast = [data[0][@"nextpage"] isEqualToString:@"false"];
                     self.title = [NSString stringWithFormat:@"%@(%ld/%@)", oriTitle, self.page, [data lastObject][@"pages"]];
+                    self.tableView.userInteractionEnabled = YES;
                     [hud hideWithSuccessMessage:@"读取成功"];
                 }
                 
@@ -252,12 +259,8 @@
                     }
                 }
                 if (isNew) {
-                    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-                    [formatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
-                    NSTimeZone *beijingTimeZone = [NSTimeZone timeZoneWithName:@"Asia/Shanghai"];
-                    [formatter setTimeZone:beijingTimeZone];
                     NSDate *currentTime = [NSDate date];
-                    NSDate *postTime =[formatter dateFromString:dict[@"time"]];
+                    NSDate *postTime = [formatter dateFromString:dict[@"time"]];
                     NSTimeInterval time = [currentTime timeIntervalSinceDate:postTime];
                     // NSLog(@"%d", (int)time);
                     if ((int)time <= 60) { // 一分钟之内的帖子(允许服务器时间误差)
@@ -442,7 +445,7 @@
     [alertController addAction:[UIAlertAction actionWithTitle:@"打开网页版" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [AppDelegate openURL:URL fullScreen:YES];
     }]];
-    if (IS_SUPER_USER && ![self.bid isEqualToString:@"1"]) {
+    if (IS_SUPER_USER && ![self.bid isEqualToString:@"1"] && [Helper checkLogin:NO]) {
         [alertController addAction:[UIAlertAction actionWithTitle:@"抢沙发模式" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             
             UIAlertController *alertControllerSofa = [UIAlertController alertControllerWithTitle:@"进入抢沙发模式" message:@"版面将持续刷新直至刷出非工作区新帖并且成功回复指定内容为止" preferredStyle:UIAlertControllerStyleAlert];

@@ -21,7 +21,7 @@
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
     for (UIView *view in @[self.buttonEnter, self.buttonRegister, self.buttonLogin]) {
-        view.layer.cornerRadius = 10;
+        view.layer.cornerRadius = view.frame.size.height / 2;
     }
     [self.iconUser setRounded:YES];
     self.labelNews.textColor = GREEN_TEXT;
@@ -39,7 +39,12 @@
     news = [NSArray arrayWithArray:[DEFAULTS objectForKey:@"newsCache"]];
     control = [[UIRefreshControl alloc] init];
     [control addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
-    [self.tableview addSubview:control];
+    [self.newsTableView addSubview:control];
+    
+    formatter = [[NSDateFormatter alloc] init];
+    [formatter setDateFormat:@"yyyy-MM-dd"];
+    NSTimeZone *beijingTimeZone = [NSTimeZone timeZoneWithName:@"Asia/Shanghai"];
+    [formatter setTimeZone:beijingTimeZone];
     
     // Uncomment the following line to preserve selection between presentations.
     // self.clearsSelectionOnViewWillAppear = NO;
@@ -91,30 +96,28 @@
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     NSDictionary *dict = news[indexPath.row];
-    NSString *bid = dict[@"bid"];
-    NSString *tid = dict[@"tid"];
     NSString *url = dict[@"url"];
+    NSDictionary *linkInfo = [Helper getLink:url];
     UITableViewCell *cell;
-    if (bid.length == 0 || tid.length == 0) {
+    if (linkInfo.count > 0 && [linkInfo[@"tid"] length] > 0) {
+        cell = [self.newsTableView dequeueReusableCellWithIdentifier:@"postCell"];
+    } else {
         if ([url hasPrefix:@"javascript"] || url.length == 0) {
-            cell = [self.tableview dequeueReusableCellWithIdentifier:@"noLinkCell"];
+            cell = [self.newsTableView dequeueReusableCellWithIdentifier:@"noLinkCell"];
             cell.tag = -1;
         } else {
-            cell = [self.tableview dequeueReusableCellWithIdentifier:@"webCell"];
+            cell = [self.newsTableView dequeueReusableCellWithIdentifier:@"webCell"];
         }
-    } else {
-        cell = [self.tableview dequeueReusableCellWithIdentifier:@"postCell"];
     }
     NSString *text = dict[@"text"];
-    if (![text hasPrefix:@"📣 "]) {
-        int interval = [[NSDate date] timeIntervalSince1970] - [dict[@"time"] intValue];
-        if (interval <= 7 * 24 * 3600) { // 一周内的公告
-            text = [@"📣 " stringByAppendingString:text];
-        }
+    int interval = [[NSDate date] timeIntervalSince1970] - [dict[@"time"] intValue];
+    if (interval <= 7 * 24 * 3600) { // 一周内的公告
+        text = [@"📣 " stringByAppendingString:text];
     }
     cell.textLabel.text = text;
     cell.textLabel.textColor = BLUE;
-    cell.backgroundColor = [UIColor colorWithWhite:1 alpha:(0.6 - indexPath.row / (2.0 * news.count))]; // 渐变色效果 alpha ∈ [0.6, 0.1)递减
+    cell.detailTextLabel.text = [formatter stringFromDate:[NSDate dateWithTimeIntervalSince1970:[dict[@"time"] intValue]]];
+    cell.backgroundColor = [UIColor colorWithWhite:1 alpha:(0.75 - 0.65 * indexPath.row / news.count)]; // 渐变色效果 alpha ∈ [0.75, 0.1)递减
     
     // Configure the cell...
     return cell;
@@ -122,7 +125,7 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    UITableViewCell *cell = [self.tableview cellForRowAtIndexPath:indexPath];
+    UITableViewCell *cell = [self.newsTableView cellForRowAtIndexPath:indexPath];
     if (cell.tag == -1) {
         [self showAlertWithTitle:@"无法打开" message:@"不是论坛链接！"];
     }
@@ -154,7 +157,7 @@
                         NSMutableArray *temp = [NSMutableArray arrayWithArray:news];
                         [temp removeObjectAtIndex:indexPath.row];
                         news = [NSArray arrayWithArray:temp];
-                        [self.tableview deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
+                        [self.newsTableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
                     } else {
                         [hud hideWithFailureMessage:@"操作失败"];
                         [self showAlertWithTitle:@"操作失败" message:result[0][@"msg"]];
@@ -294,8 +297,7 @@
     NSString *username = UID;
     self.textUid.text = UID;
     self.textPass.text = PASS;
-    self.buttonLogin.highlighted = NO;
-    self.buttonLogin.userInteractionEnabled = YES;
+    self.buttonLogin.enabled = YES;
     self.textUid.userInteractionEnabled = YES;
     self.textPass.userInteractionEnabled = YES;
     self.textPass.secureTextEntry = YES;
@@ -312,8 +314,7 @@
                 [attr addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithWhite:0 alpha:0.5] range:NSMakeRange(0, attr.length)];
                 self.textPass.secureTextEntry = NO;
                 self.textPass.attributedText = attr;
-                self.buttonLogin.highlighted = YES;
-                self.buttonLogin.userInteractionEnabled = NO;
+                self.buttonLogin.enabled = NO;
                 self.textUid.userInteractionEnabled = NO;
                 self.textPass.userInteractionEnabled = NO;
             }
@@ -429,7 +430,7 @@
         news = [result objectsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(1, result.count-1)]]; // result的第一项是更新信息 不需要
         // NSLog(@"%@", news);
         [DEFAULTS setObject:news forKey:@"newsCache"];
-        [self.tableview reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationAutomatic];
+        [self.newsTableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationAutomatic];
     }];
 }
 
@@ -482,15 +483,24 @@
     // Pass the selected object to the new view controller.
     if ([segue.identifier isEqualToString:@"post"]) {
         ContentViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
-        NSDictionary *dict = news[[self.tableview indexPathForCell:(UITableViewCell *)sender].row];
-        dest.bid = dict[@"bid"];
-        dest.tid = dict[@"tid"];
+        NSDictionary *dict = news[[self.newsTableView indexPathForCell:(UITableViewCell *)sender].row];
+        NSDictionary *linkInfo = [Helper getLink:dict[@"url"]];
+        dest.bid = linkInfo[@"bid"];
+        dest.tid = linkInfo[@"tid"];
+        int p = [linkInfo[@"p"] intValue];
+        int floor = [linkInfo[@"floor"] intValue];
+        if (p > 0) {
+            dest.destinationPage = dict[@"p"];
+        }
+        if (floor > 0) {
+            dest.destinationFloor = dict[@"floor"];
+        }
         dest.title = dict[@"text"];
         dest.navigationItem.leftBarButtonItem = [AppDelegate getCloseButtonForTarget:self action:@selector(done)];
     }
     if ([segue.identifier isEqualToString:@"web"]) {
         WebViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
-        NSDictionary *dict = news[[self.tableview indexPathForCell:(UITableViewCell *)sender].row];
+        NSDictionary *dict = news[[self.newsTableView indexPathForCell:(UITableViewCell *)sender].row];
         dest.URL = dict[@"url"];
         dest.title = dict[@"text"];
     }

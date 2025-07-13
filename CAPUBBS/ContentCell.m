@@ -52,7 +52,7 @@
     cell.lzlText.text = [dict[@"text"] stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
     [cell.lzlIcon setUrl:dict[@"icon"]];
     
-    if (indexPath.row == [self tableView:tableView numberOfRowsInSection:indexPath.section] - 1) {
+    if (indexPath.row == self.lzlDetail.count - 1) {
         cell.separatorInset = UIEdgeInsetsMake(0, 10000, 0, 0); // 隐藏
     } else {
         cell.separatorInset = UIEdgeInsetsZero; // 正常显示

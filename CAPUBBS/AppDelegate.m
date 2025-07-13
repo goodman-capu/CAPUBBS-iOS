@@ -60,6 +60,7 @@
     [[UITextField appearance] setBackgroundColor:[UIColor lightTextColor]];
     [[UITextView appearance] setBackgroundColor:[UIColor lightTextColor]];
     [[UITableViewCell appearance] setBackgroundColor:[UIColor colorWithWhite:1 alpha:0.6]];
+    [[UIButton appearance] setPointerInteractionEnabled:YES];
     
     NSDictionary *defaults = @{
         // @"proxy" : @2,
@@ -88,6 +89,11 @@
     [GROUP_DEFAULTS registerDefaults:groupDefaults];
     [self transferDefaults];
     wakeLogin = NO;
+    
+    formatter = [[NSDateFormatter alloc] init];
+    [formatter setDateFormat:@"yyyy-MM-dd"];
+    NSTimeZone *beijingTimeZone = [NSTimeZone timeZoneWithName:@"Asia/Shanghai"];
+    [formatter setTimeZone:beijingTimeZone];
     
     [[NSURLCache sharedURLCache] setMemoryCapacity:128.0 * 1024 * 1024];
     [[NSURLCache sharedURLCache] setDiskCapacity:512.0 * 1024 * 1024];
@@ -138,8 +144,10 @@
     });
     
 #ifdef DEBUG
-//    [AppDelegate openLink:[Helper getLink:@"https://www.chexie.net/bbs/content/?p=25&bid=4&tid=19837#298"] postTitle:nil];
-//    [self _handleUrlRequestWithDictionary:@{@"open": @"compose", @"bid": @"9", @"title": @"Test"}];
+//    [AppDelegate openLink:[Helper getLink:@"/bbs/content/?p=17&bid=4&tid=19919#195"] postTitle:nil]; // Apple Music
+//    [AppDelegate openLink:[Helper getLink:@"/bbs/content/?p=25&bid=4&tid=19837#298"] postTitle:nil]; // Pictures
+//    [AppDelegate openLink:[Helper getLink:@"/bbs/content/?p=25&bid=4&tid=19837#293"] postTitle:nil]; // Attachments
+//    [self _handleUrlRequestWithDictionary:@{@"open": @"compose", @"bid": @"9", @"title": @"Test"}]; // Compose
 #endif
     
     // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
@@ -162,6 +170,17 @@
         }
     });
     return topVC;
+}
+
++ (UIViewController *)viewControllerForView:(UIView *)view {
+    UIResponder *responder = view;
+    while (responder) {
+        responder = [responder nextResponder];
+        if ([responder isKindOfClass:[UIViewController class]]) {
+            return (UIViewController *)responder;
+        }
+    }
+    return nil;
 }
 
 + (void)setAdaptiveSheetFor:(UIViewController *)viewController popoverSource:(UIView *)source halfScreen:(BOOL)halfScreen {
@@ -974,10 +993,6 @@
 }
 
 - (void)maybeCheckUpdate {
-    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-    [formatter setDateFormat:@"yyyy-MM-dd"];
-    NSTimeZone *beijingTimeZone = [NSTimeZone timeZoneWithName:@"Asia/Shanghai"];
-    [formatter setTimeZone:beijingTimeZone];
     NSDate *currentDate = [NSDate date];
     NSDate *lastDate =[formatter dateFromString:[DEFAULTS objectForKey:@"checkUpdate"]];
     NSTimeInterval time = [currentDate timeIntervalSinceDate:lastDate];
