@@ -62,25 +62,22 @@
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     // Return the number of rows in the section.
-    return MAX(self.data.count, 1);
+    return self.data.count;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell" forIndexPath:indexPath];
-    cell.backgroundColor = [UIColor clearColor];
-    if (self.data.count > 0) {
-        cell.textLabel.text = [Helper restoreTitle:self.data[indexPath.row][@"title"]];
-        cell.detailTextLabel.text = self.data[indexPath.row][@"time"];
-    } else {
-        cell.textLabel.text = [@"暂无" stringByAppendingString:self.title];
-        cell.detailTextLabel.text = @"";
-        cell.accessoryType = UITableViewCellAccessoryNone;
-        cell.userInteractionEnabled = NO;
-    }
+//    cell.backgroundColor = [UIColor clearColor];
+    cell.textLabel.text = [Helper restoreTitle:self.data[indexPath.row][@"title"]];
+    cell.detailTextLabel.text = self.data[indexPath.row][@"time"];
     
     // Configure the cell...
     
     return cell;
+}
+
+- (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
+    return self.data.count > 0 ? [NSString stringWithFormat:@"共%ld条", self.data.count] : @"暂无";
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -103,7 +100,7 @@
         dest.bid = dict[@"bid"];
         dest.tid = dict[@"tid"];
         dest.destinationFloor = dict[@"pid"];
-        dest.title = dict[@"title"];
+        dest.title = [Helper restoreTitle:dict[@"title"]];
         dest.navigationItem.leftBarButtonItem = [AppDelegate getCloseButtonForTarget:self action:@selector(done)];
     }
 }

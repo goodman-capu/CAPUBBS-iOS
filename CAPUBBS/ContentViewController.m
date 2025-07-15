@@ -431,9 +431,6 @@
         return 0;
     }
     NSArray *lzlDetail = data[row][@"lzldetail"];
-    if (!lzlDetail || lzlDetail.count == 0) {
-        return 0;
-    }
     // Show at most 8 rows
     return MIN(MAX_LZL_ROWS, lzlDetail.count) * 44;
 }
@@ -636,8 +633,10 @@
             break;
     }
     cell.labelInfo.text = floor;
-    [cell.buttonLzl setTitle:[NSString stringWithFormat:@"评论 (%@)",dict[@"lzl"]] forState:UIControlStateNormal];
-    if ([dict[@"lzl"] isEqualToString:@"0"]) {
+    NSArray *lzlDetail = dict[@"lzldetail"];
+    NSUInteger lzlCount = lzlDetail.count;
+    [cell.buttonLzl setTitle:[NSString stringWithFormat:@"评论 (%ld)", lzlCount] forState:UIControlStateNormal];
+    if (lzlCount == 0) {
         [cell.buttonLzl setTitleColor:[UIColor darkGrayColor] forState:UIControlStateNormal];
     } else {
         [cell.buttonLzl setTitleColor:nil forState:UIControlStateNormal]; // use default color
@@ -679,7 +678,7 @@
     CGFloat lzlHeight = [self getLzlHeightForRow:indexPath.row];
     if (lzlHeight > 0) {
         cell.lzlTableView.hidden = NO;
-        cell.lzlDetail = dict[@"lzldetail"];
+        cell.lzlDetail = lzlDetail;
         [cell.lzlHeight setConstant:[self getLzlHeightForRow:indexPath.row]];
     } else {
         cell.lzlTableView.hidden = YES;
@@ -1166,7 +1165,6 @@
     if (selectedIndex >= 0 && selectedIndex < data.count && notification && [[notification.userInfo objectForKey:@"fid"] isEqualToString:data[selectedIndex][@"fid"]]) {
         NSDictionary *details = notification.userInfo[@"details"];
         data[selectedIndex][@"lzldetail"] = details;
-        data[selectedIndex][@"lzl"] = [NSString stringWithFormat:@"%ld", details.count];
         dispatch_main_async_safe(^{
             [self.tableView reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:selectedIndex inSection:0]] withRowAnimation:UITableViewRowAnimationAutomatic];
         });

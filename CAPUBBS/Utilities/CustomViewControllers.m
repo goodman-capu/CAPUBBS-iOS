@@ -26,6 +26,10 @@
 }
 #endif
 
+- (UIStatusBarStyle)preferredStatusBarStyle {
+    return [AppDelegate preferredStatusBarStyle];
+}
+
 @end
 
 @implementation CustomTableViewController
@@ -35,6 +39,10 @@
     NSLog(@"✅ dealloc VC: %@", self);
 }
 #endif
+
+- (UIStatusBarStyle)preferredStatusBarStyle {
+    return [AppDelegate preferredStatusBarStyle];
+}
 
 @end
 
@@ -46,9 +54,23 @@
 }
 #endif
 
+- (UIStatusBarStyle)preferredStatusBarStyle {
+    return [AppDelegate preferredStatusBarStyle];
+}
+
 @end
 
 @implementation CustomSearchController
+
+#ifdef DEBUG
+- (void)dealloc {
+    NSLog(@"✅ dealloc VC: %@", self);
+}
+#endif
+
+- (UIStatusBarStyle)preferredStatusBarStyle {
+    return [AppDelegate preferredStatusBarStyle];
+}
 
 @end
 
@@ -186,38 +208,6 @@ static char kIsAttemptingToPresentKey;
 
 - (void)showAlertWithTitle:(NSString *)title message:(NSString *)message {
     [self showAlertWithTitle:title message:message confirmTitle:nil confirmAction:nil cancelTitle:@"好" cancelAction:nil];
-}
-
-@end
-
-@implementation CustomViewController (Customize)
-
-- (UIStatusBarStyle)preferredStatusBarStyle {
-    return [AppDelegate preferredStatusBarStyle];
-}
-
-@end
-
-@implementation CustomTableViewController (Customize)
-
-- (UIStatusBarStyle)preferredStatusBarStyle {
-    return [AppDelegate preferredStatusBarStyle];
-}
-
-@end
-
-@implementation CustomCollectionViewController (Customize)
-
-- (UIStatusBarStyle)preferredStatusBarStyle {
-    return [AppDelegate preferredStatusBarStyle];
-}
-
-@end
-
-@implementation CustomSearchController (Customize)
-
-- (UIStatusBarStyle)preferredStatusBarStyle {
-    return [AppDelegate preferredStatusBarStyle];
 }
 
 @end

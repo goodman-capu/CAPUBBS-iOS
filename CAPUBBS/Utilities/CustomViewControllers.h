@@ -58,15 +58,3 @@
                    message:(NSString *)message;
 
 @end
-
-@interface CustomViewController (Customize)
-@end
-
-@interface CustomTableViewController (Customize)
-@end
-
-@interface CustomCollectionViewController (Customize)
-@end
-
-@interface CustomSearchController (Customize)
-@end

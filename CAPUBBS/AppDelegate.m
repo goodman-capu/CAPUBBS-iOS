@@ -27,8 +27,9 @@
     
     if (LIQUID_GLASS) {
         self.window.tintColor = GREEN_TINT;
-        [UISwitch appearance].onTintColor = GREEN_TINT;
     } else {
+        self.window.tintColor = BLUE;
+        
         UINavigationBar *navBar = [UINavigationBar appearance];
         UINavigationBarAppearance *navBarAppearance = [[UINavigationBarAppearance alloc] init];
         [navBarAppearance configureWithDefaultBackground];
@@ -51,16 +52,16 @@
         toolbar.compactAppearance = toolBarAppearance;
         toolbar.scrollEdgeAppearance = toolBarAppearance;
         toolbar.compactScrollEdgeAppearance = toolBarAppearance;
-        
-        self.window.tintColor = BLUE;
-        [UISwitch appearance].onTintColor = BLUE;
     }
     
     [[UITextField appearance] setClearButtonMode:UITextFieldViewModeWhileEditing];
     [[UITextField appearance] setBackgroundColor:[UIColor lightTextColor]];
     [[UITextView appearance] setBackgroundColor:[UIColor lightTextColor]];
+    [[UITableView appearance] setBackgroundColor:[UIColor clearColor]];
     [[UITableViewCell appearance] setBackgroundColor:[UIColor colorWithWhite:1 alpha:0.6]];
     [[UIButton appearance] setPointerInteractionEnabled:YES];
+    [[UISwitch appearance] setOnTintColor:[UIColor tintColor]];
+    [[UICollectionView appearance] setBackgroundColor:[UIColor clearColor]];
     
     NSDictionary *defaults = @{
         // @"proxy" : @2,

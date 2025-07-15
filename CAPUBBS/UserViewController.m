@@ -272,17 +272,10 @@
     NSInteger tag = message.webView.tag;
     
     height = height * (textSize / 100.0);
-    if (height > 0 && height - [heights[tag] floatValue] >= 1) {
+    if (height > 0 && ABS(height - [heights[tag] floatValue]) >= 1) {
         heights[tag] = @(height);
         [self.tableView beginUpdates];
         [self.tableView endUpdates];
-    }
-}
-
-- (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
-    [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
-    for (int i = 0; i < webViewContainers.count; i++) {
-        heights[i] = @0;
     }
 }
 

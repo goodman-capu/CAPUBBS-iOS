@@ -37,13 +37,9 @@
     [self.tableView addSubview:control];
     
     if (LIQUID_GLASS) {
-        self.segmentBackgroundView.backgroundColor = [UIColor clearColor];
+        [self.segmentBackgroundView removeFromSuperview];
         self.navigationItem.titleView = self.segmentType;
 
-        // 普通状态文字颜色
-        [self.segmentType setTitleTextAttributes:@{
-            NSFontAttributeName: [UIFont systemFontOfSize:14],
-        } forState:UIControlStateNormal];
         // 选中状态文字颜色
         [self.segmentType setTitleTextAttributes:@{
             NSForegroundColorAttributeName: [UIColor tintColor],
