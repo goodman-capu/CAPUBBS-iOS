@@ -12,6 +12,9 @@
 #import "WebViewController.h"
 #import "CustomWebViewContainer.h"
 
+// 24 hour
+#define FILE_EXPIRATION_INTERVAL 24 * 60 * 60
+
 @interface SettingViewController ()
 
 @end
@@ -117,10 +120,11 @@
     });
 }
 
-//单个文件的大小
+// 单个文件的大小
 + (unsigned long long)fileSizeAtPath:(NSString *)filePath {
-    if ([MANAGER fileExistsAtPath:filePath]) {
-        return [[MANAGER attributesOfItemAtPath:filePath error:nil] fileSize];
+    NSDictionary<NSFileAttributeKey, id> *attributes = [MANAGER attributesOfItemAtPath:filePath error:nil];
+    if (attributes) {
+        return [attributes fileSize];
     }
     return 0;
 }
@@ -130,13 +134,35 @@
     if (![MANAGER fileExistsAtPath:folderPath]) {
         return 0;
     }
-    NSArray *chileFiles = [MANAGER subpathsAtPath:folderPath];
+    
+    NSDirectoryEnumerator *enumerator = [MANAGER enumeratorAtPath:folderPath];
+    NSString *fileName;
     unsigned long long folderSize = 0;
-    for (NSString *fileName in chileFiles) {
-        NSString* fileAbsolutePath = [folderPath stringByAppendingPathComponent:fileName];
-        folderSize += [self fileSizeAtPath:fileAbsolutePath];
+        
+    while ((fileName = [enumerator nextObject])) {
+        NSString *filePath = [folderPath stringByAppendingPathComponent:fileName];
+        folderSize += [self fileSizeAtPath:filePath];
     }
+    
     return folderSize;
+}
+
++ (void)cleanupTemporaryFiles {
+    NSString *tempDirectoryPath = NSTemporaryDirectory();
+    NSDirectoryEnumerator *enumerator = [MANAGER enumeratorAtPath:tempDirectoryPath];
+    NSString *fileName;
+        
+    while ((fileName = [enumerator nextObject])) {
+        NSString *filePath = [tempDirectoryPath stringByAppendingPathComponent:fileName];
+        NSDictionary<NSFileAttributeKey, id> *attributes = [MANAGER attributesOfItemAtPath:filePath error:nil];
+        if (attributes) {
+            // Don't delete folder entirely, otherwise will throw many db error (webkit related)
+            NSDate *modificationDate = attributes[NSFileModificationDate];
+            if (-[modificationDate timeIntervalSinceNow] > FILE_EXPIRATION_INTERVAL) {
+                [MANAGER removeItemAtPath:filePath error:nil];
+            }
+        }
+    }
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -145,9 +171,10 @@
         if (indexPath.row == 0) {
             [self showAlertWithTitle:@"确认清除软件缓存？" message:@"将重点清除网络缓存\n不会清除头像缓存\n少数系统关键缓存无法彻底清除" confirmTitle:@"确认" confirmAction:^(UIAlertAction *action) {
                 [hud showWithProgressMessage:@"清除中"];
-                // Don't delete cache / tmp folder directly, otherwise will throw many db error
                 // NSURLCache
                 [[NSURLCache sharedURLCache] removeAllCachedResponses];
+                // Temporary folder
+                [SettingViewController cleanupTemporaryFiles];
                 // WKWebView (WebKit) cache
                 [CustomWebViewContainer clearAllDataStores:^{
                     [hud hideWithSuccessMessage:@"清除完成"];

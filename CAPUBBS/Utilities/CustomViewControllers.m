@@ -134,12 +134,13 @@ static char kIsAttemptingToPresentKey;
     return result;
 }
 
-- (void)presentViewControllerSafe:(UIViewController *)view {
-    if (!view) {
+- (void)presentViewControllerSafe:(UIViewController *)viewController {
+    if (!viewController) {
         return;
     }
     dispatch_main_async_safe(^{
-        [[self _getVcQueue] addObject:view];
+        viewController.view.tintColor = self.view.tintColor; // Fix occasional color inconsistency
+        [[self _getVcQueue] addObject:viewController];
         if ([self _tryPresentNextVc]) {
             return;
         }

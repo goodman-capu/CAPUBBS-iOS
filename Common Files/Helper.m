@@ -753,6 +753,16 @@
     return [outPutStr copy];
 }
 
++ (BOOL)isPureInt:(NSString *)str {
+    if (!str || str.length == 0) {
+            return NO;
+        }
+    NSScanner *scan = [NSScanner scannerWithString:str];
+    scan.charactersToBeSkipped = nil;
+    int val;
+    return [scan scanInt:&val] && [scan isAtEnd];
+}
+
 + (NSString *)getSigForData:(id)data {
     NSError *error = nil;
     NSData *dataJson = [NSJSONSerialization dataWithJSONObject:data

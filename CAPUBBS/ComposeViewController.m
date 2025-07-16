@@ -507,22 +507,26 @@
 }
 
 - (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(nonnull NSDictionary<UIImagePickerControllerInfoKey,id> *)info {
-    [picker dismissViewControllerAnimated:YES completion:nil];
     UIImage *image = info[UIImagePickerControllerOriginalImage];
-    [self.textTitle resignFirstResponder];
-    [self.textBody resignFirstResponder];
-    [self uploadOneImage:image withCallback:^(NSString *url) {
-        dispatch_main_async_safe((^{
-            if (url) {
-                [self insert:[NSString stringWithFormat:@"\n[img]%@[/img]\n",url]];
-            }
-            [self.textBody becomeFirstResponder];
-        }));
+    NSURL *imageUrl = info[UIImagePickerControllerImageURL];
+    if ([MANAGER fileExistsAtPath:imageUrl.path]) {
+        [MANAGER removeItemAtURL:imageUrl error:nil];
+    }
+    [picker dismissViewControllerAnimated:YES completion:^{
+        [self.textTitle resignFirstResponder];
+        [self.textBody resignFirstResponder];
+        [self uploadOneImage:image withCallback:^(NSString *url) {
+            dispatch_main_async_safe((^{
+                if (url) {
+                    [self insert:[NSString stringWithFormat:@"\n[img]%@[/img]\n",url]];
+                }
+                [self.textBody becomeFirstResponder];
+            }));
+        }];
     }];
 }
 
-- (void)picker:(PHPickerViewController *)picker didFinishPicking:(NSArray<PHPickerResult *> *)results API_AVAILABLE(ios(14)) {
-    [picker dismissViewControllerAnimated:YES completion:nil];
+- (void)picker:(PHPickerViewController *)picker didFinishPicking:(NSArray<PHPickerResult *> *)results {
     NSMutableArray<UIImage *> *selectedImages = [NSMutableArray array];
     dispatch_group_t group = dispatch_group_create();
     
@@ -540,12 +544,14 @@
         }
     }
     
-    // 所有图片加载完后开始上传
-    dispatch_group_notify(group, dispatch_get_main_queue(), ^{
-        [self.textTitle resignFirstResponder];
-        [self.textBody resignFirstResponder];
-        [self uploadImages:selectedImages index:0];
-    });
+    [picker dismissViewControllerAnimated:YES completion:^{
+        // 所有图片加载完后开始上传
+        dispatch_group_notify(group, dispatch_get_main_queue(), ^{
+            [self.textTitle resignFirstResponder];
+            [self.textBody resignFirstResponder];
+            [self uploadImages:selectedImages index:0];
+        });
+    }];
 }
 
 - (void)uploadImages:(NSArray<UIImage *> *)images index:(NSInteger)index {

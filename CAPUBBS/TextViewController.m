@@ -237,7 +237,7 @@
         [self.textInput becomeFirstResponder];
     }]];
     [alertController addAction:[UIAlertAction actionWithTitle:@"返回发帖" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
-        [self dismissViewControllerAnimated:YES completion:nil];
+        [self dismiss];
     }]];
     alertController.popoverPresentationController.barButtonItem = self.buttonAdd;
     [self presentViewControllerSafe:alertController];

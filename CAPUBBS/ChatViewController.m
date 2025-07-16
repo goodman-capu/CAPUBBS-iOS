@@ -69,7 +69,7 @@
     [alertController addAction:[UIAlertAction actionWithTitle:@"取消"
                                               style:UIAlertActionStyleCancel
                                             handler:^(UIAlertAction * _Nonnull action) {
-        [self dismissViewControllerAnimated:YES completion:nil];
+        [self dismiss];
     }]];
     [alertController addAction:[UIAlertAction actionWithTitle:@"开始"
                                               style:UIAlertActionStyleDefault
@@ -83,7 +83,7 @@
             [self showAlertWithTitle:@"错误" message:@"用户名不能为空" confirmTitle:@"重试" confirmAction:^(UIAlertAction *action) {
                 [self askForUserId];
             } cancelTitle:@"取消" cancelAction:^(UIAlertAction *action) {
-                [self dismissViewControllerAnimated:YES completion:nil];
+                [self dismiss];
             }];
         } else {
             self.ID = userName;
@@ -175,7 +175,7 @@
             [self showAlertWithTitle:@"错误" message:@"没有这个ID！" confirmTitle:@"重试" confirmAction:^(UIAlertAction *action) {
                 [self askForUserId];
             } cancelTitle:@"取消" cancelAction:^(UIAlertAction *action) {
-                [self dismissViewControllerAnimated:YES completion:nil];
+                [self dismiss];
             }];
             
             if (hudVisible) {

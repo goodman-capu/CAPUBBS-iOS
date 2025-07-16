@@ -38,6 +38,7 @@ typedef void (^ApiCompletionBlock)(NSArray* result, NSError* err);
 + (NSString *)fileNameFromURL:(NSURL *)url;
 + (BOOL)isHttpScheme:(NSString *)scheme;
 + (NSString *)md5:(NSString *)str;
++ (BOOL)isPureInt:(NSString *)str;
 + (NSString *)getSigForData:(id)data;
 + (NSString *)doDevicePlatform;
 

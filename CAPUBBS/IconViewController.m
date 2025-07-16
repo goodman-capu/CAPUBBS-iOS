@@ -11,6 +11,7 @@
 
 #define HAS_CUSTOM_ICON (newIconNum + oldIconNum == -2)
 #define OLD_ICON_TOTAL 212
+#define MAX_ICON_SIZE 512 * 1024 // 512KB
 
 @interface IconViewController ()
 
@@ -53,7 +54,7 @@
         temp = [temp substringFromIndex:range.location + range.length];
         temp = [temp stringByReplacingOccurrencesOfString:@".gif" withString:@""];
     }
-    if ([self isPureInt:temp]) {
+    if ([Helper isPureInt:temp]) {
         int num = [temp intValue];
         if (num >= 0 && num < OLD_ICON_TOTAL) {
             oldIconNum = num;
@@ -71,12 +72,6 @@
     [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
     largeCellSize = smallCellSize = 0;
     [self.collectionView reloadData];
-}
-
-- (BOOL)isPureInt:(NSString *)string {
-    NSScanner *scan = [NSScanner scannerWithString:string];
-    int val;
-    return [scan scanInt:&val] && [scan isAtEnd];
 }
 
 #pragma mark <UICollectionViewDataSource>
@@ -223,22 +218,13 @@
 //        [self presentViewControllerSafe:alertControllerLink];
 //    }]];
     [alertController addAction:[UIAlertAction actionWithTitle:@"照片图库" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        UIImagePickerController *imagePicker = [[UIImagePickerController alloc] init];
-        imagePicker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
-        imagePicker.mediaTypes = @[UTTypeImage.identifier];
-        imagePicker.allowsEditing = YES;
-        imagePicker.delegate = self;
-        [self presentViewControllerSafe:imagePicker];
+        useCamera = NO;
+        [self showImagePicker];
     }]];
     if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera]) {
         [alertController addAction:[UIAlertAction actionWithTitle:@"拍照" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            UIImagePickerController *imagePicker = [[UIImagePickerController alloc] init];
-            imagePicker.sourceType = UIImagePickerControllerSourceTypeCamera;
-            imagePicker.cameraDevice = UIImagePickerControllerCameraDeviceFront;
-            imagePicker.mediaTypes = @[UTTypeImage.identifier];
-            imagePicker.allowsEditing = YES;
-            imagePicker.delegate = self;
-            [self presentViewControllerSafe:imagePicker];
+            useCamera = YES;
+            [self showImagePicker];
         }]];
     }
     [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
@@ -246,60 +232,120 @@
     [self presentViewControllerSafe:alertController];
 }
 
+- (void)showImagePicker {
+    if (useCamera) {
+        UIImagePickerController *imagePicker = [[UIImagePickerController alloc] init];
+        imagePicker.sourceType = UIImagePickerControllerSourceTypeCamera;
+        imagePicker.cameraDevice = UIImagePickerControllerCameraDeviceFront;
+        imagePicker.mediaTypes = @[UTTypeImage.identifier];
+        imagePicker.delegate = self;
+        [self presentViewControllerSafe:imagePicker];
+    } else {
+        PHPickerConfiguration *config = [[PHPickerConfiguration alloc] init];
+        config.filter = [PHPickerFilter imagesFilter];
+        PHPickerViewController *phPicker = [[PHPickerViewController alloc] initWithConfiguration:config];
+        phPicker.delegate = self;
+        [self presentViewControllerSafe:phPicker];
+    }
+}
+
 - (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(nonnull NSDictionary<UIImagePickerControllerInfoKey,id> *)info {
-    [picker dismissViewControllerAnimated:YES completion:nil];
-
-    UIImage *finalImage = nil;
-    UIImage *originalImage = info[UIImagePickerControllerOriginalImage];
-    NSValue *cropRectValue = info[UIImagePickerControllerCropRect];
-
-    // 尝试手动裁剪原始图片以保留透明度
-    if (originalImage && cropRectValue && [originalImage hasAlphaChannel:YES]) {
-        CGRect cropRect = [cropRectValue CGRectValue];
-
-        // 1. 创建一个基于图片大小的图形上下文（先将图片“标准化”，修正其方向）
-        UIGraphicsBeginImageContextWithOptions(originalImage.size, NO, originalImage.scale);
-        
-        // 2. 将原始图片绘制到上下文中。-[UIImage drawInRect:] 会自动处理好 imageOrientation
-        [originalImage drawInRect:CGRectMake(0, 0, originalImage.size.width, originalImage.size.height)];
-        
-        // 3. 从当前上下文中获取一张方向已经校正好的新图片
-        UIImage *normalizedImage = UIGraphicsGetImageFromCurrentImageContext();
-        
-        // 4. 关闭图形上下文
-        UIGraphicsEndImageContext();
-
-        // 5. 现在，我们可以在方向正常的图片上安全地使用 cropRect 进行裁剪
-        // 注意：因为我们是针对校正后的图片进行裁剪，所以其 CGImage 的尺寸和 cropRect 的坐标系是匹配的
-        CGImageRef croppedImageRef = CGImageCreateWithImageInRect(normalizedImage.CGImage, cropRect);
-        
-        if (croppedImageRef) {
-            // 6. 用裁剪后的 CGImage 创建最终的 UIImage
-            // 这里使用 originalImage 的 scale 和 orientation 是安全的，因为 normalizedImage 已经是 Up 方向了
-            finalImage = [UIImage imageWithCGImage:croppedImageRef
-                                              scale:originalImage.scale
-                                        orientation:UIImageOrientationUp];
-            CGImageRelease(croppedImageRef);
-        }
+    UIImage *image = info[UIImagePickerControllerOriginalImage];
+    NSURL *imageUrl = info[UIImagePickerControllerImageURL];
+    if ([MANAGER fileExistsAtPath:imageUrl.path]) {
+        [MANAGER removeItemAtURL:imageUrl error:nil];
     }
+    imageHasAlpha = NO; // Camera photo has no alpha
+    [self showCropControllerFor:image over:picker];
+}
 
-    // Fallback使用系统编辑过的图片
-    if (!finalImage) {
-        finalImage = info[UIImagePickerControllerEditedImage];
-    }
-    // 最后Fallback使用原图
-    if (!finalImage) {
-        finalImage = originalImage;
+- (void)picker:(PHPickerViewController *)picker didFinishPicking:(NSArray<PHPickerResult *> *)results {
+    if (results.count == 0) {
+        [picker dismissViewControllerAnimated:YES completion:nil];
+        return;
     }
     
-    [self handleChosenImage:finalImage];
+    NSItemProvider *provider = results[0].itemProvider;
+    if ([provider hasItemConformingToTypeIdentifier:UTTypeGIF.identifier]) {
+        [provider loadDataRepresentationForTypeIdentifier:UTTypeGIF.identifier completionHandler:^(NSData * _Nullable data, NSError * _Nullable error) {
+            dispatch_main_async_safe(^{
+                if (!data || error) {
+                    [picker showAlertWithTitle:@"错误" message:@"文件读取错失败"];
+                    return;
+                }
+                if (data.length > MAX_ICON_SIZE) {
+                    [picker showAlertWithTitle:@"错误" message:@"GIF文件太大"];
+                    return;
+                }
+                [picker showAlertWithTitle:@"您选择了GIF动图" message:@"确认直接上传？" confirmTitle:@"上传" confirmAction:^(UIAlertAction *action) {
+                    [picker dismissViewControllerAnimated:YES completion:^{
+                        [self uploadImage:data];
+                    }];
+                }];
+            });
+        }];
+        return;
+    }
+    
+    [provider loadObjectOfClass:[UIImage class] completionHandler:^(UIImage *image, NSError *error) {
+        dispatch_main_async_safe(^{
+            if (!image || error) {
+                [picker showAlertWithTitle:@"错误" message:@"文件读取错失败"];
+                return;
+            }
+            // Check original image, rather than cropped image.
+            // Cropped image might have alpha on corners due to anti-aliasing
+            imageHasAlpha = [image hasAlphaChannel:YES];
+            [self showCropControllerFor:image over:picker];
+        });
+    }];
+}
+
+- (void)showCropControllerFor:(UIImage *)image over:(UIViewController *)picker {
+    if (!image || image.size.width == 0 || image.size.height == 0) {
+        [picker showAlertWithTitle:@"错误" message:@"图片不合法，无法获取长度 / 宽度！"];
+        return;
+    }
+    
+    TOCropViewController *cropVC = [[TOCropViewController alloc] initWithImage:image];
+    cropVC.delegate = self;
+    cropVC.aspectRatioPreset = TOCropViewControllerAspectRatioPresetSquare; // 正方形裁剪
+    cropVC.aspectRatioLockEnabled = YES; // 锁定宽高比
+    cropVC.resetAspectRatioEnabled = NO; // 隐藏重置宽高比按钮
+    cropVC.doneButtonColor = GREEN_DARK;
+    cropVC.doneButtonTitle = @"上传";
+    cropVC.cancelButtonColor = BLUE;
+    cropVC.cancelButtonTitle = useCamera ? @"重拍" : @"重选";
+    [cropVC setTitle:@"裁剪头像"];
+    
+    UINavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:cropVC];
+    navi.modalPresentationStyle = UIModalPresentationFormSheet;
+    navi.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
+    [AppDelegate setAdaptiveSheetFor:cropVC popoverSource:nil halfScreen:NO];
+    [picker presentViewControllerSafe:navi];
+}
+
+- (void)cropViewController:(TOCropViewController *)cropViewController didCropToImage:(UIImage *)image withRect:(CGRect)cropRect angle:(NSInteger)angle {
+    [self dismissViewControllerAnimated:YES completion:^{
+        [self handleChosenImage:image];
+    }];
+}
+
+- (void)cropViewController:(TOCropViewController *)cropViewController didFinishCancelled:(BOOL)cancelled {
+    if (useCamera) {
+        [self dismissViewControllerAnimated:YES completion:^{
+            [self showImagePicker];
+        }];
+    } else {
+        [cropViewController dismissViewControllerAnimated:YES completion:nil];
+    }
 }
 
 - (void)handleChosenImage:(UIImage *)image {
     if (!image || image.size.width == 0 || image.size.height == 0) {
-        [self showAlertWithTitle:@"警告" message:@"图片不合法，无法获取长度 / 宽度！"];
-    } else if (image.size.width / image.size.height > 4.0 / 3.0 || image.size.width / image.size.height < 3.0 / 4.0) {
-        [self showAlertWithTitle:@"警告" message:@"所选图片偏离正方形\n建议裁剪处理后使用" confirmTitle:@"继续上传" confirmAction:^(UIAlertAction *action) {
+        [self showAlertWithTitle:@"错误" message:@"图片不合法，无法获取长度 / 宽度！"];
+    } else if (image.size.width / image.size.height > 1.1 || image.size.width / image.size.height < 0.9) {
+        [self showAlertWithTitle:@"警告" message:@"图片偏离正方形\n建议重新裁剪后使用" confirmTitle:@"继续上传" confirmAction:^(UIAlertAction *action) {
             [self compressAndUploadImage:image];
         } cancelTitle:@"取消上传"];
     } else {
@@ -310,19 +356,18 @@
 - (void)compressAndUploadImage:(UIImage *)image {
     [hud showWithProgressMessage:@"正在压缩"];
     dispatch_global_default_async(^{
-        BOOL hasAlpha = [image hasAlphaChannel:YES];
         UIImage *resizedImage = image;
-        int maxWidth = hasAlpha ? 300 : 500;
+        int maxWidth = imageHasAlpha ? 300 : 500;
         if (image.size.width > maxWidth) {
             CGFloat scaledHeight = maxWidth * image.size.height / image.size.width;
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(maxWidth, scaledHeight), !hasAlpha, 0);
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(maxWidth, scaledHeight), !imageHasAlpha, 0);
             [image drawInRect:CGRectMake(0, 0, maxWidth, maxWidth * image.size.height / image.size.width)];
             resizedImage = UIGraphicsGetImageFromCurrentImageContext();
             UIGraphicsEndImageContext();
         }
         
         NSData *imageData;
-        if (hasAlpha) { // 带透明信息的png不可转换成jpeg否则丢失透明性
+        if (imageHasAlpha) { // 带透明信息的png不可转换成jpeg否则丢失透明性
             imageData = UIImagePNGRepresentation(resizedImage);
         } else {
             float maxLength = IS_SUPER_USER ? 200 : 150;
@@ -333,30 +378,34 @@
                 imageData = UIImageJPEGRepresentation(image, ratio);
             }
         }
-        NSLog(@"Upload Icon Size: %dkB", (int)imageData.length / 1024);
-        if (imageData.length > 512 * 1024) { // 512KB
-            [hud hideWithFailureMessage:@"文件太大"];
+        [self uploadImage:imageData];
+    });
+}
+
+- (void)uploadImage:(NSData *)imageData {
+    NSLog(@"Upload Icon Size: %dkB", (int)imageData.length / 1024);
+    if (imageData.length > MAX_ICON_SIZE) {
+        [hud hideWithFailureMessage:@"文件太大"];
+        return;
+    }
+    
+    NSString *extension = [AnimatedImageView fileExtension:[AnimatedImageView fileType:imageData]];
+    [hud showWithProgressMessage:@"正在上传"];
+    [Helper callApiWithParams:@{@"type": @"icon", @"extension": extension, @"file": imageData} toURL:@"upload" callback:^(NSArray *result, NSError *err) {
+        if (err || result.count == 0) {
+            [hud hideWithFailureMessage:@"上传失败"];
             return;
         }
-        
-        NSString *extension = [AnimatedImageView fileExtension:[AnimatedImageView fileType:imageData]];
-        [hud showWithProgressMessage:@"正在上传"];
-        [Helper callApiWithParams:@{@"type": @"icon", @"extension": extension, @"file": imageData} toURL:@"upload" callback:^(NSArray *result, NSError *err) {
-            if (err || result.count == 0) {
-                [hud hideWithFailureMessage:@"上传失败"];
-                return;
-            }
-            int code = [result[0][@"code"] intValue];
-            if (code == -1) {
-                [hud hideWithSuccessMessage:@"上传成功"];
-                NSString *url = result[0][@"url"];
-                [NOTIFICATION postNotificationName:@"selectIcon" object:nil userInfo:@{ @"URL" : url }];
-                [self.navigationController popViewControllerAnimated:YES];
-            } else {
-                [hud hideWithFailureMessage:code == 1 ? @"文件太大" : @"上传失败"];
-            }
-        }];
-    });
+        int code = [result[0][@"code"] intValue];
+        if (code == -1) {
+            [hud hideWithSuccessMessage:@"上传成功"];
+            NSString *url = result[0][@"url"];
+            [NOTIFICATION postNotificationName:@"selectIcon" object:nil userInfo:@{ @"URL" : url }];
+            [self.navigationController popViewControllerAnimated:YES];
+        } else {
+            [hud hideWithFailureMessage:code == 1 ? @"文件太大" : @"上传失败"];
+        }
+    }];
 }
 
 @end

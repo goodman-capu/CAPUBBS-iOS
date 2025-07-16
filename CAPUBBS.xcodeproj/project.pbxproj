@@ -10,6 +10,7 @@
 		0100A0D21C0C562C00A1282D /* AnimatedImageView.m in Sources */ = {isa = PBXBuildFile; fileRef = 0100A0D11C0C562C00A1282D /* AnimatedImageView.m */; };
 		011509C11BF21B080076D6F3 /* CollectionViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 011509C01BF21B080076D6F3 /* CollectionViewController.m */; };
 		0117FF772DF7ECE10005F5D2 /* injection.js in Resources */ = {isa = PBXBuildFile; fileRef = 0117FF762DF7ECD20005F5D2 /* injection.js */; };
+		0133C5D92E26C21E00C13675 /* TOCropViewController in Frameworks */ = {isa = PBXBuildFile; productRef = 0133C5D82E26C21E00C13675 /* TOCropViewController */; };
 		0134178B1AB06CFF0086098F /* IDViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0134178A1AB06CFF0086098F /* IDViewController.m */; };
 		0141F9621B03B803003F3186 /* OnlineViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0141F9611B03B803003F3186 /* OnlineViewController.m */; };
 		0141F9651B03C1C1003F3186 /* OnlineViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 0141F9641B03C1C1003F3186 /* OnlineViewCell.m */; };
@@ -545,6 +546,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				01E042CA2DE4C9A000590A6C /* MBProgressHUD in Frameworks */,
+				0133C5D92E26C21E00C13675 /* TOCropViewController in Frameworks */,
 				01E042CD2DE4C9D700590A6C /* SDWebImage in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -999,6 +1001,7 @@
 			packageReferences = (
 				01E042C82DE4C9A000590A6C /* XCRemoteSwiftPackageReference "MBProgressHUD" */,
 				01E042CB2DE4C9D700590A6C /* XCRemoteSwiftPackageReference "SDWebImage" */,
+				0133C5D72E26C21E00C13675 /* XCRemoteSwiftPackageReference "TOCropViewController" */,
 			);
 			productRefGroup = 8BAC8EA018B0F2BE00F68A62 /* Products */;
 			projectDirPath = "";
@@ -1438,7 +1441,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 41010;
+				CURRENT_PROJECT_VERSION = 41017;
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 674549EE7Z;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -1467,7 +1470,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 41010;
+				CURRENT_PROJECT_VERSION = 41017;
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 674549EE7Z;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -1567,6 +1570,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		0133C5D72E26C21E00C13675 /* XCRemoteSwiftPackageReference "TOCropViewController" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/TimOliver/TOCropViewController";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.7.4;
+			};
+		};
 		01E042C82DE4C9A000590A6C /* XCRemoteSwiftPackageReference "MBProgressHUD" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/jdg/MBProgressHUD.git";
@@ -1586,6 +1597,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		0133C5D82E26C21E00C13675 /* TOCropViewController */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0133C5D72E26C21E00C13675 /* XCRemoteSwiftPackageReference "TOCropViewController" */;
+			productName = TOCropViewController;
+		};
 		01E042C92DE4C9A000590A6C /* MBProgressHUD */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 01E042C82DE4C9A000590A6C /* XCRemoteSwiftPackageReference "MBProgressHUD" */;

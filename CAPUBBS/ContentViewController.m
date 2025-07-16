@@ -1399,7 +1399,7 @@
             dest.attachments = data[selectedIndex][@"attach"];
             if ([data[selectedIndex][@"author"] isEqualToString:UID]) {
                 NSString *sig = data[selectedIndex][@"signum"];
-                if (sig && [sig isEqualToString:[NSString stringWithFormat:@"%d", [sig intValue]]]) {
+                if ([Helper isPureInt:sig]) {
                     dest.defaultSigIndex = sig;
                 }
             } else {
