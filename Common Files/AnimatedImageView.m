@@ -95,7 +95,7 @@
 - (void)loadImageWithPlaceholder:(BOOL)showPlaceholder {
     [NOTIFICATION removeObserver:self];
     NSString *imageUrl = latestUrl;
-    NSString *filePath = [NSString stringWithFormat:@"%@/%@", IMAGE_CACHE_PATH, [Helper md5:imageUrl]];
+    NSString *filePath = [NSString stringWithFormat:@"%@/%@", ICON_CACHE_PATH, [Helper md5:imageUrl]];
     NSData *data = [MANAGER contentsAtPath:filePath];
     NSString *oldInfo = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     
@@ -129,7 +129,7 @@
             }
         }
         NSString *newInfo = [@"loading" stringByAppendingString:[formatter stringFromDate:[NSDate date]]];
-        [AnimatedImageView checkPath];
+        [AnimatedImageView checkIconCachePath];
         [MANAGER createFileAtPath:filePath contents:[newInfo dataUsingEncoding:NSUTF8StringEncoding] attributes:nil];
         dispatch_global_default_async(^{
             [self startLoadingUrl:imageUrl withPlaceholder:showPlaceholder];
@@ -138,7 +138,7 @@
 }
 
 - (void)startLoadingUrl:(NSString *)imageUrl withPlaceholder:(BOOL)hasPlaceholder {
-    NSString *filePath = [NSString stringWithFormat:@"%@/%@", IMAGE_CACHE_PATH, [Helper md5:imageUrl]];
+    NSString *filePath = [NSString stringWithFormat:@"%@/%@", ICON_CACHE_PATH, [Helper md5:imageUrl]];
     BOOL shouldSkipLoading = [[GROUP_DEFAULTS objectForKey:@"iconOnlyInWifi"] boolValue] && IS_CELLULAR;
     if (!shouldSkipLoading) {
         // NSLog(@"Load Img - %@", imageUrl);
@@ -150,7 +150,7 @@
                 imageData = [AnimatedImageView resizeImage:image];
             }
             // NSLog(@"Icon Type:%@, Size:%dkb", imageType, (int)(imageData.length/1024));
-            [AnimatedImageView checkPath];
+            [AnimatedImageView checkIconCachePath];
             [MANAGER createFileAtPath:filePath contents:imageData attributes:nil];
             [NOTIFICATION postNotificationName:[@"imageGet" stringByAppendingString:imageUrl] object:nil];
             return;
@@ -273,10 +273,14 @@
     }
 }
 
-+ (void)checkPath {
-    if (![MANAGER fileExistsAtPath:IMAGE_CACHE_PATH]) { // 如果没有IMAGE_CACHE_PATH目录则创建目录
-        [MANAGER createDirectoryAtPath:IMAGE_CACHE_PATH withIntermediateDirectories:NO attributes:nil error:nil];
++ (void)checkIconCachePath {
+    if ([MANAGER fileExistsAtPath:ICON_CACHE_PATH]) {
+        return;
     }
+    // 如果没有图片缓存目录则创建目录，并配置跳过iCloud备份
+    [MANAGER createDirectoryAtPath:ICON_CACHE_PATH withIntermediateDirectories:YES attributes:nil error:nil];
+    NSURL *cacheURL = [NSURL fileURLWithPath:ICON_CACHE_PATH];
+    [cacheURL setResourceValue:@YES forKey:NSURLIsExcludedFromBackupKey error:nil];
 }
 
 + (NSString *)transIconURL:(NSString *)iconUrl { // 转换用户头像地址函数

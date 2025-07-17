@@ -98,9 +98,9 @@
     
     [[NSURLCache sharedURLCache] setMemoryCapacity:128.0 * 1024 * 1024];
     [[NSURLCache sharedURLCache] setDiskCapacity:512.0 * 1024 * 1024];
-    dispatch_global_default_async(^{
-        [self transport];
-    });
+    [AnimatedImageView checkIconCachePath];
+    [self migrateLegacyData];
+    
     [NOTIFICATION addObserver:self selector:@selector(showAlert:) name:@"showAlert" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(collectionChanged) name:@"collectionChanged" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(sendEmail:) name:@"sendEmail" object:nil];
@@ -360,7 +360,7 @@
     if (!previewFileData || !previewFileName) {
         return;
     }
-    NSString *path = [NSString stringWithFormat:@"%@/%@", NSTemporaryDirectory(), previewFileName];
+    NSString *path = [NSTemporaryDirectory() stringByAppendingPathComponent:previewFileName];
     if (![previewFileData writeToFile:path atomically:YES]) {
         return;
     }
@@ -918,7 +918,7 @@
     }];
 }
 
-- (void)transport {
+- (void)migrateLegacyData {
     if (![[DEFAULTS objectForKey:@"clearDirtyData3.2"] boolValue]) { // 3.2之前版本采用NSUserDefaults储存头像 文件夹里面有许多垃圾数据
         NSString *rootFolder = NSHomeDirectory();
         NSArray *childPaths = [MANAGER subpathsAtPath:rootFolder];
@@ -953,9 +953,33 @@
         [DEFAULTS setObject:@(YES) forKey:@"transportID3.3"];
     }
     
-    if (![[DEFAULTS objectForKey:@"clearIconCache3.5"] boolValue]) { // 3.5之后链接全更改为https 缓存失效
-        [MANAGER removeItemAtPath:IMAGE_CACHE_PATH error:nil];
+//    if (![[DEFAULTS objectForKey:@"clearIconCache3.5"] boolValue]) { // 3.5之后链接全更改为https 缓存失效
+//        [MANAGER removeItemAtPath:ICON_CACHE_PATH error:nil];
+//        [DEFAULTS setObject:@(YES) forKey:@"clearIconCache3.5"];
+//    }
+    
+    if (![[DEFAULTS objectForKey:@"migrateIconCache4.1"] boolValue]) {
+        if ([[DEFAULTS objectForKey:@"clearIconCache3.5"] boolValue]) { // 3.5之前的旧缓存全部无效
+            NSString *oldCachePath1 = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"IconCache"];
+            NSString *oldCachePath2 = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"IconCache"];
+            for (NSString *oldPath in @[oldCachePath1, oldCachePath2]) {
+                if (![MANAGER fileExistsAtPath:oldPath]) {
+                    continue;
+                }
+                NSDirectoryEnumerator *enumerator = [MANAGER enumeratorAtPath:oldPath];
+                NSString *fileName;
+                while ((fileName = [enumerator nextObject])) {
+                    NSString *sourcePath = [oldPath stringByAppendingPathComponent:fileName];
+                    NSString *destinationPath = [ICON_CACHE_PATH stringByAppendingPathComponent:fileName];
+                    if (![MANAGER fileExistsAtPath:destinationPath]) {
+                        [MANAGER moveItemAtPath:sourcePath toPath:destinationPath error:nil];
+                    }
+                }
+                [MANAGER removeItemAtPath:oldPath error:nil];
+            }
+        }
         [DEFAULTS setObject:@(YES) forKey:@"clearIconCache3.5"];
+        [DEFAULTS setObject:@(YES) forKey:@"migrateIconCache4.1"];
     }
 }
 

@@ -10,7 +10,6 @@
 #import "IndexViewCell.h"
 #import "ListViewController.h"
 #import "ContentViewController.h"
-#import "SettingViewController.h"
 
 @interface IndexViewController ()
 
@@ -229,9 +228,9 @@
         NSString *childPath = [NSString stringWithFormat:@"%@/%@", rootFolder, path];
         NSArray *testPaths = [MANAGER subpathsAtPath:childPath];
         if (testPaths.count > 0) { // Folder
-            result = [NSString stringWithFormat:@"%@%@: %@\n", result, path, [Helper fileSize:[SettingViewController folderSizeAtPath:childPath]]];
+            result = [NSString stringWithFormat:@"%@%@: %@\n", result, path, [Helper fileSizeStr:[Helper folderSizeAtPath:childPath]]];
         } else if (all) { // File
-            result = [NSString stringWithFormat:@"%@%@: %@\n", result, path, [Helper fileSize:[SettingViewController fileSizeAtPath:childPath]]];
+            result = [NSString stringWithFormat:@"%@%@: %@\n", result, path, [Helper fileSizeStr:[Helper fileSizeAtPath:childPath]]];
         }
     }
     return result;

@@ -12,9 +12,6 @@
 #import "WebViewController.h"
 #import "CustomWebViewContainer.h"
 
-// 24 hour
-#define FILE_EXPIRATION_INTERVAL 24 * 60 * 60
-
 @interface SettingViewController ()
 
 @end
@@ -35,7 +32,6 @@
     [NOTIFICATION addObserver:self selector:@selector(refreshInfo) name:@"infoRefreshed" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(cacheChanged:) name:nil object:nil];
     
-    isCalculatingCache = NO;
     [self setDefault];
     // Uncomment the following line to preserve selection between presentations.
     // self.clearsSelectionOnViewWillAppear = NO;
@@ -108,61 +104,16 @@
     dispatch_global_default_async(^{
         unsigned long long cacheSize = 0;
         // tmp目录
-        cacheSize += [SettingViewController folderSizeAtPath:NSTemporaryDirectory()];
+        cacheSize += [Helper folderSizeAtPath:NSTemporaryDirectory()];
         // Caches目录
-        cacheSize += [SettingViewController folderSizeAtPath:CACHE_DIRECTORY];
-        unsigned long long iconCacheSize = [SettingViewController folderSizeAtPath:IMAGE_CACHE_PATH];
+        cacheSize += [Helper folderSizeAtPath:CACHE_PATH];
+        unsigned long long iconCacheSize = [Helper folderSizeAtPath:ICON_CACHE_PATH];
         isCalculatingCache = NO;
         dispatch_main_async_safe((^{
-            self.appCacheSize.text = [Helper fileSize:cacheSize - iconCacheSize];
-            self.iconCacheSize.text = [Helper fileSize:iconCacheSize];
+            self.appCacheSize.text = [Helper fileSizeStr:cacheSize];
+            self.iconCacheSize.text = [Helper fileSizeStr:iconCacheSize];
         }));
     });
-}
-
-// 单个文件的大小
-+ (unsigned long long)fileSizeAtPath:(NSString *)filePath {
-    NSDictionary<NSFileAttributeKey, id> *attributes = [MANAGER attributesOfItemAtPath:filePath error:nil];
-    if (attributes) {
-        return [attributes fileSize];
-    }
-    return 0;
-}
-
-//遍历文件夹获得文件夹大小
-+ (unsigned long long)folderSizeAtPath:(NSString *)folderPath {
-    if (![MANAGER fileExistsAtPath:folderPath]) {
-        return 0;
-    }
-    
-    NSDirectoryEnumerator *enumerator = [MANAGER enumeratorAtPath:folderPath];
-    NSString *fileName;
-    unsigned long long folderSize = 0;
-        
-    while ((fileName = [enumerator nextObject])) {
-        NSString *filePath = [folderPath stringByAppendingPathComponent:fileName];
-        folderSize += [self fileSizeAtPath:filePath];
-    }
-    
-    return folderSize;
-}
-
-+ (void)cleanupTemporaryFiles {
-    NSString *tempDirectoryPath = NSTemporaryDirectory();
-    NSDirectoryEnumerator *enumerator = [MANAGER enumeratorAtPath:tempDirectoryPath];
-    NSString *fileName;
-        
-    while ((fileName = [enumerator nextObject])) {
-        NSString *filePath = [tempDirectoryPath stringByAppendingPathComponent:fileName];
-        NSDictionary<NSFileAttributeKey, id> *attributes = [MANAGER attributesOfItemAtPath:filePath error:nil];
-        if (attributes) {
-            // Don't delete folder entirely, otherwise will throw many db error (webkit related)
-            NSDate *modificationDate = attributes[NSFileModificationDate];
-            if (-[modificationDate timeIntervalSinceNow] > FILE_EXPIRATION_INTERVAL) {
-                [MANAGER removeItemAtPath:filePath error:nil];
-            }
-        }
-    }
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -171,19 +122,22 @@
         if (indexPath.row == 0) {
             [self showAlertWithTitle:@"确认清除软件缓存？" message:@"将重点清除网络缓存\n不会清除头像缓存\n少数系统关键缓存无法彻底清除" confirmTitle:@"确认" confirmAction:^(UIAlertAction *action) {
                 [hud showWithProgressMessage:@"清除中"];
-                // NSURLCache
-                [[NSURLCache sharedURLCache] removeAllCachedResponses];
-                // Temporary folder
-                [SettingViewController cleanupTemporaryFiles];
                 // WKWebView (WebKit) cache
                 [CustomWebViewContainer clearAllDataStores:^{
+                    // NSURLCache
+                    [[NSURLCache sharedURLCache] removeAllCachedResponses];
+                    // Temporary folder
+                    [Helper cleanUpFilesInDirectory:NSTemporaryDirectory() minInterval:60 * 60]; // 1 hour
+                    // Cache folder
+                    [Helper cleanUpFilesInDirectory:CACHE_PATH minInterval:24 * 60 * 60]; // 24 hour
+                    
                     [hud hideWithSuccessMessage:@"清除完成"];
                     [self cacheChanged:nil];
                 }];
             }];
         } else if (indexPath.row == 1) {
             [self showAlertWithTitle:@"确认清除头像缓存？" message:@"建议仅在头像出错时使用" confirmTitle:@"确认" confirmAction:^(UIAlertAction *action) {
-                [MANAGER removeItemAtPath:IMAGE_CACHE_PATH error:nil];
+                [MANAGER removeItemAtPath:ICON_CACHE_PATH error:nil];
                 [hud showAndHideWithSuccessMessage:@"清除完成"];
                 [self cacheChanged:nil];
             }];

@@ -34,7 +34,10 @@ typedef void (^ApiCompletionBlock)(NSArray* result, NSError* err);
 /// 提取论坛的链接，获取bid，tid，p，floor
 + (NSDictionary *)getLink:(NSString *)path;
 
-+ (NSString *)fileSize:(NSInteger)size;
++ (unsigned long long)fileSizeAtPath:(NSString *)filePath;
++ (unsigned long long)folderSizeAtPath:(NSString *)folderPath;
++ (void)cleanUpFilesInDirectory:(NSString *)directoryPath minInterval:(NSTimeInterval)interval;
++ (NSString *)fileSizeStr:(NSInteger)size;
 + (NSString *)fileNameFromURL:(NSURL *)url;
 + (BOOL)isHttpScheme:(NSString *)scheme;
 + (NSString *)md5:(NSString *)str;

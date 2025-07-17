@@ -268,29 +268,35 @@
     NSItemProvider *provider = results[0].itemProvider;
     if ([provider hasItemConformingToTypeIdentifier:UTTypeGIF.identifier]) {
         [provider loadDataRepresentationForTypeIdentifier:UTTypeGIF.identifier completionHandler:^(NSData * _Nullable data, NSError * _Nullable error) {
-            dispatch_main_async_safe(^{
+            dispatch_main_async_safe((^{
                 if (!data || error) {
-                    [picker showAlertWithTitle:@"错误" message:@"文件读取错失败"];
+                    [picker showAlertWithTitle:@"错误" message:@"文件读取失败"];
                     return;
                 }
-                if (data.length > MAX_ICON_SIZE) {
+                if (![AnimatedImageView isAnimated:data]) { // Not actually animated
+                    UIImage *image = [UIImage imageWithData:data];
+                    imageHasAlpha = [image hasAlphaChannel:YES];
+                    [self showCropControllerFor:image over:picker];
+                    return;
+                }
+                if (data.length >= MAX_ICON_SIZE) {
                     [picker showAlertWithTitle:@"错误" message:@"GIF文件太大"];
                     return;
                 }
-                [picker showAlertWithTitle:@"您选择了GIF动图" message:@"确认直接上传？" confirmTitle:@"上传" confirmAction:^(UIAlertAction *action) {
+                [picker showAlertWithTitle:@"您选择了GIF动图" message:[NSString stringWithFormat:@"确认直接上传？\n文件大小：%@", [Helper fileSizeStr:data.length]] confirmTitle:@"上传" confirmAction:^(UIAlertAction *action) {
                     [picker dismissViewControllerAnimated:YES completion:^{
                         [self uploadImage:data];
                     }];
                 }];
-            });
+            }));
         }];
         return;
     }
     
-    [provider loadObjectOfClass:[UIImage class] completionHandler:^(UIImage *image, NSError *error) {
+    [provider loadObjectOfClass:[UIImage class] completionHandler:^(UIImage * _Nullable image, NSError * _Nullable error) {
         dispatch_main_async_safe(^{
             if (!image || error) {
-                [picker showAlertWithTitle:@"错误" message:@"文件读取错失败"];
+                [picker showAlertWithTitle:@"错误" message:@"文件读取失败"];
                 return;
             }
             // Check original image, rather than cropped image.
@@ -383,8 +389,8 @@
 }
 
 - (void)uploadImage:(NSData *)imageData {
-    NSLog(@"Upload Icon Size: %dkB", (int)imageData.length / 1024);
-    if (imageData.length > MAX_ICON_SIZE) {
+    NSLog(@"Upload Icon Size: %@", [Helper fileSizeStr:imageData.length]);
+    if (imageData.length >= MAX_ICON_SIZE) {
         [hud hideWithFailureMessage:@"文件太大"];
         return;
     }

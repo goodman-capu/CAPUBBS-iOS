@@ -33,6 +33,6 @@ typedef NS_ENUM(int, ImageFileType) {
 + (BOOL)isAnimated:(NSData *)imageData;
 + (ImageFileType)fileType:(NSData *)imageData;
 + (NSString *)fileExtension:(ImageFileType)type;
-+ (void)checkPath;
++ (void)checkIconCachePath;
 
 @end

@@ -338,7 +338,7 @@
                 NSString *fileName = attach[@"name"];
                 NSString *imageUrl = [self getFileImage:fileName];
                 NSString *price = [attach[@"price"] intValue] == 0 ? @"免费" : ([attach[@"free"] isEqualToString:@"YES"] ? @"您可以免费下载" : [NSString stringWithFormat:@"售价：%@", attach[@"price"]]);
-                NSString *size = [self fileSize:[attach[@"size"] intValue]];
+                NSString *size = [self fileSizeStr:[attach[@"size"] intValue]];
                 int count = [attach[@"count"] intValue];
                 NSString *downloadCount = count > 0 ? [NSString stringWithFormat:@"下载次数：%d", count] : @"暂时无人下载";
                 NSString *attachEl =
@@ -698,7 +698,51 @@
     return text;
 }
 
-+ (NSString *)fileSize:(NSInteger)size {
+// 单个文件的大小
++ (unsigned long long)fileSizeAtPath:(NSString *)filePath {
+    NSDictionary<NSFileAttributeKey, id> *attributes = [MANAGER attributesOfItemAtPath:filePath error:nil];
+    if (attributes) {
+        return [attributes fileSize];
+    }
+    return 0;
+}
+
+//遍历文件夹获得文件夹大小
++ (unsigned long long)folderSizeAtPath:(NSString *)folderPath {
+    if (![MANAGER fileExistsAtPath:folderPath]) {
+        return 0;
+    }
+    
+    NSDirectoryEnumerator *enumerator = [MANAGER enumeratorAtPath:folderPath];
+    NSString *fileName;
+    unsigned long long folderSize = 0;
+        
+    while ((fileName = [enumerator nextObject])) {
+        NSString *filePath = [folderPath stringByAppendingPathComponent:fileName];
+        folderSize += [self fileSizeAtPath:filePath];
+    }
+    
+    return folderSize;
+}
+
++ (void)cleanUpFilesInDirectory:(NSString *)directoryPath minInterval:(NSTimeInterval)interval {
+    NSDirectoryEnumerator *enumerator = [MANAGER enumeratorAtPath:directoryPath];
+    NSString *fileName;
+        
+    while ((fileName = [enumerator nextObject])) {
+        NSString *filePath = [directoryPath stringByAppendingPathComponent:fileName];
+        NSDictionary<NSFileAttributeKey, id> *attributes = [MANAGER attributesOfItemAtPath:filePath error:nil];
+        if (attributes) {
+            // Don't delete folder entirely, otherwise will throw many db error (webkit related)
+            NSDate *modificationDate = attributes[NSFileModificationDate];
+            if (-[modificationDate timeIntervalSinceNow] > interval) {
+                [MANAGER removeItemAtPath:filePath error:nil];
+            }
+        }
+    }
+}
+
++ (NSString *)fileSizeStr:(NSInteger)size {
     if (size >= 1024 * 1024) {
         float num = size * 1.0 / (1024 * 1024);
         return [NSString stringWithFormat:num >= 10 ? @"%.1fMB" : @"%.2fMB", num];

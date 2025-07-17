@@ -764,7 +764,7 @@
         return;
     }
     NSDictionary *attach = [NSJSONSerialization JSONObjectWithData:decodedData options:0 error:nil];
-    NSString *fileSize = [Helper fileSize:[attach[@"size"] intValue]];
+    NSString *fileSize = [Helper fileSizeStr:[attach[@"size"] intValue]];
     NSString *generalInfo = [NSString stringWithFormat:@"%@\n下载后请及时保存", attach[@"name"]];
     if ([attach[@"price"] intValue] == 0 || [attach[@"free"] isEqualToString:@"YES"]) {
         [self showAlertWithTitle:[NSString stringWithFormat:@"确认下载附件 (%@)", fileSize] message:generalInfo confirmTitle:@"确认" confirmAction:^(UIAlertAction *action) {

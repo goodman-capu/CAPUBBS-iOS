@@ -361,7 +361,7 @@
 - (void)showPic:(NSString *)url {
     NSURL *imageUrl = [NSURL safeURLWithString:url];
     NSString *md5Url = [Helper md5:url];
-    NSString *cachePath = [NSString stringWithFormat:@"%@/%@", IMAGE_CACHE_PATH, md5Url];
+    NSString *cachePath = [NSString stringWithFormat:@"%@/%@", ICON_CACHE_PATH, md5Url];
     if ([MANAGER fileExistsAtPath:cachePath]) {
         NSData *imageData = [MANAGER contentsAtPath:cachePath];
         // 动图是未压缩的格式 可直接调取

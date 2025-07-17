@@ -33,7 +33,4 @@
 @property (weak, nonatomic) IBOutlet UISegmentedControl *segmentDirection;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *segmentEditTool;
 
-+ (unsigned long long)fileSizeAtPath:(NSString *)filePath;
-+ (unsigned long long)folderSizeAtPath:(NSString *)folderPath;
-
 @end
