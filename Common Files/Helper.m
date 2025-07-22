@@ -701,13 +701,13 @@
 // 单个文件的大小
 + (unsigned long long)fileSizeAtPath:(NSString *)filePath {
     NSDictionary<NSFileAttributeKey, id> *attributes = [MANAGER attributesOfItemAtPath:filePath error:nil];
-    if (attributes) {
+    if ([attributes[NSFileType] isEqualToString:NSFileTypeRegular]) {
         return [attributes fileSize];
     }
     return 0;
 }
 
-//遍历文件夹获得文件夹大小
+// 遍历文件获得文件夹大小
 + (unsigned long long)folderSizeAtPath:(NSString *)folderPath {
     if (![MANAGER fileExistsAtPath:folderPath]) {
         return 0;
@@ -732,12 +732,16 @@
     while ((fileName = [enumerator nextObject])) {
         NSString *filePath = [directoryPath stringByAppendingPathComponent:fileName];
         NSDictionary<NSFileAttributeKey, id> *attributes = [MANAGER attributesOfItemAtPath:filePath error:nil];
-        if (attributes) {
-            // Don't delete folder entirely, otherwise will throw many db error (webkit related)
-            NSDate *modificationDate = attributes[NSFileModificationDate];
-            if (-[modificationDate timeIntervalSinceNow] > interval) {
-                [MANAGER removeItemAtPath:filePath error:nil];
-            }
+        if (!attributes) {
+            continue;
+        }
+        // Skip folders. Don't delete folder entirely, otherwise will throw many db error (webkit related)
+        if ([attributes[NSFileType] isEqualToString:NSFileTypeDirectory]) {
+            continue;
+        }
+        NSDate *modificationDate = attributes[NSFileModificationDate];
+        if (-[modificationDate timeIntervalSinceNow] > interval) {
+            [MANAGER removeItemAtPath:filePath error:nil];
         }
     }
 }

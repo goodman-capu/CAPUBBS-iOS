@@ -222,18 +222,24 @@
 }
 
 - (NSString *)folderInfo:(NSString *)rootFolder showAll:(BOOL)all {
-    NSString *result = @"";
-    NSArray *childPaths = [MANAGER subpathsAtPath:rootFolder];
-    for (NSString *path in childPaths) {
-        NSString *childPath = [NSString stringWithFormat:@"%@/%@", rootFolder, path];
-        NSArray *testPaths = [MANAGER subpathsAtPath:childPath];
-        if (testPaths.count > 0) { // Folder
-            result = [NSString stringWithFormat:@"%@%@: %@\n", result, path, [Helper fileSizeStr:[Helper folderSizeAtPath:childPath]]];
-        } else if (all) { // File
-            result = [NSString stringWithFormat:@"%@%@: %@\n", result, path, [Helper fileSizeStr:[Helper fileSizeAtPath:childPath]]];
+    NSMutableString *result = [NSMutableString string];
+    NSDirectoryEnumerator *enumerator = [MANAGER enumeratorAtPath:rootFolder];
+    NSString *fileName;
+        
+    while ((fileName = [enumerator nextObject])) {
+        NSString *filePath = [rootFolder stringByAppendingPathComponent:fileName];
+        NSDictionary<NSFileAttributeKey, id> *attributes = [MANAGER attributesOfItemAtPath:filePath error:nil];
+        if (!attributes) {
+            continue;
+        }
+        NSString *fileType = attributes[NSFileType];
+        if ([fileType isEqualToString:NSFileTypeDirectory]) {
+            [result appendString:[NSString stringWithFormat:@"%@: %@\n", fileName, [Helper fileSizeStr:[Helper folderSizeAtPath:filePath]]]];
+        } else if (all && [fileType isEqualToString:NSFileTypeRegular]) {
+            [result appendString:[NSString stringWithFormat:@"%@: %@\n", fileName, [Helper fileSizeStr:[Helper fileSizeAtPath:filePath]]]];
         }
     }
-    return result;
+    return [result copy];
 }
 
 #pragma mark - Navigation

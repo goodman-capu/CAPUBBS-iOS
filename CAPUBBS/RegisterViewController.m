@@ -9,6 +9,7 @@
 #import "RegisterViewController.h"
 #import "ContentViewController.h"
 #import "IconViewController.h"
+#import "LoginViewController.h"
 
 @interface RegisterViewController ()
 
@@ -258,10 +259,13 @@
             }
             switch ([result[0][@"code"] integerValue]) {
                 case 0: {
-                    [GROUP_DEFAULTS setObject:uid forKey:@"uid"];
-                    [GROUP_DEFAULTS setObject:pass forKey:@"pass"];
-                    [GROUP_DEFAULTS setObject:result[0][@"token"] forKey:@"token"];
                     dispatch_main_after(0.5, ^{
+                        [GROUP_DEFAULTS setObject:uid forKey:@"uid"];
+                        [GROUP_DEFAULTS setObject:pass forKey:@"pass"];
+                        [GROUP_DEFAULTS setObject:result[0][@"token"] forKey:@"token"];
+                        [LoginViewController updateIDSaves];
+                        NSLog(@"Register - %@", uid);
+                        [NOTIFICATION postNotificationName:@"userChanged" object:nil userInfo:nil];
                         [self dismissViewControllerAnimated:YES completion:nil];
                     });
                     break;

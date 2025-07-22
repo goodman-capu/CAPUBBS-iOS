@@ -24,6 +24,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface WKWebView (Custom)
 
+- (void)clearForReuse;
+
 /// Replaces current script message handler with the new delegate, wrapped in WeakScriptMessageDelegate
 - (void)setWeakScriptMessageHandler:(id<WKScriptMessageHandler>)delegate forNames:(NSArray<NSString *> *)handlerNames;
 

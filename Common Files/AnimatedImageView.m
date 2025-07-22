@@ -240,14 +240,13 @@
     }
     // Only iOS 16+ supports native avif rendering
     if (@available(iOS 16.0, *)) {
-        if ([type conformsToType:[UTType typeWithIdentifier:@"public.avif"]]) {
+        if ([type.identifier isEqualToString:@"public.avif"]) {
             return ImageFileTypeAVIF;
         }
     }
 
     return ImageFileTypeUnknown;
 }
-
 
 + (NSString *)fileExtension:(ImageFileType)type {
     switch (type) {
@@ -267,7 +266,6 @@
             return @"webp";
         case ImageFileTypeAVIF:
             return @"avif";
-        case ImageFileTypeUnknown:
         default:
             return nil;
     }

@@ -13,6 +13,7 @@
     MBProgressHUD *hud;
     NSUserActivity *activity;
     NSArray *data;
+    BOOL isUpdating;
     int page;
     int textSize;
     BOOL isEdit;
@@ -22,6 +23,7 @@
     NSMutableArray *heights;
     NSMutableArray *tempHeights; // 储存之前计算的高度结果，防止reload时高度突变
     NSMutableArray *HTMLStrings;
+    NSHashTable<WKWebView *> *webViews;
     NSString *tempPath;
     CGFloat contentOffsetY;
     BOOL isAtEnd;

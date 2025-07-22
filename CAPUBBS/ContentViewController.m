@@ -13,7 +13,7 @@
 #import "UserViewController.h"
 #import "WebViewController.h"
 
-#define WEBVIEW_MIN_HEIGHT 40
+#define WEB_VIEW_MIN_HEIGHT 40
 #define MAX_LZL_ROWS 8
 
 @interface ContentViewController ()
@@ -46,6 +46,7 @@
     heights = [NSMutableArray array];
     tempHeights = [NSMutableArray array];
     HTMLStrings = [NSMutableArray array];
+    webViews = [NSHashTable weakObjectsHashTable]; // Use weak reference
     
     self.refreshControl = [[UIRefreshControl alloc] init];
     [self.refreshControl addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
@@ -155,13 +156,6 @@
             return;
         }
         
-        NSUInteger originalDataCount = data.count;
-        for (int i = 0; i < originalDataCount; i++) {
-            ContentCell *cell = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:i inSection:0]];
-            if (cell) {
-                [cell invalidateTimer];
-            }
-        }
         NSMutableArray *tmpData = [NSMutableArray array];
         for (NSDictionary *entry in result) {
             NSMutableDictionary *fixedEntry = [NSMutableDictionary dictionaryWithDictionary:entry];
@@ -201,31 +195,26 @@
             [tmpData addObject:fixedEntry];
         }
         data = [tmpData copy];
-        
         if (!(self.isCollection && page > 1)) {
             [self updateCollection];
         }
         
-        NSString *titleText = data.firstObject[@"title"];
-        self.title = [Helper restoreTitle:titleText];
-        BOOL isLast = [data[0][@"nextpage"] isEqualToString:@"false"];
+        for (WKWebView *webView in webViews.allObjects) {
+            [webView clearForReuse];
+        }
+        isUpdating = YES;
         [self clearHeightsAndHTMLCaches:^{
-            for (int i = 0; i < originalDataCount; i++) {
-                ContentCell *cell = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:i inSection:0]];
-                if (cell) {
-                    if (cell.webViewContainer.webView.isLoading) {
-                        [cell.webViewContainer.webView stopLoading];
-                    }
-                    // 加载空HTML以快速清空，防止reuse后还短暂显示之前的内容
-                    [cell.webViewContainer.webView loadHTMLString:EMPTY_HTML baseURL:nil];
-                }
-            }
+            NSString *titleText = data.firstObject[@"title"];
+            self.title = [Helper restoreTitle:titleText];
+            BOOL isLast = [data[0][@"nextpage"] isEqualToString:@"false"];
             self.buttonBackOrCollect.enabled = YES;
             self.buttonForward.enabled = !isLast;
             self.buttonLatest.enabled = !isLast;
             self.buttonJump.enabled = ([[data lastObject][@"pages"] integerValue] > 1);
             self.buttonAction.enabled = YES;
             [hud hideWithSuccessMessage:@"加载成功"];
+            isUpdating = NO;
+            
             if ([self.tableView numberOfRowsInSection:0] == 0) {
                 [self.tableView reloadData];
             } else {
@@ -240,7 +229,8 @@
                 }
                 [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:rowAnimation];
             }
-            if (data.count != 0) {
+            
+            if (data.count > 0) {
                 if (self.willScrollToBottom) {
                     self.willScrollToBottom = NO;
                     [self tryScrollTo:data.count - 1 animated:NO];
@@ -443,7 +433,7 @@
             break;
         }
     }
-    return MIN(MAX(WEBVIEW_MIN_HEIGHT, webViewHeight), WEB_VIEW_MAX_HEIGHT);
+    return MIN(MAX(WEB_VIEW_MIN_HEIGHT, webViewHeight), WEB_VIEW_MAX_HEIGHT);
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
@@ -462,17 +452,11 @@
     return 109 + lzlHeight + webViewHeight;
 }
 
-- (ContentCell *)getCellForView:(UIView *)view withRow:(NSUInteger)row {
+- (ContentCell *)getCellForView:(UIView *)view {
     UIView *currentView = view;
     while (currentView != nil) {
         if ([currentView isKindOfClass:[ContentCell class]]) {
-            ContentCell *cell = (ContentCell *)currentView;
-            NSIndexPath *indexPath = [self.tableView indexPathForCell:cell];
-            if (indexPath && indexPath.row == row) {
-                return cell;
-            } else {
-                return nil;
-            }
+            return (ContentCell *)currentView;
         }
         currentView = currentView.superview;
     }
@@ -490,25 +474,11 @@
 }
 
 - (void)updateWebView:(WKWebView *)webView {
-    NSUInteger row = webView.tag;
-    if (!self.isViewLoaded || !self.view.window ||
-        !self.tableView || !self.tableView.window) { // Fix occasional crash
-        return;
-    }
-    float lastHeight = [heights[row] floatValue];
-    if (lastHeight < 0) {
-        lastHeight = 0;
-    }
-    [webView evaluateJavaScript:[NSString stringWithFormat:@"document.body.style.zoom='%d%%';window._lastReportedHeight=%.2f;", textSize, lastHeight] completionHandler:nil];
+    [webView evaluateJavaScript:[NSString stringWithFormat:@"document.body.style.zoom='%d%%';window._lastReportedHeight=0;", textSize] completionHandler:nil];
 }
 
 - (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation {
-    NSUInteger row = webView.tag;
-    if (!self.isViewLoaded || !self.view.window ||
-        !self.tableView || !self.tableView.window) { // Fix occasional crash
-        return;
-    }
-    ContentCell *cell = [self getCellForView:webView withRow:row];
+    ContentCell *cell = [self getCellForView:webView];
     if (!cell) {
         return;
     }
@@ -538,6 +508,9 @@
 }
 
 - (void)handleHeightWithMessage:(WKScriptMessage *)message {
+    if (isUpdating) {
+        return;
+    }
     float height = [message.body floatValue];
     if (height <= 0) {
         return;
@@ -545,26 +518,27 @@
     
     WKWebView *webView = message.webView;
     NSUInteger row = webView.tag;
-    ContentCell *cell = [self getCellForView:webView withRow:row];
-    if (!cell || !cell.webviewUpdateTimer.valid) {
+    ContentCell *cell = [self getCellForView:webView];
+    if (row >= heights.count || !cell || !cell.webviewUpdateTimer.valid) {
         return;
     }
     
     height = (height + 14) * (textSize / 100.0);
-    if (row < heights.count && height - [heights[row] floatValue] >= 1) {
+    if (height - [heights[row] floatValue] >= 1) {
         heights[row] = @(height);
         tempHeights[row] = @(height);
+        float targetHeight = MIN(MAX(height, WEB_VIEW_MIN_HEIGHT), WEB_VIEW_MAX_HEIGHT);
         if (scrollTargetRow >= 0) {
             [UIView performWithoutAnimation:^{
                 [self.tableView beginUpdates];
-                [cell.webviewHeight setConstant:MAX(height, WEBVIEW_MIN_HEIGHT)];
+                [cell.webviewHeight setConstant:targetHeight];
                 [self.tableView endUpdates];
                 [self maybeTriggerTableViewScrollAnimated:NO];
             }];
         } else {
             [UIView animateWithDuration:0.15 delay:0.0 options:UIViewAnimationOptionAllowUserInteraction animations:^{
                 [self.tableView beginUpdates];
-                [cell.webviewHeight setConstant:MAX(height, WEBVIEW_MIN_HEIGHT)];
+                [cell.webviewHeight setConstant:targetHeight];
                 [self.tableView endUpdates];
                 [self maybeTriggerTableViewScrollAnimated:NO];
             } completion:nil];
@@ -573,12 +547,7 @@
 }
 
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
-    NSUInteger row = webView.tag;
-    if (!self.isViewLoaded || !self.view.window ||
-        !self.tableView || !self.tableView.window) { // Fix occasional crash
-        return;
-    }
-    ContentCell *cell = [self getCellForView:webView withRow:row];
+    ContentCell *cell = [self getCellForView:webView];
     if (!cell) {
         return;
     }
@@ -666,6 +635,7 @@
     
     [cell.webViewContainer.webView setNavigationDelegate:self];
     [cell.webViewContainer.webView loadHTMLString:HTMLStrings[indexPath.row] baseURL:[self getCurrentUrl]];
+    [webViews addObject:cell.webViewContainer.webView];
     [cell.webviewHeight setConstant:[self getWebViewHeightForRow:indexPath.row]];
     
     
@@ -737,10 +707,8 @@
     }
     // NSLog(@"scrollView.contentOffset:%f, %f", scrollView.contentOffset.x, scrollView.contentOffset.y);
     if (!isAtEnd && scrollView.contentOffset.y >= scrollView.contentSize.height - scrollView.frame.size.height) {
-        if (heights.count > 0 && [[heights lastObject] floatValue] > 0) {
-            [self.navigationController setToolbarHidden:NO animated:YES];
-            isAtEnd = YES;
-        }
+        [self.navigationController setToolbarHidden:NO animated:YES];
+        isAtEnd = YES;
     }
     if (!isAtEnd && scrollView.dragging) { // 拖拽
         if ((scrollView.contentOffset.y - contentOffsetY) > 5.0f) { // 向上拖拽

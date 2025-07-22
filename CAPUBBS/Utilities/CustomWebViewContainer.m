@@ -340,6 +340,11 @@ static dispatch_once_t onceSharedDataSource;
 
 @implementation WKWebView (Custom)
 
+- (void)clearForReuse {
+    [self setNavigationDelegate:nil];
+    [self loadHTMLString:@"" baseURL:nil];
+}
+
 - (void)setWeakScriptMessageHandler:(id<WKScriptMessageHandler>)delegate forNames:(NSArray<NSString *> *)handlerNames {
     WeakScriptMessageDelegate *weakDelegate = [delegate isKindOfClass:[WeakScriptMessageDelegate class]] ? delegate : [[WeakScriptMessageDelegate alloc] initWithDelegate:delegate];
     for (NSString *handlerName in handlerNames) {

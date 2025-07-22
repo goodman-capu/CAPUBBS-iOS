@@ -88,7 +88,6 @@ static inline void dispatch_global_after(double seconds, dispatch_block_t block)
 }
 
 #define WEB_VIEW_MAX_HEIGHT 100000
-#define EMPTY_HTML @"<html><head></head><body></body></html>"
 #define JQUERY_MIN_JS [[NSBundle mainBundle] pathForResource:@"jquery.min" ofType:@"js"]
 #define INJECTION_JS [[NSBundle mainBundle] pathForResource:@"injection" ofType:@"js"]
 #define SALT @"3UhvI9LXQy69lrUd" // Never change it

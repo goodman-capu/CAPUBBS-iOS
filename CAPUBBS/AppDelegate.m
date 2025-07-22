@@ -88,7 +88,6 @@
     };
     [DEFAULTS registerDefaults:defaults];
     [GROUP_DEFAULTS registerDefaults:groupDefaults];
-    [self transferDefaults];
     wakeLogin = NO;
     
     formatter = [[NSDateFormatter alloc] init];
@@ -295,21 +294,6 @@
     btn.translatesAutoresizingMaskIntoConstraints = NO;
     [btn addTarget:target action:action forControlEvents:UIControlEventTouchUpInside];
     return btn;
-}
-
-- (void)transferDefaults {
-    NSUserDefaults *appGroup = GROUP_DEFAULTS;
-    if (![[appGroup objectForKey:@"activated"] boolValue]) {
-        for (NSString *key in @[@"URL", @"uid", @"pass", @"token", @"userInfo", @"iconOnlyInWifi", @"simpleView"]) {
-            id obj = [DEFAULTS objectForKey:key];
-            if (obj) {
-                [appGroup setObject:obj forKey:key];
-                [DEFAULTS removeObjectForKey:key];
-            }
-        }
-        [appGroup setObject:@(YES) forKey:@"activated"];
-        [appGroup synchronize];
-    }
 }
 
 - (void)showAlert:(NSNotification *)noti {
@@ -538,7 +522,7 @@
         } completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
             ImageFileType type = [AnimatedImageView fileType:data];
             if (error || type == ImageFileTypeUnknown) {
-                [hud hideWithFailureMessage:error ? errorMessage : @"未知图片格式"];
+                [hud hideWithFailureMessage:error ? errorMessage : @"图片格式不支持"];
                 return;
             }
             [hud hideWithSuccessMessage:@"图片加载成功"];
@@ -919,6 +903,17 @@
 }
 
 - (void)migrateLegacyData {
+    if (![[GROUP_DEFAULTS objectForKey:@"activated"] boolValue]) {
+        for (NSString *key in @[@"URL", @"uid", @"pass", @"token", @"userInfo", @"iconOnlyInWifi", @"simpleView"]) {
+            id obj = [DEFAULTS objectForKey:key];
+            if (obj) {
+                [GROUP_DEFAULTS setObject:obj forKey:key];
+                [DEFAULTS removeObjectForKey:key];
+            }
+        }
+        [GROUP_DEFAULTS setObject:@(YES) forKey:@"activated"];
+    }
+    
     if (![[DEFAULTS objectForKey:@"clearDirtyData3.2"] boolValue]) { // 3.2之前版本采用NSUserDefaults储存头像 文件夹里面有许多垃圾数据
         NSString *rootFolder = NSHomeDirectory();
         NSArray *childPaths = [MANAGER subpathsAtPath:rootFolder];

@@ -388,7 +388,7 @@
 
 + (void)updateIDSaves {
     NSMutableArray *data = [NSMutableArray arrayWithArray:[DEFAULTS objectForKey:@"ID"]];
-    NSDictionary *nowDict = @{
+    NSDictionary *currentUser = @{
         @"id" : UID,
         @"pass" : PASS
     };
@@ -398,12 +398,12 @@
         if ([dict[@"id"] isEqualToString:UID]) {
             findID = YES;
             if (![dict[@"pass"] isEqualToString:PASS]) {
-                data[i] = nowDict;
+                data[i] = currentUser;
             }
         }
     }
-    if (!findID) {
-        [data addObject:nowDict];
+    if (!findID && data.count < ID_NUM) {
+        [data addObject:currentUser];
     }
     [DEFAULTS setObject:data forKey:@"ID"];
 }

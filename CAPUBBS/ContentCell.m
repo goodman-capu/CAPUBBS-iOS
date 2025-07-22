@@ -39,8 +39,7 @@
 - (void)prepareForReuse {
     [super prepareForReuse];
     [self invalidateTimer];
-    // 加载空HTML以快速清空，防止reuse后还短暂显示之前的内容
-    [self.webViewContainer.webView loadHTMLString:EMPTY_HTML baseURL:nil];
+    [self.webViewContainer.webView clearForReuse];
 }
 
 - (nonnull UITableViewCell *)tableView:(nonnull UITableView *)tableView cellForRowAtIndexPath:(nonnull NSIndexPath *)indexPath { 
