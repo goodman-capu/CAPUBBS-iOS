@@ -92,6 +92,9 @@
     }
     if (newUrl.length == 0) {
         NSLog(@"Failed to translate icon URL - %@", urlToSet);
+        dispatch_main_async_safe(^{
+            [self setImage:PLACEHOLDER];
+        });
         return;
     }
     latestUrl = newUrl;

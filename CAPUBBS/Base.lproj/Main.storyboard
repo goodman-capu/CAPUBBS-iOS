@@ -141,9 +141,7 @@
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="d4P-v8-pYm">
                                 <rect key="frame" x="16" y="114" width="370" height="38"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="38" id="rET-cz-moI">
-                                        <variation key="heightClass=regular-widthClass=regular" constant="50"/>
-                                    </constraint>
+                                    <constraint firstAttribute="height" constant="38" id="rET-cz-moI"/>
                                 </constraints>
                                 <state key="normal" image="hot">
                                     <color key="titleShadowColor" red="0.5" green="0.5" blue="0.5" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>

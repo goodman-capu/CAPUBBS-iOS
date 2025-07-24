@@ -442,11 +442,11 @@ static const CGFloat kWebViewMinHeight = 40;
     return 106 + lzlHeight + webViewHeight;
 }
 
-- (UITableViewCell *)getCellForView:(UIView *)view {
+- (ContentCell *)getCellForView:(UIView *)view {
     UIView *currentView = view;
     while (currentView != nil) {
-        if ([currentView isKindOfClass:[UITableViewCell class]]) {
-            return (UITableViewCell *)currentView;
+        if ([currentView isKindOfClass:[ContentCell class]]) {
+            return (ContentCell *)currentView;
         }
         currentView = currentView.superview;
     }
@@ -469,8 +469,8 @@ static const CGFloat kWebViewMinHeight = 40;
         !self.tableView || !self.tableView.window) { // Fix occasional crash
         return;
     }
-    ContentCell *cell = (ContentCell *)[self getCellForView:webView];
-    if (!cell || [self.tableView indexPathForCell:cell].row != row) {
+    ContentCell *cell = [self getCellForView:webView];
+    if (!cell) {
         return;
     }
     
@@ -506,13 +506,12 @@ static const CGFloat kWebViewMinHeight = 40;
 }
 
 - (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation {
-    NSUInteger row = webView.tag;
     if (!self.isViewLoaded || !self.view.window ||
         !self.tableView || !self.tableView.window) { // Fix occasional crash
         return;
     }
-    ContentCell *cell = (ContentCell *)[self getCellForView:webView];
-    if (!cell || [self.tableView indexPathForCell:cell].row != row) {
+    ContentCell *cell = [self getCellForView:webView];
+    if (!cell) {
         return;
     }
     [cell invalidateTimer];
@@ -533,13 +532,12 @@ static const CGFloat kWebViewMinHeight = 40;
 }
 
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
-    NSUInteger row = webView.tag;
     if (!self.isViewLoaded || !self.view.window ||
         !self.tableView || !self.tableView.window) { // Fix occasional crash
         return;
     }
-    ContentCell *cell = (ContentCell *)[self getCellForView:webView];
-    if (!cell || [self.tableView indexPathForCell:cell].row != row) {
+    ContentCell *cell = [self getCellForView:webView];
+    if (!cell) {
         return;
     }
     [cell.indicatorLoading stopAnimating];
