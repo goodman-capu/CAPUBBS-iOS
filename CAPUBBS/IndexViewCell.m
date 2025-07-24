@@ -20,7 +20,11 @@
 
 - (void)layoutSubviews {
     [super layoutSubviews];
-    self.layer.cornerRadius = self.frame.size.width / 15;
+    if (LIQUID_GLASS) {
+        self.layer.cornerRadius = self.frame.size.width / 8;
+    } else {
+        self.layer.cornerRadius = self.frame.size.width / 15;
+    }
 }
 
 @end

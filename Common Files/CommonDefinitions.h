@@ -36,6 +36,9 @@
 #define USERINFO [GROUP_DEFAULTS objectForKey:@"userInfo"]
 #define HOTPOSTS [GROUP_DEFAULTS objectForKey:@"hotPosts"]
 #define SIMPLE_VIEW [[GROUP_DEFAULTS objectForKey:@"simpleView"] boolValue]
+#define IS_SUPER_USER [[DEFAULTS objectForKey:@"superUser"] boolValue]
+#define ID_NUM (IS_SUPER_USER ? 20 : 10)
+#define HOT_NUM (IS_SUPER_USER ? 50 : 25)
 
 #define BLUE [UIColor colorWithRed:22.0/255 green:133.0/255 blue:237.0/255 alpha:1.0]
 #define GREEN_TEXT [UIColor colorWithHue:142.0/360 saturation:0.75 brightness:0.35 alpha:1.0]
@@ -56,12 +59,6 @@
 #define APP_VERSION [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"]
 #define APP_BUILD [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"]
 #define IS_CELLULAR ([ReachabilityManager sharedManager].currentNetworkType == NetworkTypeCellular)
-
-#define MAX_ID_NUM 10
-#define MAX_HOT_NUM 40
-#define ID_NUM [[DEFAULTS objectForKey:@"IDNum"] intValue]
-#define HOT_NUM [[DEFAULTS objectForKey:@"hotNum"] intValue]
-#define IS_SUPER_USER (ID_NUM == MAX_ID_NUM && HOT_NUM == MAX_HOT_NUM)
 
 static inline void dispatch_main_async_safe(dispatch_block_t block) {
     dispatch_async(dispatch_get_main_queue(), block);

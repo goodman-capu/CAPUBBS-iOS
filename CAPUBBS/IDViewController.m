@@ -46,7 +46,7 @@
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     // Return the number of rows in the section.
-    return MIN(ID_NUM - isDelete, data.count + 1);
+    return MIN(ID_NUM, data.count + 1);
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -83,7 +83,7 @@
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
     // Return NO if you do not want the specified item to be editable.
     if (indexPath.row < data.count) {
-        return YES;
+        return ![data[indexPath.row] [@"id"] isEqualToString:UID];
     } else {
         return NO;
     }
@@ -95,15 +95,11 @@
         [data removeObjectAtIndex:indexPath.row];
         [DEFAULTS setObject:data forKey:@"ID"];
         // Delete the row from the data source
-        isDelete = YES;
-        [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
-        isDelete = NO;
-        if (data.count + 1 == MAX_ID_NUM) {
-            dispatch_main_after(0.5, ^{
-                [self.tableView reloadData];
-            });
-        }
-    }  
+        [self.tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
+        dispatch_main_after(0.5, ^{
+            [self.tableView reloadData];
+        });
+    }
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -147,7 +143,6 @@
 - (void)userChanged:(NSNotification*)noti {
     dispatch_main_async_safe(^{
         data = [NSMutableArray arrayWithArray:[DEFAULTS objectForKey:@"ID"]];
-        isDelete = NO;
         self.buttonLogout.enabled = ([UID length] > 0);
         [self.tableView reloadData];
     });

@@ -663,8 +663,10 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
         }];
         return;
     }
-    if (image.size.width <= 1000 && image.size.height <= 1000) {
-        [self compressAndUploadImage:image withCallback:callback];
+    BOOL opaque = ![image hasAlphaChannel:YES];
+    float goodSize = opaque ? 800 : 400;
+    if (image.size.width <= goodSize && image.size.height <= goodSize) {
+        [self compressAndUploadImage:image opaque:opaque withCallback:callback];
         return;
     }
     
@@ -673,8 +675,8 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
     
     int recommendedSizes = 0;
     // 多种缩图尺寸（最长边限制）
-    for (NSNumber *size in @[@800, @1600, @2400]) {
-        CGSize newSize = scaledSizeForImage(image, size.floatValue);
+    for (int scale = 1; scale <= 3; scale++) {
+        CGSize newSize = scaledSizeForImage(image, goodSize * scale);
         if (CGSizeEqualToSize(newSize, CGSizeZero)) {
             continue; // 跳过，无需缩放
         }
@@ -682,15 +684,15 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
         [alertController addAction:[UIAlertAction actionWithTitle:title
                                                             style:UIAlertActionStyleDefault
                                                           handler:^(UIAlertAction * _Nonnull action) {
-            UIImage *resizedImage = [self resizeImage:image toSize:newSize opaque:![image hasAlphaChannel:YES]];
-            [self compressAndUploadImage:resizedImage withCallback:callback];
+            UIImage *resizedImage = [self resizeImage:image toSize:newSize opaque:opaque];
+            [self compressAndUploadImage:resizedImage opaque:opaque withCallback:callback];
         }]];
         recommendedSizes++;
     }
     [alertController addAction:[UIAlertAction actionWithTitle: [NSString stringWithFormat:@"原图 (%d×%d)", (int)image.size.width, (int)image.size.height]
                                                         style:recommendedSizes >= 3 ? UIAlertActionStyleDestructive : UIAlertActionStyleDefault
                                                       handler:^(UIAlertAction * _Nonnull action) {
-        [self compressAndUploadImage:image withCallback:callback];
+        [self compressAndUploadImage:image opaque:opaque withCallback:callback];
     }]];
     [alertController addAction:[UIAlertAction actionWithTitle:@"取消上传" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
         callback(nil);
@@ -718,17 +720,17 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
     [self presentViewControllerSafe:alertController];
 }
 
-- (void)compressAndUploadImage:(UIImage *)image withCallback:(void (^)(NSString *url))callback {
+- (void)compressAndUploadImage:(UIImage *)image opaque:(BOOL)opaque withCallback:(void (^)(NSString *url))callback {
     [hud showWithProgressMessage:@"正在压缩"];
     dispatch_global_default_async(^{
         NSData *imageData;
-        if ([image hasAlphaChannel:YES]) { // 带透明信息的png不可转换成jpeg否则丢失透明性
+        if (!opaque) { // 带透明信息的png不可转换成jpeg否则丢失透明性
             imageData = UIImagePNGRepresentation(image);
         } else {
             float maxLength = IS_SUPER_USER ? 500 : 300;
             float ratio = 0.75;
             imageData = UIImageJPEGRepresentation(image, ratio);
-            while (imageData.length >= maxLength * 1024 && ratio >= 0.2) {
+            while (imageData.length >= maxLength * 1024 && ratio >= 0.1) {
                 ratio *= 0.75;
                 imageData = UIImageJPEGRepresentation(image, ratio);
             }
@@ -765,7 +767,7 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
 }
 
 - (UIImage *)resizeImage:(UIImage *)oriImage toSize:(CGSize)newSize opaque:(BOOL)opaque {
-    UIGraphicsBeginImageContextWithOptions(CGSizeMake(newSize.width, newSize.height), opaque, 0);
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(newSize.width, newSize.height), opaque, 1.0);
     [oriImage drawInRect:CGRectMake(0, 0, newSize.width, newSize.height)];
     UIImage *resizedImage = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();

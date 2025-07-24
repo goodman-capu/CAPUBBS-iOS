@@ -147,7 +147,7 @@
         ImageFileType imageType = [AnimatedImageView fileType:imageData];
         if (imageType != ImageFileTypeUnknown) {
             if (![AnimatedImageView isAnimated:imageData]) {
-                imageData = [AnimatedImageView resizeImage:image];
+                imageData = [self resizeAndCompressImage:image];
             }
             // NSLog(@"Icon Type:%@, Size:%dkb", imageType, (int)(imageData.length/1024));
             [AnimatedImageView checkIconCachePath];
@@ -167,22 +167,22 @@
     }
 }
 
-+ (NSData *)resizeImage:(UIImage *)oriImage {
+- (NSData *)resizeAndCompressImage:(UIImage *)oriImage {
     BOOL hasAlpha = [oriImage hasAlphaChannel:NO];
-    UIImage *resizeImage = oriImage;
+    UIImage *resizedImage = oriImage;
     int maxWidth = 300; // 详细信息界面图片大小80 * 80，3x模式下可保证清晰
     if (oriImage.size.width > maxWidth) {
         CGFloat scaledHeight = maxWidth * oriImage.size.height / oriImage.size.width;
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(maxWidth, scaledHeight), !hasAlpha, 0);
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(maxWidth, scaledHeight), !hasAlpha, 1.0);
         [oriImage drawInRect:CGRectMake(0, 0, maxWidth, maxWidth * oriImage.size.height / oriImage.size.width)];
-        resizeImage = UIGraphicsGetImageFromCurrentImageContext();
+        resizedImage = UIGraphicsGetImageFromCurrentImageContext();
         UIGraphicsEndImageContext();
     }
     
     if (hasAlpha) { // 带透明信息的png不可转换成jpeg否则丢失透明性
-        return UIImagePNGRepresentation(resizeImage);
+        return UIImagePNGRepresentation(resizedImage);
     } else {
-        return UIImageJPEGRepresentation(resizeImage, 0.75);
+        return UIImageJPEGRepresentation(resizedImage, 0.75);
     }
 }
 

@@ -467,7 +467,7 @@
         exit(0);
     }]];
     [alertController addAction:[UIAlertAction actionWithTitle:@"我同意以上协议"
-                                              style:UIAlertActionStyleCancel
+                                              style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
         [DEFAULTS setObject:@(YES) forKey:@"hasShownEULA"];
     }]];

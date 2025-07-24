@@ -40,21 +40,29 @@
         [self.segmentBackgroundView removeFromSuperview];
         self.navigationItem.titleView = self.segmentType;
 
-        // 选中状态文字颜色
+        // 普通状态文字
+//        [self.segmentType setTitleTextAttributes:@{
+//            NSFontAttributeName: [UIFont systemFontOfSize:14],
+//        } forState:UIControlStateNormal];
+        // 选中状态文字
         [self.segmentType setTitleTextAttributes:@{
             NSForegroundColorAttributeName: [UIColor tintColor],
         } forState:UIControlStateSelected];
+//        self.segmentType.translatesAutoresizingMaskIntoConstraints = NO;
+//        [NSLayoutConstraint activateConstraints:@[
+//            [self.segmentType.heightAnchor constraintEqualToConstant:44],
+//        ]];
     } else {
         self.segmentBackgroundView.backgroundColor = [GREEN_BACK colorWithAlphaComponent:0.85];
         self.tableView.contentInset = UIEdgeInsetsMake(48, 0, 0, 0);
         self.tableView.scrollIndicatorInsets = self.tableView.contentInset;
         
         self.segmentType.selectedSegmentTintColor = GREEN_DARK;
-        // 普通状态文字颜色
+        // 普通状态文字
         [self.segmentType setTitleTextAttributes:@{
             NSForegroundColorAttributeName: [UIColor darkGrayColor],
         } forState:UIControlStateNormal];
-        // 选中状态文字颜色
+        // 选中状态文字
         [self.segmentType setTitleTextAttributes:@{
             NSForegroundColorAttributeName: [UIColor whiteColor],
         } forState:UIControlStateSelected];

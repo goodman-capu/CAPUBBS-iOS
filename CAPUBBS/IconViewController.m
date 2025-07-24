@@ -366,7 +366,7 @@
         int maxWidth = imageHasAlpha ? 300 : 500;
         if (image.size.width > maxWidth) {
             CGFloat scaledHeight = maxWidth * image.size.height / image.size.width;
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(maxWidth, scaledHeight), !imageHasAlpha, 0);
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(maxWidth, scaledHeight), !imageHasAlpha, 1.0);
             [image drawInRect:CGRectMake(0, 0, maxWidth, maxWidth * image.size.height / image.size.width)];
             resizedImage = UIGraphicsGetImageFromCurrentImageContext();
             UIGraphicsEndImageContext();
@@ -379,7 +379,7 @@
             float maxLength = IS_SUPER_USER ? 200 : 150;
             float ratio = 0.75;
             imageData = UIImageJPEGRepresentation(image, ratio);
-            while (imageData.length >= maxLength * 1024 && ratio >= 0.2) {
+            while (imageData.length >= maxLength * 1024 && ratio >= 0.1) {
                 ratio *= 0.75;
                 imageData = UIImageJPEGRepresentation(image, ratio);
             }

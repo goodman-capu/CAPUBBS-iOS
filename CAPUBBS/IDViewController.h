@@ -10,7 +10,6 @@
 
 @interface IDViewController : CustomTableViewController {
     NSMutableArray *data;
-    BOOL isDelete;
 }
 
 @property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonLogin;

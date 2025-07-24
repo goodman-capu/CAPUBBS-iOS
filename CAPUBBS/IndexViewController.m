@@ -156,7 +156,7 @@
     __weak typeof(alertController) weakAlertController = alertController; // 避免循环引用
     [alertController addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
         textField.keyboardType = UIKeyboardTypeURL;
-        textField.text = @"https://www.chexie.net";
+        textField.text = DEFAULT_SERVER_URL;
         textField.placeholder = @"地址链接";
     }];
     [alertController addAction:[UIAlertAction actionWithTitle:@"取消"
@@ -197,28 +197,23 @@
         return;
     }
     
-    if (
-        ([text containsString:@"15骑行团"] || [text containsString:@"I2"] || [text containsString:@"维茨C"] || [text containsString:@"好男人"] || [text containsString:@"老蒋"] || [text containsString:@"猿"] || [text containsString:@"小猴子"] || [text containsString:@"熊典"] || [text containsString:@"陈章"] || [text containsString:@"范志康"] || [text containsString:@"蒋雨蒙"] || [text containsString:@"扈煊"] || [text containsString:@"侯书漪"])
+    if (([text containsString:@"15骑行团"] || [text containsString:@"I2"] || [text containsString:@"维茨C"] || [text containsString:@"好男人"] || [text containsString:@"老蒋"] || [text containsString:@"猿"] || [text containsString:@"小猴子"] || [text containsString:@"熊典"] || [text containsString:@"陈章"] || [text containsString:@"范志康"] || [text containsString:@"蒋雨蒙"] || [text containsString:@"扈煊"] || [text containsString:@"侯书漪"])
         && ([text containsString:@"赞"] || [text containsString:@"棒"] || [text containsString:@"给力"] || [text containsString:@"威武"] || [text containsString:@"牛"] || [text containsString:@"厉害"] || [text containsString:@"帅"] || [text containsString:@"爱"] || [text containsString:@"V5"] || [text containsString:@"么么哒"] || [text containsString:@"漂亮"])
-        && ![text containsString:@"不"]
+        && ![text containsString:@"不"] && ![text containsString:@"才怪"]
         ) {
-            [hud showAndHideWithSuccessMessage:@"~\(≧▽≦)/~" delay:1]; // (>^ω^<)
-            [DEFAULTS setObject:@(MAX_ID_NUM) forKey:@"IDNum"];
-            [DEFAULTS setObject:@(MAX_HOT_NUM) forKey:@"hotNum"];
-        } else {
-            if (!([text containsString:@"chexie"] || [text containsString:@"capu"] || [text containsString:@"local"] || [text containsString:@"test"] || [text rangeOfString:@"[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" options:NSRegularExpressionSearch].location != NSNotFound) || [text hasSuffix:@"/"]) {
-                [DEFAULTS removeObjectForKey:@"IDNum"];
-                [DEFAULTS removeObjectForKey:@"hotNum"];
-                [self showAlertWithTitle:@"错误" message:@"不是有效的链接"];
-            } else {
-                [hud showAndHideWithSuccessMessage:@"设置成功"];
-                [GROUP_DEFAULTS setObject:text forKey:@"URL"];
-                if (![text isEqualToString:oriURL]) {
-                    [GROUP_DEFAULTS removeObjectForKey:@"token"];
-                    [NOTIFICATION postNotificationName:@"userChanged" object:nil userInfo:nil];
-                }
-            }
+        [hud showAndHideWithSuccessMessage:@"~\(≧▽≦)/~" delay:1]; // (>^ω^<)
+        [DEFAULTS setObject:@(YES) forKey:@"superUser"];
+    } else if (([text containsString:@"chexie"] || [text containsString:@"capu"] || [text containsString:@"local"] || [text containsString:@"test"] || [text rangeOfString:@"(?i)(?<![\\w:])((\\d{1,3}\\.){3}\\d{1,3}|([a-f0-9]{0,4}:){2,7}[a-f0-9]{0,4})(?![\\w:])" options:NSRegularExpressionSearch].location != NSNotFound) && ([text hasPrefix:@"http://"] || [text hasPrefix:@"https://"]) && ![text hasSuffix:@"/"] && ![text containsString:@"?"] && ![text containsString:@"#"]) {
+        [hud showAndHideWithSuccessMessage:@"设置成功"];
+        [GROUP_DEFAULTS setObject:text forKey:@"URL"];
+        if (![text isEqualToString:oriURL]) {
+            [GROUP_DEFAULTS removeObjectForKey:@"token"];
+            [NOTIFICATION postNotificationName:@"userChanged" object:nil userInfo:nil];
         }
+    } else {
+        [DEFAULTS removeObjectForKey:@"superUser"];
+        [self showAlertWithTitle:@"错误" message:@"不是有效的链接"];
+    }
 }
 
 - (NSString *)folderInfo:(NSString *)rootFolder showAll:(BOOL)all {

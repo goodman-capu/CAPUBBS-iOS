@@ -75,8 +75,7 @@
         @"toolbarEditor" : @1,
         @"viewCollectionType" : @1,
         @"textSize" : @100,
-        @"IDNum" : @(MAX_ID_NUM / 2),
-        @"hotNum" : @(MAX_HOT_NUM / 2),
+        @"superUser": @NO,
         @"checkUpdate" : @"2025-01-01",
     };
     NSDictionary *groupDefaults = @{
@@ -933,7 +932,7 @@
     
     if (![[DEFAULTS objectForKey:@"transportID3.3"] boolValue]) { // 3.3之后版本ID储存采用一个Dictionary
         NSMutableArray *IDs = [NSMutableArray array];
-        for (int i = 0; i < MAX_ID_NUM; i++) {
+        for (int i = 0; i < 10; i++) {
             NSString *uid = [DEFAULTS objectForKey:[NSString stringWithFormat:@"id%d", i]];
             if (uid.length > 0) {
                 [IDs addObject:@{
@@ -976,6 +975,12 @@
         [DEFAULTS setObject:@(YES) forKey:@"clearIconCache3.5"];
         [DEFAULTS setObject:@(YES) forKey:@"migrateIconCache4.1"];
     }
+    
+    if ([[DEFAULTS objectForKey:@"IDNum"] intValue] == 10 && [[DEFAULTS objectForKey:@"hotNum"] intValue] == 40) {
+        [DEFAULTS setObject:@(YES) forKey:@"superUser"];
+    }
+    [DEFAULTS removeObjectForKey:@"IDNum"];
+    [DEFAULTS removeObjectForKey:@"hotNum"];
 }
 
 - (void)handleGlobalTap:(UITapGestureRecognizer *)gesture {
