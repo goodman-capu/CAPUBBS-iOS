@@ -142,9 +142,7 @@
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="d4P-v8-pYm">
                                 <rect key="frame" x="16" y="114" width="370" height="38"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="38" id="rET-cz-moI">
-                                        <variation key="heightClass=regular-widthClass=regular" constant="50"/>
-                                    </constraint>
+                                    <constraint firstAttribute="height" constant="38" id="rET-cz-moI"/>
                                 </constraints>
                                 <state key="normal" image="hot">
                                     <color key="titleShadowColor" red="0.5" green="0.5" blue="0.5" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
@@ -3439,12 +3437,12 @@
                                             <rect key="frame" x="0.0" y="0.0" width="362" height="100"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" text="签名档2：" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="f6F-nW-7Rh">
+                                                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="签名档2：" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="f6F-nW-7Rh">
                                                     <rect key="frame" x="24.666666666666664" y="39.666666666666664" width="71.333333333333343" height="20.666666666666664"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="NUP-Zc-Cu9">
+                                                <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="NUP-Zc-Cu9">
                                                     <rect key="frame" x="104" y="11" width="238" height="78"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                                     <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
@@ -4714,7 +4712,7 @@
                                         <rect key="frame" x="20" y="837.33333015441895" width="362" height="50"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="KG6-9U-SuC" id="CLy-53-IRL">
-                                            <rect key="frame" x="0.0" y="0.0" width="343.66666666666669" height="50"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="331.66666666666669" height="50"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="recentreply" translatesAutoresizingMaskIntoConstraints="NO" id="Gn9-pc-yLF">
@@ -5280,7 +5278,7 @@
     <inferredMetricsTieBreakers>
         <segue reference="AZV-Sg-2a8"/>
         <segue reference="nRX-jp-GjU"/>
-        <segue reference="sj5-kt-NMp"/>
+        <segue reference="GJl-5Z-q6I"/>
         <segue reference="615-ON-Eah"/>
         <segue reference="bde-Ng-mlI"/>
         <segue reference="HIq-q4-d3p"/>
@@ -5289,7 +5287,7 @@
         <segue reference="akm-dg-fMD"/>
         <segue reference="ja4-2F-R9Z"/>
         <segue reference="IjX-G8-SY1"/>
-        <segue reference="6cu-9M-AkO"/>
+        <segue reference="bUD-VL-hk4"/>
         <segue reference="eFE-qZ-GN7"/>
         <segue reference="P8Y-Av-Bkc"/>
         <segue reference="BLQ-JI-F28"/>

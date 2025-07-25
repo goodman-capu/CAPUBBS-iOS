@@ -11,9 +11,13 @@
 - (void)configStyle {
     self.minSize = CGSizeMake(100, 0);
     CALayer *layer = self.bezelView.layer;
-    layer.cornerRadius = 12;
-    layer.borderColor = [UIColor colorWithWhite:0 alpha:0.1].CGColor;
-    layer.borderWidth = 1;
+    if (LIQUID_GLASS) {
+        layer.cornerRadius = 24;
+    } else {
+        layer.cornerRadius = 12;
+    }
+    layer.borderColor = [UIColor colorWithWhite:0 alpha:0.2].CGColor;
+    layer.borderWidth = 0.5;
 }
 
 - (void)updateToProgress:(float)progress {
