@@ -12,12 +12,10 @@
 @interface ContentViewController : CustomTableViewController<WKNavigationDelegate, WKScriptMessageHandler> {
     MBProgressHUD *hud;
     NSUserActivity *activity;
-    NSString *URL;
-    NSMutableArray *data;
-    UIDocumentInteractionController *dic;
+    NSArray *data;
+    BOOL isUpdating;
     int page;
     int textSize;
-    BOOL isLast;
     BOOL isEdit;
     NSString *defaultTitle;
     NSString *defaultContent;
@@ -25,10 +23,13 @@
     NSMutableArray *heights;
     NSMutableArray *tempHeights; // 储存之前计算的高度结果，防止reload时高度突变
     NSMutableArray *HTMLStrings;
+    NSHashTable<WKWebView *> *webViews;
     NSString *tempPath;
     CGFloat contentOffsetY;
     BOOL isAtEnd;
     NSInteger scrollTargetRow;
+    UITableViewScrollPosition scrollTargetPosition;
+    NSIndexPath *longPressIndexPath;
 }
 
 @property NSString *bid;
@@ -41,13 +42,11 @@
 /// If set, will try to scroll to the last flor
 @property BOOL willScrollToBottom;
 @property BOOL isCollection;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *barFreeSpace;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonCollection;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonBack;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonForward;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonLatest;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonJump;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonAction;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonCompose;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonLatest;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonBackOrCollect;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonForward;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonJump;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonAction;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonCompose;
 
 @end

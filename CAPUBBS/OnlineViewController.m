@@ -7,6 +7,7 @@
 //
 
 #import "OnlineViewController.h"
+#import "OnlineViewCell.h"
 #import "ContentViewController.h"
 #import "UserViewController.h"
 #import "WebViewController.h"
@@ -20,13 +21,13 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
-    self.preferredContentSize = CGSizeMake(400, 0);
+    self.preferredContentSize = CGSizeMake(400, 650);
     
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
     
-    if (!([ActionPerformer checkRight] > 0)) {
+    if (!([Helper checkRight] > 0)) {
         self.navigationItem.rightBarButtonItems = @[self.buttonStat];
     }
     self.refreshControl = [[UIRefreshControl alloc] init];
@@ -40,8 +41,8 @@
     // self.navigationItem.rightBarButtonItem = self.editButtonItem;
 }
 
-- (void)refreshControlValueChanged:(UIRefreshControl*)sender{
-    self.refreshControl.attributedTitle=[[NSAttributedString alloc] initWithString:@"刷新"];
+- (void)refreshControlValueChanged:(UIRefreshControl *)refreshControl {
+    refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
     [self viewOnline];
 }
 
@@ -53,7 +54,7 @@
 }
 
 - (void)loadOnline:(NSString *)HTMLString {
-    data = [[NSMutableArray alloc] init];
+    data = [NSMutableArray array];
     NSArray *keys = @[@"user", @"time", @"ip", @"board", @"type"];
     BOOL fail = NO;
     if (self.refreshControl.isRefreshing) {
@@ -107,11 +108,13 @@
 //        [self showAlertWithTitle:@"加载失败" message:@"当前功能暂不可用！"];
     } else {
         [hud hideWithSuccessMessage:@"加载成功"];
-        if (data.count == 0) {
-            [self showAlertWithTitle:@"当前没有人在线！" message:nil];
-        }
+        
 //        NSLog(@"%@", data);
-        [self.tableView reloadData];
+        if ([self.tableView numberOfRowsInSection:0] == 0) {
+            [self.tableView reloadData];
+        } else {
+            [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationFade];
+        }
     }
 }
 
@@ -127,7 +130,7 @@
     self.navigationItem.rightBarButtonItem.enabled = YES;
     if (HTMLString && [HTMLString containsString:@"签到统计"]) {
         [hud hideWithSuccessMessage:@"加载成功"];
-        HTMLString = [[ActionPerformer removeHTML:HTMLString] substringFromIndex:@"签到统计\n".length];
+        HTMLString = [[Helper removeHTML:HTMLString restoreFormat:NO] substringFromIndex:@"签到统计\n".length];
         HTMLString = [HTMLString stringByReplacingOccurrencesOfString:@"\n#" withString:@"\n"];
         [self showAlertWithTitle:@"签到统计" message:HTMLString];
     } else {
@@ -165,7 +168,7 @@
     if (data.count > 0) {
         return [NSString stringWithFormat:@"当前共%d人在线", (int)data.count];
     } else {
-        return nil;
+        return data ? @"当前没有人在线" : nil;
     }
 }
 
@@ -213,6 +216,7 @@
     if ([segue.identifier isEqualToString:@"web"]) {
         WebViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
         dest.URL = [NSString stringWithFormat:@"%@/bbs/online", CHEXIE];
+        [AppDelegate setAdaptiveSheetFor:dest popoverSource:nil halfScreen:NO];
     }
     // Get the new view controller using [segue destinationViewController].
     // Pass the selected object to the new view controller.

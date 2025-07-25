@@ -9,6 +9,8 @@
 #import <UIKit/UIKit.h>
 #import <WebKit/WebKit.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 @interface CustomWebViewContainer : UIView <WKUIDelegate>
 
 @property (nonatomic, strong) WKWebView *webView;
@@ -19,3 +21,14 @@
 - (void)initiateWebViewWithToken:(BOOL)hasToken;
 
 @end
+
+@interface WKWebView (Custom)
+
+- (void)clearForReuse;
+
+/// Replaces current script message handler with the new delegate, wrapped in WeakScriptMessageDelegate
+- (void)setWeakScriptMessageHandler:(id<WKScriptMessageHandler>)delegate forNames:(NSArray<NSString *> *)handlerNames;
+
+@end
+
+NS_ASSUME_NONNULL_END

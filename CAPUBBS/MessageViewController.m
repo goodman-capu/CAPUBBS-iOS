@@ -7,6 +7,7 @@
 //
 
 #import "MessageViewController.h"
+#import "MessageCell.h"
 #import "ContentViewController.h"
 #import "ChatViewController.h"
 #import "UserViewController.h"
@@ -26,25 +27,45 @@
     [targetView addSubview:hud];
     
     messageRefreshing = NO;
-    isFirstTime = YES;
+    
     [NOTIFICATION addObserver:self selector:@selector(backgroundRefresh) name:@"userChanged" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(getInfo) name:@"chatChanged" object:nil];
-    [NOTIFICATION addObserver:self.tableView selector:@selector(reloadData) name:@"collectionChanged" object:nil];
+    [NOTIFICATION addObserver:self selector:@selector(reloadTableView) name:@"collectionChanged" object:nil];
+    
     control = [[UIRefreshControl alloc] init];
     [control addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
     [self.tableView addSubview:control];
-    if (@available(iOS 13.0, *)) {
-        self.segmentType.selectedSegmentTintColor = GREEN_DARK;
-        // 普通状态文字颜色
+    
+    if (LIQUID_GLASS) {
+        [self.segmentBackgroundView removeFromSuperview];
+        self.navigationItem.titleView = self.segmentType;
+
+        // 普通状态文字
+//        [self.segmentType setTitleTextAttributes:@{
+//            NSFontAttributeName: [UIFont systemFontOfSize:14],
+//        } forState:UIControlStateNormal];
+        // 选中状态文字
         [self.segmentType setTitleTextAttributes:@{
-            NSForegroundColorAttributeName: [UIColor grayColor]
-        } forState:UIControlStateNormal];
-        // 选中状态文字颜色
-        [self.segmentType setTitleTextAttributes:@{
-            NSForegroundColorAttributeName: [UIColor whiteColor]
+            NSForegroundColorAttributeName: [UIColor tintColor],
         } forState:UIControlStateSelected];
+//        self.segmentType.translatesAutoresizingMaskIntoConstraints = NO;
+//        [NSLayoutConstraint activateConstraints:@[
+//            [self.segmentType.heightAnchor constraintEqualToConstant:44],
+//        ]];
     } else {
-        self.segmentType.tintColor = GREEN_DARK;
+        self.segmentBackgroundView.backgroundColor = [GREEN_BACK colorWithAlphaComponent:0.85];
+        self.tableView.contentInset = UIEdgeInsetsMake(48, 0, 0, 0);
+        self.tableView.scrollIndicatorInsets = self.tableView.contentInset;
+        
+        self.segmentType.selectedSegmentTintColor = GREEN_DARK;
+        // 普通状态文字
+        [self.segmentType setTitleTextAttributes:@{
+            NSForegroundColorAttributeName: [UIColor darkGrayColor],
+        } forState:UIControlStateNormal];
+        // 选中状态文字
+        [self.segmentType setTitleTextAttributes:@{
+            NSForegroundColorAttributeName: [UIColor whiteColor],
+        } forState:UIControlStateSelected];
     }
     [self typeChanged:self.segmentType];
     // Do any additional setup after loading the view.
@@ -65,18 +86,35 @@
 }
 
 - (void)refreshControlValueChanged:(UIRefreshControl *)refreshControl {
-    control.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
+    refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
     [hud showWithProgressMessage:@"正在刷新"];
     [self getInfo];
 }
 
+- (void)reloadTableView {
+    dispatch_main_sync_safe(^{
+        [self.tableView reloadData];
+    });
+}
+
 - (void)getInfo {
-    if (self.segmentType.selectedSegmentIndex == 0) {
-        self.toolbarItems = @[self.buttonPrevious, self.barFreeSpace, self.barFreeSpace, self.buttonNext];
-    } else {
-        self.toolbarItems = @[self.barFreeSpace, self.buttonAdd, self.barFreeSpace];
-    }
-    if ([ActionPerformer checkLogin:NO] && messageRefreshing == NO) {
+    dispatch_main_async_safe((^{
+        if (messageRefreshing) {
+            return;
+        }
+        if (![Helper checkLogin:NO]) {
+            if (control.isRefreshing) {
+                [control endRefreshing];
+            }
+            [hud showAndHideWithFailureMessage:@"尚未登录"];
+            data = nil;
+            self.buttonPrevious.enabled = NO;
+            self.buttonNext.enabled = NO;
+            self.buttonAdd.enabled = NO;
+            [self setMessageNum];
+            [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationAutomatic];
+            return;
+        }
         messageRefreshing = YES;
         NSString *type = (self.segmentType.selectedSegmentIndex == 0) ? @"system" : @"private";
         [hud showWithProgressMessage:@"正在加载"];
@@ -84,7 +122,7 @@
             @"type" : type,
             @"page" : [NSString stringWithFormat:@"%ld", (long)page]
         };
-        [ActionPerformer callApiWithParams:dict toURL:@"msg" callback: ^(NSArray *result, NSError *err) {
+        [Helper callApiWithParams:dict toURL:@"msg" callback: ^(NSArray *result, NSError *err) {
             if (control.isRefreshing) {
                 [control endRefreshing];
             }
@@ -103,27 +141,24 @@
             }
             [self setMessageNum];
             
-            int rowAnimation = -1;
-            if (originalSegment < self.segmentType.selectedSegmentIndex) {
-                rowAnimation = UITableViewRowAnimationLeft;
-            }
-            if (originalSegment > self.segmentType.selectedSegmentIndex) {
-                rowAnimation = UITableViewRowAnimationRight;
-            }
-            if (rowAnimation > 0) {
-                [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:rowAnimation];
+            if ([self.tableView numberOfRowsInSection:0] == 0) {
+                [self.tableView reloadData];
             } else {
-                if (isFirstTime) {
-                    [self.tableView reloadData];
-                } else {
-                    [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationAutomatic];
+                UITableViewRowAnimation rowAnimation = UITableViewRowAnimationFade;
+                if (!SIMPLE_VIEW) {
+                    if (originalSegment < self.segmentType.selectedSegmentIndex) {
+                        rowAnimation = UITableViewRowAnimationLeft;
+                    }
+                    if (originalSegment > self.segmentType.selectedSegmentIndex) {
+                        rowAnimation = UITableViewRowAnimationRight;
+                    }
                 }
-                isFirstTime = NO;
+                [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:rowAnimation];
             }
             originalSegment = self.segmentType.selectedSegmentIndex;
             
             if (data.count > 1) {
-                [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UITableViewScrollPositionBottom animated:YES];
+                [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UITableViewScrollPositionTop animated:YES];
             }
             if (data.count - 1 < 10) {
                 maxPage = page;
@@ -131,27 +166,26 @@
             self.buttonPrevious.enabled = (page > 1);
             self.buttonNext.enabled = (page < maxPage);
         }];
-    } else {
-        if (control.isRefreshing) {
-            [control endRefreshing];
-        }
-        [hud showAndHideWithFailureMessage:@"尚未登录"];
-        data = nil;
-        self.buttonPrevious.enabled = NO;
-        self.buttonNext.enabled = NO;
-        self.buttonAdd.enabled = NO;
-        [self setMessageNum];
-        [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationAutomatic];
-    }
+    }));
 }
 
 - (IBAction)typeChanged:(UISegmentedControl *)sender {
     if (sender.selectedSegmentIndex == 0) {
         page = 1;
         maxPage = 10000;
+        if (LIQUID_GLASS) {
+            [self setToolbarItems:@[self.buttonPrevious, self.buttonNext] animated:YES];
+        } else {
+            [self setToolbarItems:@[self.buttonPrevious, self.flexSpace, self.buttonNext] animated:YES];
+        }
     } else {
         page = -1;
         maxPage = -1;
+        if (LIQUID_GLASS) {
+            [self setToolbarItems:@[self.buttonAdd] animated:YES];
+        } else {
+            [self setToolbarItems:@[self.flexSpace, self.buttonAdd, self.flexSpace] animated:YES];
+        }
     }
     [self getInfo];
 }
@@ -207,35 +241,47 @@
         [dict setObject:msgNum forKey:@"newmsg"];
         [GROUP_DEFAULTS setObject:dict forKey:@"userInfo"];
     }
-    dispatch_main_async_safe(^{
-        [NOTIFICATION postNotificationName:@"infoRefreshed" object:nil];
-    });
+    [NOTIFICATION postNotificationName:@"infoRefreshed" object:nil];
 }
 
 - (IBAction)previous:(id)sender {
+    if (messageRefreshing) {
+        return;
+    }
     page--;
     [self getInfo];
 }
 
 - (IBAction)next:(id)sender {
+    if (messageRefreshing) {
+        return;
+    }
     page++;
     [self getInfo];
 }
 
 - (IBAction)add:(id)sender {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"发送私信"
+    if (messageRefreshing) {
+        return;
+    }
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"发送私信"
                                                                    message:@"请输入对方的用户名"
                                                             preferredStyle:UIAlertControllerStyleAlert];
-    [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+    __weak typeof(alertController) weakAlertController = alertController; // 避免循环引用
+    [alertController addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
         textField.placeholder = @"用户名";
     }];
-    [alert addAction:[UIAlertAction actionWithTitle:@"取消"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"取消"
                                               style:UIAlertActionStyleCancel
                                             handler:nil]];
-    [alert addAction:[UIAlertAction actionWithTitle:@"开始"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"开始"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        NSString *userName = alert.textFields.firstObject.text;
+        __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+        if (!strongAlertController) {
+            return;
+        }
+        NSString *userName = strongAlertController.textFields[0].text;
         if (userName.length == 0) {
             [self showAlertWithTitle:@"错误" message:@"用户名不能为空"];
         } else {
@@ -243,7 +289,7 @@
             [self performSegueWithIdentifier:@"chat" sender:nil];
         }
     }]];
-    [self presentViewControllerSafe:alert];
+    [self presentViewControllerSafe:alertController];
 }
 
 - (void)backgroundRefresh {
@@ -280,7 +326,7 @@
     if (self.segmentType.selectedSegmentIndex == 0) {
         int textLenth = 0;
         NSString *titleText = dict[@"title"];
-        titleText = [ActionPerformer restoreTitle:titleText];
+        titleText = [Helper restoreTitle:titleText];
         NSString *type = dict[@"type"];
         if ([type isEqualToString:@"reply"]) {
             text = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"回复了您的帖子：%@", titleText]];
@@ -343,6 +389,7 @@
     }
     if ([segue.identifier isEqualToString:@"chat"]) {
         ChatViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
+        [AppDelegate setAdaptiveSheetFor:dest popoverSource:nil halfScreen:NO];
         if (sender == nil) {
             dest.ID = chatID;
             dest.directTalk = YES;
@@ -370,14 +417,14 @@
         dest.bid = dict[@"bid"];
         dest.destinationPage = dict[@"p"];
         // NSLog(@"%@", dict[@"url"]);
-        NSString *floor = [ActionPerformer getLink:dict[@"url"]][@"floor"];
+        NSString *floor = [Helper getLink:dict[@"url"]][@"floor"];
         if ([floor intValue] > 0) {
             dest.destinationFloor = floor;
             if ([dict[@"type"] hasPrefix:@"replylzl"]) {
                 dest.openDestinationLzl = YES;
             }
         }
-        dest.title = @"帖子跳转中";
+        dest.title = [Helper restoreTitle:dict[@"title"]];
         NSMutableArray *tempData = [data mutableCopy];
         if ([tempData[indexPath.row + 1][@"hasread"] isEqualToString:@"0"]) {
             NSString *sysmsg = tempData[0][@"sysmsg"];
@@ -391,15 +438,17 @@
     }
     if ([segue.identifier isEqualToString:@"userInfo"]) {
         UserViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
+        [AppDelegate setAdaptiveSheetFor:dest popoverSource:sender halfScreen:YES];
         UIButton *button = sender;
-        dest.navigationController.modalPresentationStyle = UIModalPresentationPopover;
-        dest.navigationController.popoverPresentationController.sourceView = button;
-        dest.navigationController.popoverPresentationController.sourceRect = button.bounds;
         dest.ID = data[button.tag + 1][@"username"];
         MessageCell *cell = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForItem:button.tag inSection:0]];
         if (cell && ![cell.imageIcon.image isEqual:PLACEHOLDER]) {
             dest.iconData = UIImagePNGRepresentation(cell.imageIcon.image);
         }
+    }
+    if ([segue.identifier isEqualToString:@"setting"]) {
+        UIViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
+        [AppDelegate setAdaptiveSheetFor:dest popoverSource:sender halfScreen:NO];
     }
 }
 

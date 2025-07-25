@@ -24,7 +24,7 @@
     
     self.textUid.text = self.defaultUid;
     self.textPass.text = self.defaultPass;
-    [self.buttonLogin.layer setCornerRadius:10.0];
+    self.buttonLogin.layer.cornerRadius = self.buttonLogin.frame.size.height / 2;
     if (self.textUid.text.length == 0) {
         [self.textUid becomeFirstResponder];
     }
@@ -33,7 +33,7 @@
 
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
-    if (shouldPop == NO) {
+    if (!shouldPop) {
         if (self.textUid.text.length > 0 && self.textPass.text.length > 0) {
             [self login:nil];
         }
@@ -71,32 +71,23 @@
     [hud showWithProgressMessage:@"正在登录"];
     NSDictionary *dict = @{
         @"username" : uid,
-        @"password" : [ActionPerformer md5:pass],
+        @"password" : [Helper md5:pass],
     };
-    [ActionPerformer callApiWithParams:dict toURL:@"login" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:dict toURL:@"login" callback:^(NSArray *result, NSError *err) {
         if (err || result.count == 0) {
             [hud hideWithFailureMessage:@"登录失败"];
 //            [self showAlertWithTitle:@"登录失败" message:[err localizedDescription]];
             return ;
         }
-        if ([result[0][@"code"] isEqualToString:@"0"]) {
+        int code = [result[0][@"code"] intValue];
+        if (code == 0) {
             [hud hideWithSuccessMessage:@"登录成功"];
         } else {
             [hud hideWithFailureMessage:@"登录失败"];
         }
-        if ([result[0][@"code"] isEqualToString:@"1"]) {
-            [self showAlertWithTitle:@"登录失败" message:@"密码错误！" cancelAction:^(UIAlertAction *action) {
-                [self.textPass becomeFirstResponder];
-            }];
-            return ;
-        } else if ([result[0][@"code"] isEqualToString:@"2"]) {
-            [self showAlertWithTitle:@"登录失败" message:@"用户名不存在！" cancelAction:^(UIAlertAction *action) {
-                [self.textUid becomeFirstResponder];
-            }];
-            return ;
-        } else if ([result[0][@"code"] isEqualToString:@"0"]) {
+        if (code == 0) {
             if ([UID length] > 0 && ![uid isEqualToString:UID]) { // 注销之前的账号
-                [ActionPerformer callApiWithParams:nil toURL:@"logout" callback:^(NSArray *result, NSError *err) {}];
+                [Helper callApiWithParams:nil toURL:@"logout" callback:^(NSArray *result, NSError *err) {}];
                 NSLog(@"Logout - %@", UID);
             }
             [GROUP_DEFAULTS setObject:uid forKey:@"uid"];
@@ -104,14 +95,21 @@
             [GROUP_DEFAULTS setObject:result[0][@"token"] forKey:@"token"];
             [LoginViewController updateIDSaves];
             NSLog(@"Login - %@", uid);
-            dispatch_main_async_safe(^{
-                [NOTIFICATION postNotificationName:@"userChanged" object:nil userInfo:nil];
-            });
-            [ActionPerformer checkPasswordLength];
+            [NOTIFICATION postNotificationName:@"userChanged" object:nil userInfo:nil];
             shouldPop = YES;
             dispatch_main_after(0.5, ^{
                 [self.navigationController popViewControllerAnimated:YES];
             });
+            return;
+        }
+        if (code == 1) {
+            [self showAlertWithTitle:@"登录失败" message:@"密码错误！" cancelAction:^(UIAlertAction *action) {
+                [self.textPass becomeFirstResponder];
+            }];
+        } else if (code == 2) {
+            [self showAlertWithTitle:@"登录失败" message:@"用户名不存在！" cancelAction:^(UIAlertAction *action) {
+                [self.textUid becomeFirstResponder];
+            }];
         } else {
             [self showAlertWithTitle:@"登录失败" message:@"发生未知错误！"];
         }

@@ -26,7 +26,7 @@
     self.view.backgroundColor = GREEN_BACK;
     if (!SIMPLE_VIEW) {
         AnimatedImageView *backgroundView = [[AnimatedImageView alloc] init];
-        [backgroundView setBlurredImage:[UIImage imageNamed:@"bcollection"] animated:NO];
+        [backgroundView setImage:[UIImage imageNamed:@"bcollection"] blurred:YES animated:NO];
         [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
         self.tableView.backgroundView = backgroundView;
     }
@@ -35,6 +35,7 @@
     [targetView addSubview:hud];
     
     [NOTIFICATION addObserver:self selector:@selector(refresh) name:@"collectionChanged" object:nil];
+    
     sortType = [[DEFAULTS objectForKey:@"viewCollectionType"] intValue];
     
     self.searchController = [[CustomSearchController alloc] initWithSearchResultsController:nil];
@@ -129,16 +130,18 @@
 }
 
 - (void)refresh {
-    data = [[DEFAULTS objectForKey:@"collection"] mutableCopy];
-    [self sortData];
-    
-    if (self.searchController.isActive) {
-        [self updateSearchResultsForSearchController:self.searchController];
-    } else {
+    dispatch_global_default_async(^{
+        data = [NSMutableArray arrayWithArray:[DEFAULTS objectForKey:@"collection"]];
+        [self sortData];
+        
         dispatch_main_async_safe(^{
-            [self.tableView reloadData];
+            if (self.searchController.isActive) {
+                [self updateSearchResultsForSearchController:self.searchController];
+            } else {
+                [self.tableView reloadData];
+            }
         });
-    }
+    });
 }
 
 - (void)sortData {
@@ -152,7 +155,7 @@
     }
     
     if (!sortData) {
-        sortData = [[NSMutableArray alloc] init];
+        sortData = [NSMutableArray array];
     }
     
     if (sortType == SORT_BY_POST_DATE) {
@@ -181,7 +184,7 @@
 - (void)indexByKeyword:(NSString *)keyword {
     [sortData removeAllObjects];
     NSString *nowValue;
-    NSMutableArray *nowArray = [[NSMutableArray alloc] init];
+    NSMutableArray *nowArray = [NSMutableArray array];
     for (NSDictionary *dict in data) {
         NSString *value = dict[keyword];
         if (value.length == 0) {
@@ -205,33 +208,33 @@
         [self toggleEditMode:NO animated:YES];
         return;
     }
-    UIAlertController *action = [UIAlertController alertControllerWithTitle:@"个人收藏" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-    [action addAction:[UIAlertAction actionWithTitle:@"按收藏日期查看" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"个人收藏" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"按收藏日期查看" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         sortType = SORT_BY_COLLECTION_DATE;
         [DEFAULTS setObject:@(sortType) forKey:@"viewCollectionType"];
         [self refresh];
     }]];
-    [action addAction:[UIAlertAction actionWithTitle:@"按发帖日期查看" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    [alertController addAction:[UIAlertAction actionWithTitle:@"按发帖日期查看" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         sortType = SORT_BY_POST_DATE;
         [DEFAULTS setObject:@(sortType) forKey:@"viewCollectionType"];
         [self refresh];
     }]];
-    [action addAction:[UIAlertAction actionWithTitle:@"按讨论板块查看" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    [alertController addAction:[UIAlertAction actionWithTitle:@"按讨论板块查看" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         sortType = SORT_BY_BOARD_INDEX;
         [DEFAULTS setObject:@(sortType) forKey:@"viewCollectionType"];
         [self refresh];
     }]];
-    [action addAction:[UIAlertAction actionWithTitle:@"按文章作者查看" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    [alertController addAction:[UIAlertAction actionWithTitle:@"按文章作者查看" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         sortType = SORT_BY_AUTHOR;
         [DEFAULTS setObject:@(sortType) forKey:@"viewCollectionType"];
         [self refresh];
     }]];
-    [action addAction:[UIAlertAction actionWithTitle:@"管理收藏" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    [alertController addAction:[UIAlertAction actionWithTitle:@"管理收藏" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [self toggleEditMode:YES animated:YES];
     }]];
-    [action addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
-    action.popoverPresentationController.barButtonItem = self.buttonOrganize;
-    [[self getVcToShowAlert] presentViewControllerSafe:action];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
+    alertController.popoverPresentationController.barButtonItem = self.buttonOrganize;
+    [[self getVcToShowAlert] presentViewControllerSafe:alertController];
 }
 
 - (IBAction)selectAll:(id)sender {
@@ -304,7 +307,7 @@
         @{
             @"type": @"capubbs_collection",
             @"data": collections,
-            @"sig": [ActionPerformer getSigForData:collections]
+            @"sig": [Helper getSigForData:collections]
         }
     ];
     
@@ -368,7 +371,7 @@
         return [NSString stringWithFormat:@"您一共有%d个收藏", (int)data.count];
     }
     if (sortType == SORT_BY_BOARD_INDEX) {
-        return [ActionPerformer getBoardTitle:sortData[section][0][@"bid"]];
+        return [Helper getBoardTitle:sortData[section][0][@"bid"]];
     }
     if (sortType == SORT_BY_AUTHOR) {
         return sortData[section][0][@"author"] ?: @"未知";
@@ -404,7 +407,7 @@
     
     NSString *postTime = dict[@"time"];
     if (sortType == SORT_BY_AUTHOR) {
-        NSString *boardTitle = [ActionPerformer getBoardTitle:dict[@"bid"]];
+        NSString *boardTitle = [Helper getBoardTitle:dict[@"bid"]];
         if (postTime.length > 0) {
             cell.labelSubtitle.text = [NSString stringWithFormat:@"%@  %@", boardTitle, postTime];
         } else {
@@ -460,7 +463,7 @@
             [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
         }
         [DEFAULTS setObject:data forKey:@"collection"];
-        dispatch_main_after(0.5, ^{
+        dispatch_global_after(0.5, ^{
             [self commitChange];
         });
     }
@@ -494,6 +497,7 @@
             totalRowCount += [self.tableView numberOfRowsInSection:section];
         }
         self.buttonSelectAll.enabled = selectedCount < totalRowCount;
+        self.buttonSelectReverse.enabled = totalRowCount > 0;
         self.buttonShare.enabled = selectedCount > 0;
         self.buttonTrash.enabled = selectedCount > 0;
     });
@@ -504,7 +508,7 @@
 // 搜索时触发的方法
 - (void)updateSearchResultsForSearchController:(UISearchController *)searchController {
     if (!searchData) {
-        searchData = [[NSMutableArray alloc] init];
+        searchData = [NSMutableArray array];
     }
     [searchData removeAllObjects];
     NSString *word = searchController.searchBar.text;

@@ -14,7 +14,7 @@
 #import "WebViewController.h"
 #import "AnimatedImageView.h"
 
-#define NUMBER_EMOJI @[@"1⃣️", @"2⃣️", @"3⃣️", @"4⃣️", @"5⃣️", @"6⃣️", @"7⃣️", @"8⃣️", @"9⃣️", @"🔟"]
+//#define NUMBER_EMOJI @[@"1⃣️", @"2⃣️", @"3⃣️", @"4⃣️", @"5⃣️", @"6⃣️", @"7⃣️", @"8⃣️", @"9⃣️", @"🔟"]
 
 @interface ListViewController ()
 
@@ -32,27 +32,36 @@
     hudSofa = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hudSofa];
     
-    if ([self.bid isEqualToString:@"hot"]) {
-        self.navigationItem.rightBarButtonItems = @[self.buttonViewOnline];
+    if ([self isHotList]) {
+        if (LIQUID_GLASS) {
+            self.toolbarItems = @[self.buttonAction, self.buttonCompose];
+        }
     } else {
-        self.navigationItem.rightBarButtonItems = @[self.buttonSearch];
-        
         if (!SIMPLE_VIEW) {
             AnimatedImageView *backgroundView = [[AnimatedImageView alloc] init];
-            [backgroundView setBlurredImage:[UIImage imageNamed:[@"b" stringByAppendingString:self.bid]] animated:NO];
+            [backgroundView setImage:[UIImage imageNamed:[@"b" stringByAppendingString:self.bid]] blurred:YES animated:NO];
             [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
             self.tableView.backgroundView = backgroundView;
         }
     }
-    isFirstTime = YES;
-    [NOTIFICATION addObserver:self selector:@selector(shouldRefresh) name:@"refreshList" object:nil];
-    [NOTIFICATION addObserver:self.tableView selector:@selector(reloadData) name:@"collectionChanged" object:nil];
-    self.title = ([self.bid isEqualToString:@"hot"] ? @"🔥论坛热点🔥" : [ActionPerformer getBoardTitle:self.bid]);
+    [self.tableView addGestureRecognizer:[[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)]];
+    
+    [NOTIFICATION addObserver:self selector:@selector(doRefresh) name:@"refreshList" object:nil];
+    [NOTIFICATION addObserver:self selector:@selector(reloadTableView) name:@"collectionChanged" object:nil];
+    
+    self.title = ([self isHotList] ? @"论坛热点" : [Helper getBoardTitle:self.bid]);
     oriTitle = self.title;
+    self.refreshControl = [[UIRefreshControl alloc] init];
     [self.refreshControl addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
     if (self.page <= 0) {
         self.page = 1;
     }
+    
+    formatter = [[NSDateFormatter alloc] init];
+    [formatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
+    NSTimeZone *beijingTimeZone = [NSTimeZone timeZoneWithName:@"Asia/Shanghai"];
+    [formatter setTimeZone:beijingTimeZone];
+    
     [self jumpTo:self.page];
 }
 
@@ -63,7 +72,7 @@
     activity.webpageURL = [self getCurrentUrl];
     [activity becomeCurrent];
     
-    if (![self.bid isEqualToString:@"hot"]) {
+    if (![self isHotList]) {
 //        if (![[DEFAULTS objectForKey:@"FeatureSwipe2.0"] boolValue]) {
 //            [self showAlertWithTitle:@"新功能！" message:@"帖子和列表界面可以左右滑动翻页" cancelTitle:@"我知道了"];
 //            [DEFAULTS setObject:@(YES) forKey:@"FeatureSwipe2.0"];
@@ -87,9 +96,19 @@
     [activity invalidate];
 }
 
+- (void)reloadTableView {
+    dispatch_main_sync_safe(^{
+        [self.tableView reloadData];
+    });
+}
+
+- (BOOL)isHotList {
+    return [self.bid isEqualToString:@"hot"];
+}
+
 - (NSURL *)getCurrentUrl {
     NSString *url;
-    if ([self.bid isEqualToString:@"hot"]) {
+    if ([self isHotList]) {
         url = [NSString stringWithFormat:@"%@/bbs/index", CHEXIE];
     } else {
         url = [NSString stringWithFormat:@"%@/bbs/main/?bid=%@&p=%ld", CHEXIE, self.bid, self.page];
@@ -97,12 +116,12 @@
     return [NSURL URLWithString:url];
 }
 
-- (void)shouldRefresh{
+- (void)doRefresh {
     [self jumpTo:self.page];
 }
 
-- (void)refreshControlValueChanged:(UIRefreshControl*)sender{
-    self.refreshControl.attributedTitle=[[NSAttributedString alloc] initWithString:@"刷新"];
+- (void)refreshControlValueChanged:(UIRefreshControl *)refreshControl {
+    refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
     [self jumpTo:self.page];
 }
 
@@ -110,24 +129,27 @@
     [hud showWithProgressMessage:@"读取中"];
     NSInteger oldPage = self.page;
     self.page = pageNum;
-    self.buttonCompose.enabled = [ActionPerformer checkLogin:NO];
-    self.buttonSearch.enabled = (![self.bid isEqualToString:@"1" ] || [ActionPerformer checkLogin:NO]);
-    if (![self.bid isEqualToString: @"hot"]) {
-        self.buttonBack.enabled = (self.page != 1);
+    self.buttonAction.enabled = NO;
+    self.buttonCompose.enabled = [Helper checkLogin:NO];
+    self.buttonBack.enabled = NO;
+    self.buttonJump.enabled = NO;
+    self.buttonForward.enabled = NO;
+    if (![self isHotList]) {
         NSDictionary *dict = @{
             @"bid" : self.bid,
             @"p" : [NSString stringWithFormat:@"%ld", (long)pageNum],
             @"raw": @"YES"
         };
-        [ActionPerformer callApiWithParams:dict toURL:@"show" callback:^(NSArray *result, NSError *err) {
+        [Helper callApiWithParams:dict toURL:@"show" callback:^(NSArray *result, NSError *err) {
             if (self.refreshControl.isRefreshing) {
                 [self.refreshControl endRefreshing];
             }
 
+            self.buttonAction.enabled = YES;
+            self.buttonBack.enabled = self.page != 1;
             if (err || result.count == 0) {
                 failCount++;
                 self.page = oldPage;
-                self.buttonBack.enabled = self.page != 1;
                 [hud hideWithFailureMessage:@"读取失败"];
                 NSLog(@"%@",err);
             } else {
@@ -135,26 +157,37 @@
                 if (pages.length == 0) {
                     failCount++;
                     isLast = YES;
-                    self.title = [NSString stringWithFormat:@"%@(未登录)", oriTitle];
+                    if (![Helper checkLogin:NO]) {
+                        self.title = [NSString stringWithFormat:@"%@（未登录）", oriTitle];
+                        [self showAlertWithTitle:@"错误" message:@"您未登录，不能查看本版！\n请登录或者前往其它版面"];
+                    }
                     self.tableView.userInteractionEnabled = NO;
-                    [self showAlertWithTitle:@"警告" message:@"您未登录，不能查看本版！\n请登录或者前往其它版面"];
                     [hud hideWithFailureMessage:@"读取失败"];
                 } else {
-                    data = [NSMutableArray arrayWithArray:result];
+                    data = result;
                     isLast = [data[0][@"nextpage"] isEqualToString:@"false"];
                     self.title = [NSString stringWithFormat:@"%@(%ld/%@)", oriTitle, self.page, [data lastObject][@"pages"]];
+                    self.tableView.userInteractionEnabled = YES;
                     [hud hideWithSuccessMessage:@"读取成功"];
                 }
                 
                 activity.webpageURL = [self getCurrentUrl];
                 self.buttonForward.enabled = !isLast;
                 self.buttonJump.enabled = ([pages integerValue] > 1);
-                if (isFirstTime) {
+                if ([self.tableView numberOfRowsInSection:0] == 0) {
                     [self.tableView reloadData];
                 } else {
-                    [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationAutomatic];
+                    UITableViewRowAnimation rowAnimation = UITableViewRowAnimationFade;
+                    if (!SIMPLE_VIEW) {
+                        if (oldPage > pageNum) {
+                            rowAnimation = UITableViewRowAnimationRight;
+                        }
+                        if (oldPage < pageNum) {
+                            rowAnimation = UITableViewRowAnimationLeft;
+                        }
+                    }
+                    [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:rowAnimation];
                 }
-                isFirstTime = NO;
                 if (data.count > 0) {
                     [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UITableViewScrollPositionTop animated:YES];
                 }
@@ -162,19 +195,15 @@
             [self checkRobSofa];
         }];
     } else {
-        self.buttonBack.enabled = NO;
-        self.buttonForward.enabled = NO;
-        self.buttonJump.enabled = NO;
-        [ActionPerformer callApiWithParams:nil toURL:@"globaltop" callback:^(NSArray *topResult, NSError *topErr) {
-            [ActionPerformer callApiWithParams:@{@"hotnum":[NSString stringWithFormat:@"%d", HOT_NUM]} toURL:@"hot" callback:^(NSArray *hotResult, NSError *hotErr) {
+        [Helper callApiWithParams:nil toURL:@"globaltop" callback:^(NSArray *topResult, NSError *topErr) {
+            [Helper callApiWithParams:@{@"hotnum":[NSString stringWithFormat:@"%d", HOT_NUM]} toURL:@"hot" callback:^(NSArray *hotResult, NSError *hotErr) {
                 if (self.refreshControl.isRefreshing) {
                     self.page = 1;
                     [self.refreshControl endRefreshing];
                 }
+                self.buttonAction.enabled = YES;
                 if (topErr || hotErr || hotResult.count == 0) {
                     failCount++;
-                    self.page = oldPage;
-                    self.buttonBack.enabled = self.page != 1;
                     [hud hideWithFailureMessage:@"读取失败"];
                     if (topErr) {
                         NSLog(@"globaltop error: %@",topErr);
@@ -188,17 +217,17 @@
                 } else {
                     [hud hideWithSuccessMessage:@"读取成功"];
                     
-                    data = [NSMutableArray arrayWithArray:topResult];
-                    globalTopCount = data.count;
-                    [data addObjectsFromArray:hotResult];
+                    NSMutableArray *tmpData = [NSMutableArray arrayWithArray:topResult];
+                    globalTopCount = topResult.count;
+                    [tmpData addObjectsFromArray:hotResult];
+                    data = [tmpData copy];
                     [GROUP_DEFAULTS setObject:@(globalTopCount) forKey:@"globalTopCount"];
                     [GROUP_DEFAULTS setObject:data forKey:@"hotPosts"];
-                    if (isFirstTime) {
+                    if ([self.tableView numberOfRowsInSection:0] == 0) {
                         [self.tableView reloadData];
                     } else {
-                        [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationAutomatic];
+                        [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationFade];
                     }
-                    isFirstTime = NO;
                     [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UITableViewScrollPositionTop animated:YES];
                 }
                 [self checkRobSofa];
@@ -210,7 +239,7 @@
 - (void)checkRobSofa {
     if (isRobbingSofa) {
         if (failCount > 10) {
-            [self showAlertWithTitle:@"抢沙发失败" message:@"错误次数过多，请检查原因！"];
+            [self showAlertWithTitle:@"抢沙发失败" message:@"错误次数过多，请检查您的网络连接！"];
             isRobbingSofa = NO;
             [hudSofa hideWithFailureMessage:@"错误次数过多"];
             return;
@@ -218,7 +247,7 @@
         if (data.count > 0) {
             for (NSDictionary *dict in data) {
                 BOOL isNew = NO;
-                if ([self.bid isEqualToString:@"hot"]) {
+                if ([self isHotList]) {
                     if (![dict[@"bid"] isEqualToString:@"1"] && ([dict[@"replyer"] length] == 0 || [dict[@"replyer"] isEqualToString:@"Array"])) {  // 不允许抢工作区沙发
                         isNew = YES;
                     }
@@ -229,13 +258,9 @@
                         isNew = YES;
                     }
                 }
-                if (isNew == YES) {
-                    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-                    [formatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
-                    NSTimeZone *beijingTimeZone = [NSTimeZone timeZoneWithName:@"Asia/Shanghai"];
-                    [formatter setTimeZone:beijingTimeZone];
+                if (isNew) {
                     NSDate *currentTime = [NSDate date];
-                    NSDate *postTime =[formatter dateFromString:dict[@"time"]];
+                    NSDate *postTime = [formatter dateFromString:dict[@"time"]];
                     NSTimeInterval time = [currentTime timeIntervalSinceDate:postTime];
                     // NSLog(@"%d", (int)time);
                     if ((int)time <= 60) { // 一分钟之内的帖子(允许服务器时间误差)
@@ -266,20 +291,20 @@
         @"text" : sofaContent,
         @"sig" : @"0"
     };
-    [ActionPerformer callApiWithParams:dict toURL:@"post" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:dict toURL:@"post" callback:^(NSArray *result, NSError *err) {
         BOOL fail = NO;
         if (err || result.count == 0) {
             fail = YES;
         }
-        if (fail == NO && ![result[0][@"code"] isEqualToString:@"0"]) {
+        if (!fail && ![result[0][@"code"] isEqualToString:@"0"]) {
             fail = YES;
         }
-        if (fail == NO) {
+        if (fail) {
+            failCount++;
+        } else {
             [self showAlertWithTitle:@"抢沙发成功" message:[NSString stringWithFormat:@"您成功在帖子“%@”中抢到了沙发", [postInfo objectForKey:@"text"]]];
             isRobbingSofa = NO;
             [hudSofa hideWithSuccessMessage:@"抢沙发成功"];
-        } else {
-            failCount++;
         }
         dispatch_main_after(0.5, ^{
             [self refresh];
@@ -312,14 +337,18 @@
     ListCell *cell = [self.tableView dequeueReusableCellWithIdentifier:@"list"];
     
     NSDictionary *dict = data[indexPath.row];
-    NSString *titleText = [ActionPerformer restoreTitle:dict[@"text"]] ?: @"";
+    NSString *titleText = [Helper restoreTitle:dict[@"text"]] ?: @"";
     BOOL isTop = NO;
     BOOL isCollection = [self isCollection:dict[@"bid"] tid:dict[@"tid"]];
     NSMutableArray *titlePrefixes = [NSMutableArray array];
     if (isCollection) {
-        [titlePrefixes addObject:@"💙"];
+        if (LIQUID_GLASS) {
+            [titlePrefixes addObject:@"💚"];
+        } else {
+            [titlePrefixes addObject:@"💙"];
+        }
     }
-    if ([self.bid isEqualToString:@"hot"]) {
+    if ([self isHotList]) {
         if (indexPath.row < globalTopCount) {
             isTop = YES;
             [titlePrefixes addObject:@"⬆️"];
@@ -340,7 +369,7 @@
         if (SIMPLE_VIEW) {
             cell.timeText.text = time;
         } else {
-            cell.timeText.text = [NSString stringWithFormat:@"%@ • %@", [ActionPerformer getBoardTitle:dict[@"bid"]], time];
+            cell.timeText.text = [NSString stringWithFormat:@"%@ • %@", [Helper getBoardTitle:dict[@"bid"]], time];
         }
     } else {
         if ([dict[@"top"] integerValue] == 1 || [dict[@"extr"] integerValue] == 1 || [dict[@"lock"] integerValue] == 1 || isCollection) {
@@ -385,11 +414,6 @@
         cell.backgroundColor = isTop ? [UIColor colorWithWhite:1.0 alpha:0.5] : [UIColor clearColor];
         cell.titleText.font = isTop ? [UIFont systemFontOfSize:cell.titleText.font.pointSize weight:UIFontWeightMedium] : [UIFont systemFontOfSize:cell.titleText.font.pointSize weight:UIFontWeightRegular];
     }
-    
-    if (cell.gestureRecognizers.count == 0) {
-        [cell addGestureRecognizer:[[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)]];
-    }
-    // Configure the cell...
     return cell;
 }
 
@@ -407,39 +431,39 @@
 
 - (IBAction)action:(id)sender {
     NSString *URL = [NSString stringWithFormat:@"%@/bbs/main/?p=%ld&bid=%@", CHEXIE, self.page, self.bid];
-    if ([self.bid isEqualToString:@"hot"]) {
+    if ([self isHotList]) {
         URL = [NSString stringWithFormat:@"%@/bbs/index", CHEXIE];
     }
-    UIAlertController *action = [UIAlertController alertControllerWithTitle:@"更多操作" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-    [action addAction:[UIAlertAction actionWithTitle:@"分享" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"更多操作" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"分享" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         NSURL *shareURL = [[NSURL alloc] initWithString:URL];
         UIActivityViewController *activityViewController =
         [[UIActivityViewController alloc] initWithActivityItems:@[self.title, shareURL] applicationActivities:nil];
         activityViewController.popoverPresentationController.barButtonItem = self.buttonAction;
         [self presentViewControllerSafe:activityViewController];
     }]];
-    [action addAction:[UIAlertAction actionWithTitle:@"打开网页版" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        WebViewController *dest = [self.storyboard instantiateViewControllerWithIdentifier:@"webview"];
-        CustomNavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
-        dest.URL = URL;
-        [navi setToolbarHidden:NO];
-        navi.modalPresentationStyle = UIModalPresentationFullScreen;
-        [self presentViewControllerSafe:navi];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"打开网页版" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [AppDelegate openURL:URL fullScreen:YES];
     }]];
-    if (IS_SUPER_USER && ![self.bid isEqualToString:@"1"]) {
-        [action addAction:[UIAlertAction actionWithTitle:@"抢沙发模式" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    if (IS_SUPER_USER && ![self.bid isEqualToString:@"1"] && [Helper checkLogin:NO]) {
+        [alertController addAction:[UIAlertAction actionWithTitle:@"抢沙发模式" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             
-            UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"进入抢沙发模式" message:@"版面将持续刷新直至刷出非工作区新帖并且成功回复指定内容为止" preferredStyle:UIAlertControllerStyleAlert];
-            [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+            UIAlertController *alertControllerSofa = [UIAlertController alertControllerWithTitle:@"进入抢沙发模式" message:@"版面将持续刷新直至刷出非工作区新帖并且成功回复指定内容为止" preferredStyle:UIAlertControllerStyleAlert];
+            __weak typeof(alertControllerSofa) weakAlertController = alertControllerSofa; // 避免循环引用
+            [alertControllerSofa addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
                 textField.placeholder = @"请指定回复内容，默认为“沙发”";
             }];
-            [alert addAction:[UIAlertAction actionWithTitle:@"取消"
+            [alertControllerSofa addAction:[UIAlertAction actionWithTitle:@"取消"
                                                       style:UIAlertActionStyleCancel
                                                     handler:nil]];
-            [alert addAction:[UIAlertAction actionWithTitle:@"开始"
+            [alertControllerSofa addAction:[UIAlertAction actionWithTitle:@"开始"
                                                       style:UIAlertActionStyleDefault
                                                     handler:^(UIAlertAction * _Nonnull action) {
-                sofaContent = alert.textFields.firstObject.text;
+                __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+                if (!strongAlertController) {
+                    return;
+                }
+                sofaContent = strongAlertController.textFields[0].text;
                 if ([sofaContent hasPrefix:@"fast"]) {
                     isFastRobSofa = YES;
                     sofaContent = [sofaContent substringFromIndex:@"fast".length];
@@ -455,27 +479,32 @@
                 [self showAlertWithTitle:@"已开始抢沙发" message:@"屏幕将常亮，请勿退出软件或者锁屏\n晃动设备可以随时终止抢沙发模式"];
                 [self refresh];
             }]];
-            [self presentViewControllerSafe:alert];
+            [self presentViewControllerSafe:alertControllerSofa];
         }]];
     }
-    [action addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
-    action.popoverPresentationController.barButtonItem = self.buttonAction;
-    [self presentViewControllerSafe:action];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
+    alertController.popoverPresentationController.barButtonItem = self.buttonAction;
+    [self presentViewControllerSafe:alertController];
 }
 
 - (IBAction)jump:(id)sender {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"跳转页面" message:[NSString stringWithFormat:@"请输入页码(1-%@)",[data lastObject][@"pages"]] preferredStyle:UIAlertControllerStyleAlert];
-    [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"跳转页面" message:[NSString stringWithFormat:@"请输入页码(1-%@)",[data lastObject][@"pages"]] preferredStyle:UIAlertControllerStyleAlert];
+    __weak typeof(alertController) weakAlertController = alertController; // 避免循环引用
+    [alertController addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
         textField.placeholder = @"页码";
         textField.keyboardType = UIKeyboardTypeNumberPad;
     }];
-    [alert addAction:[UIAlertAction actionWithTitle:@"取消"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"取消"
                                               style:UIAlertActionStyleCancel
                                             handler:nil]];
-    [alert addAction:[UIAlertAction actionWithTitle:@"好"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"好"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        NSString *pageip = alert.textFields.firstObject.text;
+        __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+        if (!strongAlertController) {
+            return;
+        }
+        NSString *pageip = strongAlertController.textFields[0].text;
         NSInteger pagen = [pageip integerValue];
         if (pagen <= 0 || pagen > [[data lastObject][@"pages"] integerValue]) {
             [self showAlertWithTitle:@"错误" message:@"输入不合法"];
@@ -483,7 +512,7 @@
         }
         [self jumpTo:pagen];
     }]];
-    [self presentViewControllerSafe:alert];
+    [self presentViewControllerSafe:alertController];
 }
 
 - (IBAction)swipeRight:(UISwipeGestureRecognizer *)sender {
@@ -492,9 +521,9 @@
         if (swipeDirection == 2) { // Disable swipe
             return;
         }
-        if (self.buttonForward.enabled == YES && swipeDirection == 0)
+        if (self.buttonForward.enabled && swipeDirection == 0)
             [self jumpTo:self.page + 1];
-        if (self.buttonBack.enabled == YES && swipeDirection == 1)
+        if (self.page > 1 && swipeDirection == 1)
             [self jumpTo:self.page - 1];
     }
 }
@@ -505,45 +534,47 @@
         if (swipeDirection == 2) { // Disable swipe
             return;
         }
-        if (self.buttonForward.enabled == YES && swipeDirection == 1)
+        if (self.buttonForward.enabled && swipeDirection == 1)
             [self jumpTo:self.page + 1];
-        if (self.buttonBack.enabled == YES && swipeDirection == 0)
+        if (self.page > 1 && swipeDirection == 0)
             [self jumpTo:self.page - 1];
     }
 }
 
-- (void)longPress:(UILongPressGestureRecognizer*)sender {
+- (void)longPress:(UILongPressGestureRecognizer *)sender {
     if (sender.state == UIGestureRecognizerStateBegan) {
         CGPoint point = [sender locationInView:self.tableView];
         NSIndexPath * indexPath = [self.tableView indexPathForRowAtPoint:point];
-        if (indexPath == nil) return ;
-        selectedRow = indexPath.row;
-        
-        NSDictionary *info = data[selectedRow];
-        if ([ActionPerformer checkRight] < 2) {
+        if (indexPath == nil) {
+            return;
+        }
+        if ([Helper checkRight] < 2) {
             return;
         }
         
-        UIAlertController *action = [UIAlertController alertControllerWithTitle:@"选择操作" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-        if (![self.bid isEqualToString:@"hot"]) {
-            [action addAction:[UIAlertAction actionWithTitle:([info[@"extr"] integerValue] == 1) ? @"取消加精" : @"加精" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        selectedRow = indexPath.row;
+        NSDictionary *info = data[selectedRow];
+        
+        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"选择操作" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+        if (![self isHotList]) {
+            [alertController addAction:[UIAlertAction actionWithTitle:([info[@"extr"] integerValue] == 1) ? @"取消加精" : @"加精" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
                 [self operate:@"extr"];
             }]];
-            [action addAction:[UIAlertAction actionWithTitle:([info[@"top"] integerValue] == 1) ? @"取消置顶" : @"置顶" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            [alertController addAction:[UIAlertAction actionWithTitle:([info[@"top"] integerValue] == 1) ? @"取消置顶" : @"置顶" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
                 [self operate:@"top"];
             }]];
-            [action addAction:[UIAlertAction actionWithTitle:@"首页置顶" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            [alertController addAction:[UIAlertAction actionWithTitle:@"首页置顶" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
                 [self operate:@"global_top_action"];
             }]];
-            [action addAction:[UIAlertAction actionWithTitle:([info[@"lock"] integerValue] == 1) ? @"取消锁定" : @"锁定" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            [alertController addAction:[UIAlertAction actionWithTitle:([info[@"lock"] integerValue] == 1) ? @"取消锁定" : @"锁定" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
                 [self operate:@"lock"];
             }]];
         } else {
-            [action addAction:[UIAlertAction actionWithTitle:indexPath.row < globalTopCount ? @"取消首页置顶" : @"首页置顶" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            [alertController addAction:[UIAlertAction actionWithTitle:indexPath.row < globalTopCount ? @"取消首页置顶" : @"首页置顶" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
                 [self operate:@"global_top_action"];
             }]];
         }
-        [action addAction:[UIAlertAction actionWithTitle:@"删除" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+        [alertController addAction:[UIAlertAction actionWithTitle:@"删除" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
             NSString *author = [info[@"author"] stringByReplacingOccurrencesOfString:@" " withString:@""];
             NSRange range = [author rangeOfString:@"/"];
             if (range.location != NSNotFound) {
@@ -554,12 +585,12 @@
                 [self deletePost];
             }];
         }]];
-        [action addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
+        [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
         ListCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
         UIView *view = cell.titleText;
-        action.popoverPresentationController.sourceView = view;
-        action.popoverPresentationController.sourceRect = view.bounds;
-        [self presentViewControllerSafe:action];
+        alertController.popoverPresentationController.sourceView = view;
+        alertController.popoverPresentationController.sourceRect = view.bounds;
+        [self presentViewControllerSafe:alertController];
     }
 }
 
@@ -570,7 +601,7 @@
         @"method" : method
     };
     [hud showWithProgressMessage:@"正在操作"];
-    [ActionPerformer callApiWithParams:dict toURL:@"action" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:dict toURL:@"action" callback:^(NSArray *result, NSError *err) {
         if (result.count > 0 && [result[0][@"code"] integerValue] == 0) {
             [hud hideWithSuccessMessage:@"操作成功"];
             dispatch_main_after(0.5, ^{
@@ -589,10 +620,12 @@
         @"tid" : data[selectedRow][@"tid"]
     };
     [hud showWithProgressMessage:@"正在操作"];
-    [ActionPerformer callApiWithParams:dict toURL:@"delete" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:dict toURL:@"delete" callback:^(NSArray *result, NSError *err) {
         if (result.count > 0 && [result[0][@"code"] integerValue] == 0) {
             [hud hideWithSuccessMessage:@"操作成功"];
-            [data removeObjectAtIndex:selectedRow];
+            NSMutableArray *tmpData = [NSMutableArray arrayWithArray:data];
+            [tmpData removeObjectAtIndex:selectedRow];
+            data = [tmpData copy];
             [self.tableView deleteRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:selectedRow inSection:0]] withRowAnimation:UITableViewRowAnimationFade];
             dispatch_main_after(0.5, ^{
                 [self refresh];
@@ -620,25 +653,32 @@
 #pragma mark - Navigation
 
 // In a storyboard-based application, you will often want to do a little preparation before navigation
-- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
-{
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
     if ([segue.identifier isEqualToString:@"compose"]) {
         ComposeViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
+        [AppDelegate setAdaptiveSheetFor:dest popoverSource:nil halfScreen:NO];
         dest.bid = self.bid;
-    } else if ([segue.identifier isEqualToString:@"search"]) {
+    }
+    if ([segue.identifier isEqualToString:@"search"]) {
         SearchViewController *dest = [segue destinationViewController];
-        dest.bid = self.bid;
-    } else if ([segue.identifier isEqualToString:@"post"]) {
+        dest.bid = [self isHotList] ? @"-1" : self.bid;
+    }
+    if ([segue.identifier isEqualToString:@"post"]) {
         ContentViewController *dest = [segue destinationViewController];
         NSIndexPath *indexPath = [self.tableView indexPathForCell:(UITableViewCell *)sender];
-        NSDictionary *one = data[indexPath.row];
-        dest.tid = one[@"tid"];
-        dest.bid = one[@"bid"];
-        if ([self.bid isEqualToString: @"hot"] && indexPath.row >= globalTopCount) {
+        NSDictionary *dict = data[indexPath.row];
+        dest.tid = dict[@"tid"];
+        dest.bid = dict[@"bid"];
+        if ([self isHotList] && indexPath.row >= globalTopCount) {
             // pid is reply num, floor # is reply num + 1
-            dest.destinationFloor = [NSString stringWithFormat:@"%ld", [one[@"pid"] integerValue] + 1];
+            dest.destinationFloor = [NSString stringWithFormat:@"%ld", [dict[@"pid"] integerValue] + 1];
         }
-        dest.title = [ActionPerformer restoreTitle:one[@"text"]];
+        dest.title = [Helper restoreTitle:dict[@"text"]];
+        dest.isCollection = [self isCollection:dict[@"bid"] tid:dict[@"tid"]];
+    }
+    if ([segue.identifier isEqualToString:@"viewOnline"]) {
+        UIViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
+        [AppDelegate setAdaptiveSheetFor:dest popoverSource:sender halfScreen:NO];
     }
 
     // Get the new view controller using [segue destinationViewController].

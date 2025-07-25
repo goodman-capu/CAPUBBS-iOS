@@ -11,11 +11,10 @@
 #import "AnimatedImageView.h"
 #import "CustomWebViewContainer.h"
 
-@interface UserViewController : CustomTableViewController<WKNavigationDelegate> {
+@interface UserViewController : CustomTableViewController<WKNavigationDelegate, WKScriptMessageHandler> {
     MBProgressHUD *hud;
     AnimatedImageView *backgroundView;
     int textSize;
-    UIRefreshControl *control;
     NSMutableArray *recentPost;
     NSMutableArray *recentReply;
     NSArray *labels;
@@ -24,8 +23,6 @@
     NSString *iconURL;
     NSArray *property;
     NSMutableArray *heights;
-    UIDocumentInteractionController *dic;
-    NSTimer *heightCheckTimer;
 }
 
 @property NSString *ID;

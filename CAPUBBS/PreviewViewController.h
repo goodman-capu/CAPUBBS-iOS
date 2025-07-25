@@ -17,6 +17,7 @@
 @property (weak, nonatomic) IBOutlet CustomWebViewContainer *webViewContainer;
 @property NSString *textTitle;
 @property NSString *textBody;
+@property NSArray *attachments;
 @property int sig;
 
 @end

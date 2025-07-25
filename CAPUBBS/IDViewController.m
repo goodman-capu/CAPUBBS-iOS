@@ -7,8 +7,9 @@
 //
 
 #import "IDViewController.h"
-#import "AnimatedImageView.h"
 #import "IDCell.h"
+#import "InternalLoginViewController.h"
+#import "AnimatedImageView.h"
 
 @interface IDViewController ()
 
@@ -19,12 +20,14 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
-    self.preferredContentSize = CGSizeMake(400, 0);
+    self.preferredContentSize = CGSizeMake(400, 650);
     if (!IS_SUPER_USER) {
         self.navigationItem.rightBarButtonItems = @[self.buttonLogout];
     }
+    
     [NOTIFICATION addObserver:self selector:@selector(userChanged:) name:@"userChanged" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(userChanged:) name:@"infoRefreshed" object:nil];
+    
     [self userChanged:nil];
     
     // Uncomment the following line to preserve selection between presentations.
@@ -43,22 +46,23 @@
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     // Return the number of rows in the section.
-    return MIN(ID_NUM - isDelete, data.count + 1);
+    return MIN(ID_NUM, data.count + 1);
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     IDCell *cell;
     if (indexPath.row < data.count) {
+        NSDictionary *info = data[indexPath.row];
         cell = [tableView dequeueReusableCellWithIdentifier:@"id" forIndexPath:indexPath];
-        cell.labelText.text = data[indexPath.row][@"id"];
-        if ([cell.labelText.text isEqualToString:UID] && [ActionPerformer checkLogin:NO]) {
+        cell.labelText.text = info[@"id"];
+        if ([info[@"id"] isEqualToString:UID] && [Helper checkLogin:NO]) {
             cell.accessoryType = UITableViewCellAccessoryCheckmark;
             cell.userInteractionEnabled = NO;
         } else {
-            cell.accessoryType = UITableViewCellAccessoryNone;
+            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
             cell.userInteractionEnabled = YES;
         }
-        [cell.icon setUrl:data[indexPath.row][@"icon"]];
+        [cell.icon setUrl:info[@"icon"]];
     } else {
         cell = [tableView dequeueReusableCellWithIdentifier:@"new" forIndexPath:indexPath];
     }
@@ -79,7 +83,7 @@
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
     // Return NO if you do not want the specified item to be editable.
     if (indexPath.row < data.count) {
-        return YES;
+        return ![data[indexPath.row] [@"id"] isEqualToString:UID];
     } else {
         return NO;
     }
@@ -91,15 +95,11 @@
         [data removeObjectAtIndex:indexPath.row];
         [DEFAULTS setObject:data forKey:@"ID"];
         // Delete the row from the data source
-        isDelete = YES;
-        [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
-        isDelete = NO;
-        if (data.count + 1 == MAX_ID_NUM) {
-            dispatch_main_after(0.5, ^{
-                [self.tableView reloadData];
-            });
-        }
-    }  
+        [self.tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
+        dispatch_main_after(0.5, ^{
+            [self.tableView reloadData];
+        });
+    }
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -122,17 +122,18 @@
 }
 
 - (IBAction)logOut:(id)sender {
-    [self showAlertWithTitle:@"警告" message:@"您确定要注销当前账号吗？" confirmTitle:@"确定" confirmAction:^(UIAlertAction *action) {
-        [ActionPerformer callApiWithParams:nil toURL:@"logout" callback:^(NSArray *result, NSError *err) {}];
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"退出登录" message:@"您确定要登出当前账号吗？" preferredStyle:UIAlertControllerStyleActionSheet];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
         NSLog(@"Logout - %@", UID);
         [GROUP_DEFAULTS removeObjectForKey:@"uid"];
         [GROUP_DEFAULTS removeObjectForKey:@"pass"];
         [GROUP_DEFAULTS removeObjectForKey:@"token"];
         [GROUP_DEFAULTS removeObjectForKey:@"userInfo"];
-        dispatch_main_async_safe(^{
-            [NOTIFICATION postNotificationName:@"userChanged" object:nil userInfo:nil];
-        });
-    }];
+        [NOTIFICATION postNotificationName:@"userChanged" object:nil userInfo:nil];
+    }]];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
+    alertController.popoverPresentationController.barButtonItem = sender;
+    [self presentViewControllerSafe:alertController];
 }
 
 - (IBAction)back:(id)sender {
@@ -141,8 +142,7 @@
 
 - (void)userChanged:(NSNotification*)noti {
     dispatch_main_async_safe(^{
-        data = [[DEFAULTS objectForKey:@"ID"] mutableCopy];
-        isDelete = NO;
+        data = [NSMutableArray arrayWithArray:[DEFAULTS objectForKey:@"ID"]];
         self.buttonLogout.enabled = ([UID length] > 0);
         [self.tableView reloadData];
     });

@@ -1,5 +1,5 @@
 {
-  "originHash" : "e7107044ceb7b8a8c0feb6569869b02ca4ec0ec3d536a7a950a9c4a25931680f",
+  "originHash" : "e36d9a92ffac24955e6c177452dfa0d4960a5a4bdf6640ed7ad58ba6093ed896",
   "pins" : [
     {
       "identity" : "mbprogresshud",
@@ -15,8 +15,17 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SDWebImage/SDWebImage.git",
       "state" : {
-        "revision" : "cac9a55a3ae92478a2c95042dcc8d9695d2129ca",
-        "version" : "5.21.0"
+        "revision" : "b62cb63bf4ed1f04c961a56c9c6c9d5ab8524ec6",
+        "version" : "5.21.1"
+      }
+    },
+    {
+      "identity" : "tocropviewcontroller",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/TimOliver/TOCropViewController",
+      "state" : {
+        "revision" : "a634cb7cdfd580006e79a6e74e64417fe9e9783b",
+        "version" : "2.7.4"
       }
     }
   ],

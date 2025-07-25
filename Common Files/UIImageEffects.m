@@ -305,6 +305,70 @@ void cleanupBuffer(void *userData, void *buf_data)
 
 @implementation UIImage (Extension)
 
+- (BOOL)hasAlphaChannel:(BOOL)strictValidation {
+    if (!self.CGImage) {
+        return NO;
+    }
+    CGImageRef cgImage = self.CGImage;
+    
+    // 快速排除不含 alpha 通道的格式
+    CGImageAlphaInfo alphaInfo = CGImageGetAlphaInfo(cgImage);
+    if (alphaInfo == kCGImageAlphaNone ||
+        alphaInfo == kCGImageAlphaNoneSkipLast ||
+        alphaInfo == kCGImageAlphaNoneSkipFirst) {
+        return NO;
+    } else if (!strictValidation) {
+        return YES;
+    }
+
+    size_t width = CGImageGetWidth(cgImage);
+    size_t height = CGImageGetHeight(cgImage);
+    if (width == 0 || height == 0) {
+        return NO;
+    }
+
+    size_t bytesPerPixel = 4;
+    size_t bytesPerRow = bytesPerPixel * width;
+    UInt8 *rawData = (UInt8 *)calloc(height * width, bytesPerPixel);
+    if (!rawData) {
+        return NO;
+    }
+
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    if (!colorSpace) {
+        free(rawData);
+        return NO;
+    }
+
+    CGContextRef context = CGBitmapContextCreate(rawData,
+                                                 width,
+                                                 height,
+                                                 8,
+                                                 bytesPerRow,
+                                                 colorSpace,
+                                                 (CGBitmapInfo)kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(colorSpace);
+
+    if (!context) {
+        free(rawData);
+        return NO;
+    }
+
+    CGContextDrawImage(context, CGRectMake(0, 0, width, height), cgImage);
+
+    BOOL hasAlphaPixel = NO;
+    for (size_t i = 0; i < width * height; i++) {
+        if (rawData[i * 4 + 3] < 255) {
+            hasAlphaPixel = YES;
+            break;
+        }
+    }
+
+    CGContextRelease(context);
+    free(rawData);
+    return hasAlphaPixel;
+}
+
 - (UIImage *)imageByApplyingCornerRadius:(CGFloat)cornerRadius {
     // 1. 开启图形上下文
     UIGraphicsBeginImageContextWithOptions(self.size, NO, 0.0);
@@ -326,6 +390,49 @@ void cleanupBuffer(void *userData, void *buf_data)
     UIGraphicsEndImageContext();
 
     return roundedImage;
+}
+
+- (UIImage *)getCenterSquareImage {
+    // 1. 获取图片的原始 CGImageRef
+    CGImageRef sourceImageRef = self.CGImage;
+    if (sourceImageRef == NULL) {
+        return nil; // 无法获取 CGImage
+    }
+
+    // 2. 计算像素尺寸，而不是点（points）尺寸，这对于裁剪更精确
+    // UIImage 的 size 属性是点，需要乘以 scale 得到实际像素
+    CGFloat pixelWidth = self.size.width * self.scale;
+    CGFloat pixelHeight = self.size.height * self.scale;
+
+    // 3. 确定正方形的边长（取宽高的较小值）
+    CGFloat squareSideLength = MIN(pixelWidth, pixelHeight);
+
+    // 4. 计算裁剪区域的起始点 (x, y)，使其居中
+    // (总宽度 - 正方形边长) / 2
+    CGFloat cropX = (pixelWidth - squareSideLength) / 2.0;
+    CGFloat cropY = (pixelHeight - squareSideLength) / 2.0;
+
+    // 5. 创建裁剪矩形区域 (CGRect)
+    CGRect cropRect = CGRectMake(cropX, cropY, squareSideLength, squareSideLength);
+
+    // 6. 使用 Core Graphics API 进行裁剪
+    // 这个函数从一个现有的 CGImage 中根据指定的矩形创建一个新的 CGImage
+    CGImageRef croppedImageRef = CGImageCreateWithImageInRect(sourceImageRef, cropRect);
+    if (croppedImageRef == NULL) {
+        return nil; // 裁剪失败
+    }
+
+    // 7. 将裁剪后的 CGImageRef 转换回 UIImage
+    // 关键：必须使用原始图片的 scale 和 orientation 来创建新图片，否则可能导致方向错误或分辨率丢失
+    UIImage *newImage = [UIImage imageWithCGImage:croppedImageRef
+                                            scale:self.scale
+                                      orientation:self.imageOrientation];
+
+    // 8. 释放由 CGImageCreateWithImageInRect 创建的 CGImageRef，防止内存泄漏
+    // Core Foundation/Core Graphics 对象需要手动管理内存
+    CGImageRelease(croppedImageRef);
+
+    return newImage;
 }
 
 + (UIImage *)imageWithColor:(UIColor *)color size:(CGSize)size {

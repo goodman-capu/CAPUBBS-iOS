@@ -12,10 +12,13 @@
 @interface LoginViewController : CustomViewController<UITableViewDelegate> {
     MBProgressHUD *hud;
     NSArray *news;
-    NSString *title;
+    NSDateFormatter *formatter;
     UIRefreshControl *control;
+    BOOL enterLogin;
     BOOL userInfoRefreshing;
-    BOOL newsRefreshing;
+    NSString *lastUserName;
+    NSTimeInterval vibrateTime;
+    NSTimeInterval newsRefreshTime;
 }
 @property (weak, nonatomic) IBOutlet UITextField *textUid;
 @property (weak, nonatomic) IBOutlet UITextField *textPass;
@@ -23,8 +26,9 @@
 @property (weak, nonatomic) IBOutlet UIButton *buttonLogin;
 @property (weak, nonatomic) IBOutlet UIButton *buttonRegister;
 @property (weak, nonatomic) IBOutlet UIButton *buttonEnter;
+@property (weak, nonatomic) IBOutlet UILabel *labelNews;
 @property (weak, nonatomic) IBOutlet UIButton *buttonAddNews;
-@property (weak, nonatomic) IBOutlet UITableView *tableview;
+@property (weak, nonatomic) IBOutlet UITableView *newsTableView;
 
 + (void)updateIDSaves;
 

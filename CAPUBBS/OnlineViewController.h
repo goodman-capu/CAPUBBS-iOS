@@ -7,7 +7,6 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "OnlineViewCell.h"
 
 @interface OnlineViewController : CustomTableViewController {
     NSMutableArray *data;

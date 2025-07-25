@@ -83,7 +83,11 @@
 
 @interface UIImage (Extension)
 
+- (BOOL)hasAlphaChannel:(BOOL)strictValidation;
+
 - (UIImage *)imageByApplyingCornerRadius:(CGFloat)cornerRadius;
+
+- (UIImage *)getCenterSquareImage;
 
 + (UIImage *)imageWithColor:(UIColor *)color size:(CGSize)size;
 

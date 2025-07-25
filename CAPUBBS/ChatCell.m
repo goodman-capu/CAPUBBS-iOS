@@ -13,16 +13,13 @@
 - (void)awakeFromNib {
     [super awakeFromNib];
     // Initialization code
-    [self.imageChat setAlpha:0.8];
-    [self.labelTime.layer setCornerRadius:5.0];
-    [self.labelTime.layer setMasksToBounds:YES];
-    [self.textSend.layer setCornerRadius:10.0];
-    [self.textSend setScrollsToTop:NO];
-    [self.textMessage setBackgroundColor:[UIColor clearColor]];
-    [self.imageIcon setRounded:YES];
+    self.backgroundColor = [UIColor clearColor];
     
-    self.layer.shouldRasterize = YES; // 光栅化 提高流畅度
-    self.layer.rasterizationScale = [UIScreen mainScreen].scale;
+    self.imageChat.alpha = 0.8;
+    self.textSend.layer.cornerRadius = 10;
+    self.textSend.scrollsToTop = NO;
+    self.textMessage.backgroundColor = [UIColor clearColor];
+    [self.imageIcon setRounded:YES];
 }
 
 @end

@@ -11,6 +11,7 @@
 #import "CustomWebViewContainer.h"
 
 @interface WebViewController : CustomViewController<WKNavigationDelegate, UIScrollViewDelegate> {
+    MBProgressHUD *hud;
     CGFloat contentOffsetY;
     BOOL isAtEnd;
     NSUserActivity *activity;
@@ -25,5 +26,6 @@
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonBack;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonForward;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonShare;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonSafari;
 
 @end

@@ -7,6 +7,7 @@
                 return;
             }
             const imgSrc = target.src || target.dataset._originalSrc;
+            const alt = target.alt || '';
             if (!imgSrc) {
                 return;
             }
@@ -42,7 +43,7 @@
                         loading: false,
                         src: imgSrc,
                         data: base64data,
-                        alt: target.alt || ''
+                        alt: alt,
                     });
                 };
                 reader.onerror = () => {
@@ -51,6 +52,7 @@
                         loading: false,
                         src: imgSrc,
                         error: reader.error?.message || '图片格式错误',
+                        alt: alt,
                     });
                 };
                 reader.readAsDataURL(blob);
@@ -67,6 +69,7 @@
                     loading: false,
                     src: imgSrc,
                     error: message,
+                    alt: alt,
                 });
             })
             .finally(() => {
@@ -90,7 +93,9 @@
 
         img.dataset._originalSrc = img.src;
         img.removeAttribute('src');
-        img.alt = '🚫';
+        if (!img.alt) {
+            img.alt = '🚫';
+        }
         img.classList.add('image-hidden');
     }
     
@@ -108,4 +113,27 @@
         });
     });
     observer.observe(document.body, { childList: true, subtree: true });
+})();
+
+// Observe height. ResizeObserver / MutationObserver don't work reliably.
+// requestAnimationFrame is the best reliable option we have.
+(() => {
+    window._lastReportedHeight = -1; // override to >= 0 to start reporting
+    const postHeightToHandler = () => {
+        requestAnimationFrame(postHeightToHandler);
+        if (window._lastReportedHeight < 0) {
+            return;
+        }
+        const bodyWrapper = document.getElementById('body-wrapper');
+        if (!bodyWrapper) {
+            return;
+        }
+        const height = bodyWrapper.scrollHeight;
+        if (Math.abs(height - window._lastReportedHeight) < 1) {
+            return;
+        }
+        window._lastReportedHeight = height;
+        window.webkit.messageHandlers.heightHandler.postMessage(height);
+    };
+    requestAnimationFrame(postHeightToHandler);
 })();

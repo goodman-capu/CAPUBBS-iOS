@@ -9,6 +9,9 @@
 #import <UIKit/UIKit.h>
 #import <MessageUI/MessageUI.h>
 
+@interface CustomNavigationController : UINavigationController
+@end
+
 @interface CustomViewController : UIViewController
 @end
 
@@ -16,9 +19,6 @@
 @end
 
 @interface CustomCollectionViewController : UICollectionViewController
-@end
-
-@interface CustomMailComposeViewController : MFMailComposeViewController
 @end
 
 @interface CustomSearchController : UISearchController
@@ -57,19 +57,4 @@
 - (void)showAlertWithTitle:(NSString *)title
                    message:(NSString *)message;
 
-@end
-
-@interface CustomViewController (Customize)
-@end
-
-@interface CustomTableViewController (Customize)
-@end
-
-@interface CustomCollectionViewController (Customize)
-@end
-
-@interface CustomMailComposeViewController (Customize)
-@end
-
-@interface CustomSearchController (Customize)
 @end

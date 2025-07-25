@@ -7,24 +7,25 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "AppDelegate.h"
 #import <SDWebImage/SDAnimatedImage.h>
 #import <SDWebImage/SDAnimatedImageView.h>
 
 typedef NS_ENUM(int, ImageFileType) {
     ImageFileTypeUnknown = 0,
+    ImageFileTypeSVG,
     ImageFileTypeJPEG,
     ImageFileTypePNG,
     ImageFileTypeGIF,
     ImageFileTypeHEIC,
     ImageFileTypeHEIF,
-    ImageFileTypeWEBP  // iOS 14+
+    ImageFileTypeWEBP,
+    ImageFileTypeAVIF, // iOS 16+
 };
 
 @interface AnimatedImageView : SDAnimatedImageView
 
 - (void)setRounded:(BOOL)isRounded;
-- (void)setBlurredImage:(UIImage *)image animated:(BOOL)animated;
+- (void)setImage:(UIImage *)image blurred:(BOOL)blurred animated:(BOOL)animated;
 - (void)setGif:(NSString *)imageName;
 - (void)setUrl:(NSString *)urlToSet;
 - (NSString *)getUrl;
@@ -32,6 +33,6 @@ typedef NS_ENUM(int, ImageFileType) {
 + (BOOL)isAnimated:(NSData *)imageData;
 + (ImageFileType)fileType:(NSData *)imageData;
 + (NSString *)fileExtension:(ImageFileType)type;
-+ (void)checkPath;
++ (void)checkIconCachePath;
 
 @end

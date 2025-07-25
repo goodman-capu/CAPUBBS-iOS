@@ -7,8 +7,6 @@
 //
 
 #import "AnimatedImageView.h"
-#import <MobileCoreServices/MobileCoreServices.h>
-#import "UIImageEffects.h"
 
 @implementation AnimatedImageView {
     NSString * latestUrl;
@@ -30,44 +28,51 @@
     }
 }
 
-- (void)setBlurredImage:(UIImage *)image animated:(BOOL)animated {
+- (void)setImage:(UIImage *)image {
     latestUrl = nil;
-    float animationTime = 0.5;
-    image = [UIImageEffects imageByApplyingExtraLightEffectToImage:image];
+    [super setImage:image];
+}
+
+- (void)setImageInternal:(UIImage *)image {
+    [super setImage:image];
+}
+
+- (void)setImage:(UIImage *)image blurred:(BOOL)blurred animated:(BOOL)animated {
+    if (image && blurred) {
+        image = [UIImageEffects imageByApplyingBlurToImage:image withRadius:40 tintColor:[UIColor colorWithWhite:0.93 alpha:0.9] saturationDeltaFactor:4 maskImage:nil];
+    }
     if (animated) {
-        if (self.image) { // 原本有图片
-            [UIView animateWithDuration:animationTime / 2 animations:^{
-                [self setAlpha:0.25];
-            } completion:^(BOOL finished) {
-                [self setImage:image];
-                [UIView animateWithDuration:animationTime / 2 animations:^{
-                    [self setAlpha:1.0];
-                }];
-            }];
-        } else {
-            [self setAlpha:0.0];
+        [UIView transitionWithView:self
+                          duration:0.25
+                           options:UIViewAnimationOptionTransitionCrossDissolve
+                        animations:^{
             [self setImage:image];
-            [UIView animateWithDuration:animationTime animations:^{
-                [self setAlpha:1.0];
-            }];
-        }
+        } completion:nil];
     } else {
         [self setImage:image];
     }
 }
 
 - (void)setGif:(NSString *)imageName {
-    latestUrl = nil;
-    NSString *filePath = [[NSBundle mainBundle] pathForResource:imageName ofType:nil];
-    NSData *fileData = [NSData dataWithContentsOfFile:filePath];
-    [self _setGifWithData:fileData];
+    dispatch_global_default_async(^{
+        NSString *filePath = [[NSBundle mainBundle] pathForResource:imageName ofType:nil];
+        NSData *fileData = [NSData dataWithContentsOfFile:filePath];
+        dispatch_main_async_safe(^{
+            [self _setGifWithData:fileData internal:NO];
+        });
+    });
 }
 
-- (void)_setGifWithData:(NSData *)data {
-    dispatch_main_async_safe(^{
-        SDAnimatedImage *image = [[SDAnimatedImage alloc] initWithData:data];
+- (void)_setGifWithData:(NSData *)data internal:(BOOL)internal {
+    SDAnimatedImage *image = [[SDAnimatedImage alloc] initWithData:data];
+    // Loop forever
+    self.shouldCustomLoopCount = YES;
+    self.animationRepeatCount = 0;
+    if (internal) {
+        [self setImageInternal:image];
+    } else {
         [self setImage:image];
-    });
+    }
 }
 
 - (void)setUrl:(NSString *)urlToSet {
@@ -77,6 +82,9 @@
     }
     if (newUrl.length == 0) {
         NSLog(@"Failed to translate icon URL - %@", urlToSet);
+        dispatch_main_async_safe(^{
+            [self setImage:PLACEHOLDER];
+        });
         return;
     }
     latestUrl = newUrl;
@@ -90,25 +98,26 @@
 - (void)loadImageWithPlaceholder:(BOOL)showPlaceholder {
     [NOTIFICATION removeObserver:self];
     NSString *imageUrl = latestUrl;
-    NSString *filePath = [NSString stringWithFormat:@"%@/%@", IMAGE_CACHE_PATH, [ActionPerformer md5:imageUrl]];
+    NSString *filePath = [NSString stringWithFormat:@"%@/%@", ICON_CACHE_PATH, [Helper md5:imageUrl]];
     NSData *data = [MANAGER contentsAtPath:filePath];
     NSString *oldInfo = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     
-    // 一定要在主线程上刷新图片 否则软件崩溃
     if (data.length > 0 && ![oldInfo hasPrefix:@"loading"]) { // 缓存存在的话直接加载缓存
         dispatch_main_async_safe(^{
-            if (SIMPLE_VIEW == YES) {
-                [self setImage:[UIImage imageWithData:data]];
+            if (SIMPLE_VIEW) {
+                [self setImageInternal:[UIImage imageWithData:data]];
             } else {
-                [self _setGifWithData:data];
-            }
-            if (imageUrl.length > 0) {
-                [NOTIFICATION postNotificationName:[@"imageSet" stringByAppendingString:imageUrl] object:nil userInfo:@{@"data": data}];
+                [self _setGifWithData:data internal:YES];
             }
         });
+        if (imageUrl.length > 0) {
+            [NOTIFICATION postNotificationName:[@"imageSet" stringByAppendingString:imageUrl] object:nil userInfo:@{@"data": data}];
+        }
     } else if (imageUrl.length > 0) {
         if (showPlaceholder) {
-            [self setImage:PLACEHOLDER];
+            dispatch_main_async_safe(^{
+                [self setImageInternal:PLACEHOLDER];
+            });
         }
         [NOTIFICATION addObserver:self selector:@selector(loadImageWithPlaceholder:) name:[@"imageGet" stringByAppendingString:imageUrl] object:nil];
         
@@ -123,7 +132,7 @@
             }
         }
         NSString *newInfo = [@"loading" stringByAppendingString:[formatter stringFromDate:[NSDate date]]];
-        [AnimatedImageView checkPath];
+        [AnimatedImageView checkIconCachePath];
         [MANAGER createFileAtPath:filePath contents:[newInfo dataUsingEncoding:NSUTF8StringEncoding] attributes:nil];
         dispatch_global_default_async(^{
             [self startLoadingUrl:imageUrl withPlaceholder:showPlaceholder];
@@ -132,7 +141,7 @@
 }
 
 - (void)startLoadingUrl:(NSString *)imageUrl withPlaceholder:(BOOL)hasPlaceholder {
-    NSString *filePath = [NSString stringWithFormat:@"%@/%@", IMAGE_CACHE_PATH, [ActionPerformer md5:imageUrl]];
+    NSString *filePath = [NSString stringWithFormat:@"%@/%@", ICON_CACHE_PATH, [Helper md5:imageUrl]];
     BOOL shouldSkipLoading = [[GROUP_DEFAULTS objectForKey:@"iconOnlyInWifi"] boolValue] && IS_CELLULAR;
     if (!shouldSkipLoading) {
         // NSLog(@"Load Img - %@", imageUrl);
@@ -141,10 +150,10 @@
         ImageFileType imageType = [AnimatedImageView fileType:imageData];
         if (imageType != ImageFileTypeUnknown) {
             if (![AnimatedImageView isAnimated:imageData]) {
-                imageData = [self resizeImage:image];
+                imageData = [self resizeAndCompressImage:image];
             }
             // NSLog(@"Icon Type:%@, Size:%dkb", imageType, (int)(imageData.length/1024));
-            [AnimatedImageView checkPath];
+            [AnimatedImageView checkIconCachePath];
             [MANAGER createFileAtPath:filePath contents:imageData attributes:nil];
             [NOTIFICATION postNotificationName:[@"imageGet" stringByAppendingString:imageUrl] object:nil];
             return;
@@ -153,7 +162,7 @@
     [MANAGER removeItemAtPath:filePath error:nil];
     if (!hasPlaceholder) {
         dispatch_main_async_safe(^{
-            [self setImage:PLACEHOLDER];
+            [self setImageInternal:PLACEHOLDER];
         });
     }
     if (!shouldSkipLoading) {
@@ -161,29 +170,22 @@
     }
 }
 
-- (NSData *)resizeImage:(UIImage *)oriImage {
-    UIImage *resizeImage = oriImage;
-    int maxWidth = 450; // 详细信息界面图片大小150 * 150 @3x模式下450 * 450可保证清晰
+- (NSData *)resizeAndCompressImage:(UIImage *)oriImage {
+    BOOL hasAlpha = [oriImage hasAlphaChannel:NO];
+    UIImage *resizedImage = oriImage;
+    int maxWidth = 300; // 详细信息界面图片大小80 * 80，3x模式下可保证清晰
     if (oriImage.size.width > maxWidth) {
-        UIGraphicsBeginImageContext(CGSizeMake(maxWidth, maxWidth*oriImage.size.height/oriImage.size.width));
-        [oriImage drawInRect:CGRectMake(0, 0, maxWidth, maxWidth*oriImage.size.height/oriImage.size.width)];
-        resizeImage = UIGraphicsGetImageFromCurrentImageContext();
+        CGFloat scaledHeight = maxWidth * oriImage.size.height / oriImage.size.width;
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(maxWidth, scaledHeight), !hasAlpha, 1.0);
+        [oriImage drawInRect:CGRectMake(0, 0, maxWidth, maxWidth * oriImage.size.height / oriImage.size.width)];
+        resizedImage = UIGraphicsGetImageFromCurrentImageContext();
         UIGraphicsEndImageContext();
     }
     
-    CGImageAlphaInfo alphaInfo = CGImageGetAlphaInfo(oriImage.CGImage);
-    BOOL hasAlpha = (alphaInfo == kCGImageAlphaFirst ||
-                     alphaInfo == kCGImageAlphaLast ||
-                     alphaInfo == kCGImageAlphaPremultipliedFirst ||
-                     alphaInfo == kCGImageAlphaPremultipliedLast);
     if (hasAlpha) { // 带透明信息的png不可转换成jpeg否则丢失透明性
-        return UIImagePNGRepresentation(resizeImage);
+        return UIImagePNGRepresentation(resizedImage);
     } else {
-        if (resizeImage.size.width >= maxWidth) {
-            return UIImageJPEGRepresentation(resizeImage, 0.75);
-        } else {
-            return UIImageJPEGRepresentation(resizeImage, 1);
-        }
+        return UIImageJPEGRepresentation(resizedImage, 0.75);
     }
 }
 
@@ -199,39 +201,50 @@
     if (!imageData || imageData.length == 0) {
         return ImageFileTypeUnknown;
     }
+    
+    NSString *textPrefix = [[NSString alloc] initWithData:[imageData subdataWithRange:NSMakeRange(0, MIN(1024, imageData.length))] encoding:NSUTF8StringEncoding];
+    if ([[textPrefix lowercaseString] containsString:@"<svg"]) {
+        return ImageFileTypeSVG;
+    }
 
     CGImageSourceRef source = CGImageSourceCreateWithData((__bridge CFDataRef)imageData, NULL);
     if (!source) {
         return ImageFileTypeUnknown;
     }
 
-    CFStringRef uti = CGImageSourceGetType(source);
+    CFStringRef utiString = CGImageSourceGetType(source);
+    UTType *type = nil;
+    if (utiString) {
+        type = [UTType typeWithIdentifier:(__bridge NSString *)utiString];
+    }
     CFRelease(source);
 
-    if (!uti) {
+    if (!type) {
         return ImageFileTypeUnknown;
     }
 
-    if (UTTypeConformsTo(uti, kUTTypeJPEG)) {
+    if ([type conformsToType:UTTypeJPEG]) {
         return ImageFileTypeJPEG;
     }
-    if (UTTypeConformsTo(uti, kUTTypePNG)) {
+    if ([type conformsToType:UTTypePNG]) {
         return ImageFileTypePNG;
     }
-    if (UTTypeConformsTo(uti, kUTTypeGIF)) {
+    if ([type conformsToType:UTTypeGIF]) {
         return ImageFileTypeGIF;
     }
-    if (UTTypeConformsTo(uti, (__bridge CFStringRef)@"public.heic")) {
+    if ([type conformsToType:UTTypeHEIC]) {
         return ImageFileTypeHEIC;
     }
-    if (UTTypeConformsTo(uti, (__bridge CFStringRef)@"public.heif")) {
+    if ([type conformsToType:UTTypeHEIF]) {
         return ImageFileTypeHEIF;
     }
-    if (@available(iOS 14.0, *)) {
-        // WebP 在 iOS 14+ 才原生支持，所以对于更早系统不要识别，不然无法渲染
-        if (UTTypeConformsTo(uti, (__bridge CFStringRef)@"public.webp") ||
-            UTTypeConformsTo(uti, (__bridge CFStringRef)@"org.webmproject.webp")) {
-            return ImageFileTypeWEBP;
+    if ([type conformsToType:UTTypeWebP]) {
+        return ImageFileTypeWEBP;
+    }
+    // Only iOS 16+ supports native avif rendering
+    if (@available(iOS 16.0, *)) {
+        if ([type.identifier isEqualToString:@"public.avif"]) {
+            return ImageFileTypeAVIF;
         }
     }
 
@@ -240,6 +253,8 @@
 
 + (NSString *)fileExtension:(ImageFileType)type {
     switch (type) {
+        case ImageFileTypeSVG:
+            return @"svg";
         case ImageFileTypeJPEG:
             return @"jpg";
         case ImageFileTypePNG:
@@ -252,16 +267,21 @@
             return @"heif";
         case ImageFileTypeWEBP:
             return @"webp";
-        case ImageFileTypeUnknown:
+        case ImageFileTypeAVIF:
+            return @"avif";
         default:
             return nil;
     }
 }
 
-+ (void)checkPath {
-    if (![MANAGER fileExistsAtPath:IMAGE_CACHE_PATH]) { // 如果没有IMAGE_CACHE_PATH目录则创建目录
-        [MANAGER createDirectoryAtPath:IMAGE_CACHE_PATH withIntermediateDirectories:NO attributes:nil error:nil];
++ (void)checkIconCachePath {
+    if ([MANAGER fileExistsAtPath:ICON_CACHE_PATH]) {
+        return;
     }
+    // 如果没有图片缓存目录则创建目录，并配置跳过iCloud备份
+    [MANAGER createDirectoryAtPath:ICON_CACHE_PATH withIntermediateDirectories:YES attributes:nil error:nil];
+    NSURL *cacheURL = [NSURL fileURLWithPath:ICON_CACHE_PATH];
+    [cacheURL setResourceValue:@YES forKey:NSURLIsExcludedFromBackupKey error:nil];
 }
 
 + (NSString *)transIconURL:(NSString *)iconUrl { // 转换用户头像地址函数

@@ -7,6 +7,7 @@
 //
 
 #import "LzlViewController.h"
+#import "LzlCell.h"
 #import <StoreKit/StoreKit.h>
 #import "UserViewController.h"
 #import "ContentViewController.h"
@@ -21,7 +22,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
-    self.preferredContentSize = CGSizeMake(400, 0);
+    self.preferredContentSize = CGSizeMake(400, 650);
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
@@ -31,6 +32,8 @@
     self.refreshControl = [[UIRefreshControl alloc] init];
     [self.refreshControl addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
     shouldShowHud = YES;
+    [self.tableView addGestureRecognizer:[[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)]];
+    [self.buttomCompose setEnabled:[Helper checkLogin:NO]];
     
     if (self.defaultData) {
         data = [self.defaultData mutableCopy];
@@ -63,20 +66,34 @@
     [activity invalidate];
 }
 
-- (void)refreshControlValueChanged:(UIRefreshControl*)sender{
-    self.refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
+- (void)refreshControlValueChanged:(UIRefreshControl *)refreshControl {
+    refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
     shouldShowHud = YES;
     [self loadData];
 }
 
+- (BOOL)shouldDisableClose {
+    return self.textPost.text.length > 0;
+}
+
 - (IBAction)back:(id)sender {
-    if (self.textPost.text.length == 0) {
-        [self dismissViewControllerAnimated:YES completion:nil];
+    if ([self shouldDisableClose]) {
+        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"确定退出" message:@"您有尚未发表的楼中楼，建议先保存草稿，确定继续退出？" preferredStyle:UIAlertControllerStyleActionSheet];
+        [alertController addAction:[UIAlertAction actionWithTitle:@"退出" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+            [self dismiss];
+        }]];
+        [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
+        if ([sender isKindOfClass:[UIBarButtonItem class]]) {
+            alertController.popoverPresentationController.barButtonItem = sender;
+        }
+        [self presentViewControllerSafe:alertController];
     } else {
-        [self showAlertWithTitle:@"确定退出" message:@"您有尚未发表的楼中楼内容，确定继续退出？" confirmTitle:@"退出" confirmAction:^(UIAlertAction *action) {
-            [self dismissViewControllerAnimated:YES completion:nil];
-        } cancelTitle:@"返回"];
+        [self dismiss];
     }
+}
+
+- (void)dismiss {
+    [self dismissViewControllerAnimated:YES completion:nil];
 }
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
@@ -96,7 +113,7 @@
         @"fid" : self.fid,
         @"method" : @"show"
     };
-    [ActionPerformer callApiWithParams:dict toURL:@"lzl" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:dict toURL:@"lzl" callback:^(NSArray *result, NSError *err) {
         if (self.refreshControl.isRefreshing) {
             [self.refreshControl endRefreshing];
         }
@@ -114,7 +131,7 @@
         
         data = [result subarrayWithRange:NSMakeRange(1, result.count - 1)];
         [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationAutomatic];
-        dispatch_main_after(0.5, ^{
+        dispatch_global_after(0.5, ^{
             [NOTIFICATION postNotificationName:@"refreshLzl" object:nil userInfo:@{
                 @"fid" : self.fid,
                 @"details": data,
@@ -127,7 +144,7 @@
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
     // Return the number of sections.
-    return 2;
+    return [Helper checkLogin:NO] ? 2 : 1;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
@@ -150,15 +167,10 @@
         cell.textMain.text = dict[@"text"];
         [cell.icon setUrl:dict[@"icon"]];
         cell.buttonIcon.tag = indexPath.row;
-        
-        if (cell.gestureRecognizers.count == 0) {
-            [cell addGestureRecognizer:[[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)]];
-        }
     } else if (indexPath.section == 1) {
         cell = [tableView dequeueReusableCellWithIdentifier:@"post" forIndexPath:indexPath];
         
         self.textPost = cell.textPost;
-        [self.textPost setDelegate:self];
         [self textViewDidChange:self.textPost];
         self.labelByte = cell.labelByte;
     }
@@ -180,49 +192,29 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     if (indexPath.section == 0) {
-        UIAlertController *action = [UIAlertController alertControllerWithTitle:@"选择操作" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-        [action addAction:[UIAlertAction actionWithTitle:@"回复" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [self.textPost resignFirstResponder];
+        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"选择操作" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+        UIAlertAction *replyAction = [UIAlertAction actionWithTitle:@"回复" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            [tableView deselectRowAtIndexPath:indexPath animated:YES];
+            lzlAuthor = data[indexPath.row][@"author"];
             [self directPost:nil];
-        }]];
-        [action addAction:[UIAlertAction actionWithTitle:@"复制" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            [[UIPasteboard generalPasteboard] setString:lzlText];
-            [hud showAndHideWithSuccessMessage:@"复制完成"];
-        }]];
-        [action addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
-        lzlText = data[indexPath.row][@"text"];
-        lzlAuthor = data[indexPath.row][@"author"];
-        NSString *exp = @"[a-zA-z]+://[^\\s]*"; // 提取网址链接
-        NSRange range = [lzlText rangeOfString:exp options:NSRegularExpressionSearch];
-        if (range.location != NSNotFound) {
-            lzlUrl = [lzlText substringWithRange:range];
-            [action addAction:[UIAlertAction actionWithTitle:@"打开链接" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                NSDictionary *dict = [ActionPerformer getLink:lzlUrl];
-                if (dict.count > 0 && [dict[@"tid"] length] > 0) {
-                    ContentViewController *dest = [self.storyboard instantiateViewControllerWithIdentifier:@"content"];
-                    dest.bid = dict[@"bid"];
-                    dest.tid = dict[@"tid"];
-                    dest.destinationPage = dict[@"p"];
-                    dest.title=@"帖子跳转中";
-                    dest.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(done)];
-                    CustomNavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
-                    [navi setToolbarHidden:NO];
-                    navi.modalPresentationStyle = UIModalPresentationFullScreen;
-                    [self presentViewControllerSafe:navi];
-                } else {
-                    WebViewController *dest = [self.storyboard instantiateViewControllerWithIdentifier:@"webview"];
-                    CustomNavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
-                    dest.URL = lzlUrl;
-                    [navi setToolbarHidden:NO];
-                    navi.modalPresentationStyle = UIModalPresentationFullScreen;
-                    [self presentViewControllerSafe:navi];
-                }
+        }];
+        replyAction.enabled = [Helper checkLogin:NO];
+        [alertController addAction:replyAction];
+        if ([self tableView:tableView canEditRowAtIndexPath:indexPath]) {
+            [alertController addAction:[UIAlertAction actionWithTitle:@"删除" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+                [tableView deselectRowAtIndexPath:indexPath animated:YES];
+                [self confirmDelete:indexPath];
             }]];
         }
+        [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+            [tableView deselectRowAtIndexPath:indexPath animated:YES];
+        }]];
         LzlCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
-        UIView *view = cell.textMain;
-        action.popoverPresentationController.sourceView = view;
-        action.popoverPresentationController.sourceRect = view.bounds;
-        [self presentViewControllerSafe:action];
+        UIView *view = cell.imageBottom;
+        alertController.popoverPresentationController.sourceView = view;
+        alertController.popoverPresentationController.sourceRect = view.bounds;
+        [self presentViewControllerSafe:alertController];
     }
 }
 
@@ -230,49 +222,50 @@
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
     // Return NO if you do not want the specified item to be editable.
     if (indexPath.section == 0) {
-        if ([ActionPerformer checkRight] > 1 || [data[indexPath.row][@"author"] isEqualToString:UID]) {
+        if ([Helper checkRight] > 1 || [data[indexPath.row][@"author"] isEqualToString:UID]) {
             return YES;
         }
     }
     return NO;
 }
 
-
-
 // Override to support editing the table view.
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
     if (editingStyle == UITableViewCellEditingStyleDelete) {
-        // Delete the row from the data source
-        NSDictionary *info = data[indexPath.row];
-        [self showAlertWithTitle:@"警告" message:[NSString stringWithFormat:@"确定要删除该楼中楼吗？\n删除操作不可逆！\n\n作者：%@\n正文：%@", info[@"author"], info[@"text"]] confirmTitle:@"删除" confirmAction:^(UIAlertAction *action) {
-            [hud showWithProgressMessage:@"正在删除"];
-            
-            NSDictionary *dict = @{
-                @"method" : @"delete",
-                @"fid" : self.fid,
-                @"id" : info[@"id"]
-            };
-            [ActionPerformer callApiWithParams:dict toURL:@"lzl" callback:^(NSArray *result, NSError *err) {
-                if (err || result.count == 0) {
-                    [hud hideWithFailureMessage:@"删除失败"];
-                    return;
-                }
-                if ([result[0][@"code"] integerValue]==0) {
-                    [hud hideWithSuccessMessage:@"删除成功"];
-                    NSMutableArray *temp = [NSMutableArray arrayWithArray:data];
-                    [temp removeObjectAtIndex:indexPath.row];
-                    data = [NSArray arrayWithArray:temp];
-                    [self.tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
-                    dispatch_global_after(0.5, ^{
-                        [self loadData];
-                    });
-                } else {
-                    [hud hideWithFailureMessage:@"删除失败"];
-                    [self showAlertWithTitle:@"删除失败" message:result[0][@"msg"]];
-                }
-            }];
-        }];
+        [self confirmDelete:indexPath];
     }
+}
+
+- (void)confirmDelete:(NSIndexPath *)indexPath {
+    NSDictionary *info = data[indexPath.row];
+    [self showAlertWithTitle:@"警告" message:[NSString stringWithFormat:@"确定要删除该楼中楼吗？\n删除操作不可逆！\n\n作者：%@\n正文：%@", info[@"author"], info[@"text"]] confirmTitle:@"删除" confirmAction:^(UIAlertAction *action) {
+        [hud showWithProgressMessage:@"正在删除"];
+        
+        NSDictionary *dict = @{
+            @"method" : @"delete",
+            @"fid" : self.fid,
+            @"id" : info[@"id"]
+        };
+        [Helper callApiWithParams:dict toURL:@"lzl" callback:^(NSArray *result, NSError *err) {
+            if (err || result.count == 0) {
+                [hud hideWithFailureMessage:@"删除失败"];
+                return;
+            }
+            if ([result[0][@"code"] integerValue]==0) {
+                [hud hideWithSuccessMessage:@"删除成功"];
+                NSMutableArray *temp = [NSMutableArray arrayWithArray:data];
+                [temp removeObjectAtIndex:indexPath.row];
+                data = [NSArray arrayWithArray:temp];
+                [self.tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
+                dispatch_global_after(0.5, ^{
+                    [self loadData];
+                });
+            } else {
+                [hud hideWithFailureMessage:@"删除失败"];
+                [self showAlertWithTitle:@"删除失败" message:result[0][@"msg"]];
+            }
+        }];
+    }];
 }
 
 - (IBAction)buttonPost:(id)sender {
@@ -296,14 +289,14 @@
         @"fid" : self.fid,
         @"text" : self.textPost.text
     };
-    [ActionPerformer callApiWithParams:dict toURL:@"lzl" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:dict toURL:@"lzl" callback:^(NSArray *result, NSError *err) {
         if (err || result.count == 0) {
             [hud hideWithFailureMessage:@"发布失败"];
             return;
         }
             if ([result[0][@"code"] integerValue]==0) {
                 [hud hideWithSuccessMessage:@"发布成功"];
-                [SKStoreReviewController requestReview];
+                [SKStoreReviewController requestReviewInScene:self.view.window.windowScene];
                 self.textPost.text = @"";
                 dispatch_global_after(0.5, ^{
                     [self loadData];
@@ -316,18 +309,48 @@
 }
 
 - (IBAction)directPost:(id)sender {
+    if (![Helper checkLogin:YES]) {
+        return;
+    }
     [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:1] atScrollPosition:UITableViewScrollPositionBottom animated:YES];
     if (sender == nil) {
-        [self.textPost insertText:[NSString stringWithFormat:@"回复 @%@: ",lzlAuthor]];
+        NSString *currentText = self.textPost.text;
+        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"^回复 @[^:]+:\\s*" options:0 error:nil];
+        currentText = [regex stringByReplacingMatchesInString:currentText options:0 range:NSMakeRange(0, currentText.length) withTemplate:@""];
+        self.textPost.text = [NSString stringWithFormat:@"回复 @%@: %@", lzlAuthor, currentText];
     }
-    dispatch_global_after(0.5, ^{
+    dispatch_main_after(0.5, ^{
         [self.textPost becomeFirstResponder];
     });
 }
 
+- (void)longPress:(UILongPressGestureRecognizer *)sender {
+    if (sender.state == UIGestureRecognizerStateBegan) {
+        CGPoint point = [sender locationInView:self.tableView];
+        NSIndexPath *indexPath = [self.tableView indexPathForRowAtPoint:point];
+        if (indexPath == nil || indexPath.section == 1) {
+            return;
+        }
+        if (![Helper checkLogin:NO]) {
+            return;
+        }
+        lzlAuthor = data[indexPath.row][@"author"];
+        [self directPost:nil];
+    }
+}
+
+#pragma mark - Text view delegate
+
+- (BOOL)textView:(UITextView *)textView shouldInteractWithURL:(NSURL *)URL inRange:(NSRange)characterRange interaction:(UITextItemInteraction)interaction {
+    return [AppDelegate textView:textView shouldInteractWithURL:URL inRange:characterRange interaction:interaction];
+}
+
 - (void)textViewDidChange:(UITextView *)textView {
-    int length = (int)textView.text.length;
-    self.labelByte.text = [NSString stringWithFormat:@"%d/140", length];
+    if (textView != self.textPost) {
+        return;
+    }
+    NSUInteger length = textView.text.length;
+    self.labelByte.text = [NSString stringWithFormat:@"%ld/140", length];
     if (length <= 120) {
         [self.labelByte setTextColor:[UIColor darkGrayColor]];
     } else if (length <= 140) {
@@ -336,24 +359,7 @@
         [self.labelByte setTextColor:[UIColor redColor]];
     }
     // 如果有输入文字，不允许点击外部关闭
-    if (@available(iOS 13.0, *)) {
-        [self setModalInPresentation:length > 0];
-    }
-}
-
-- (void)longPress:(UILongPressGestureRecognizer*)sender{
-    if (sender.state == UIGestureRecognizerStateBegan) {
-        if (![ActionPerformer checkLogin:YES]) {
-            return;
-        }
-        CGPoint point = [sender locationInView:self.tableView];
-        NSIndexPath *indexPath = [self.tableView indexPathForRowAtPoint:point];
-        if (indexPath == nil) {
-            return;
-        }
-        lzlAuthor = data[indexPath.row][@"author"];
-        [self directPost:nil];
-    }
+    self.modalInPresentation = [self shouldDisableClose];
 }
 
 #pragma mark - Navigation
@@ -373,10 +379,6 @@
             dest.iconData = UIImagePNGRepresentation(cell.icon.image);
         }
     }
-}
-
-- (void)done {
-    [self dismissViewControllerAnimated:YES completion:nil];
 }
 
 @end

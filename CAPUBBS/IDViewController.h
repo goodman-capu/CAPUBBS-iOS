@@ -7,11 +7,9 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "InternalLoginViewController.h"
 
 @interface IDViewController : CustomTableViewController {
     NSMutableArray *data;
-    BOOL isDelete;
 }
 
 @property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonLogin;

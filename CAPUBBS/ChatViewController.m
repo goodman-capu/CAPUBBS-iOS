@@ -7,6 +7,7 @@
 //
 
 #import "ChatViewController.h"
+#import "ChatCell.h"
 #import "UserViewController.h"
 
 @interface ChatViewController ()
@@ -18,17 +19,23 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
+    self.preferredContentSize = CGSizeMake(400, 650);
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
+    if (!SIMPLE_VIEW) {
+        backgroundView = [[AnimatedImageView alloc] init];
+        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
+        self.tableView.backgroundView = backgroundView;
+    }
     
     if (self.iconData.length > 0) {
         [self refreshBackgroundViewAnimated:NO];
     }
     
-    if (self.shouldHideInfo == YES) {
+    if (self.shouldHideInfo) {
         self.navigationItem.rightBarButtonItems = nil;
-    } else if (self.directTalk == YES) {
+    } else if (self.directTalk) {
         self.navigationItem.rightBarButtonItems = @[self.buttonInfo];
     }
     shouldShowHud = YES;
@@ -52,26 +59,31 @@
 }
 
 - (void)askForUserId {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"发送私信"
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"发送私信"
                                                                    message:@"请输入对方的用户名"
                                                             preferredStyle:UIAlertControllerStyleAlert];
-    [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+    __weak typeof(alertController) weakAlertController = alertController; // 避免循环引用
+    [alertController addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
         textField.placeholder = @"用户名";
     }];
-    [alert addAction:[UIAlertAction actionWithTitle:@"取消"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"取消"
                                               style:UIAlertActionStyleCancel
                                             handler:^(UIAlertAction * _Nonnull action) {
-        [self dismissViewControllerAnimated:YES completion:nil];
+        [self dismiss];
     }]];
-    [alert addAction:[UIAlertAction actionWithTitle:@"开始"
+    [alertController addAction:[UIAlertAction actionWithTitle:@"开始"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * _Nonnull action) {
-        NSString *userName = alert.textFields.firstObject.text;
+        __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+        if (!strongAlertController) {
+            return;
+        }
+        NSString *userName = strongAlertController.textFields[0].text;
         if (userName.length == 0) {
             [self showAlertWithTitle:@"错误" message:@"用户名不能为空" confirmTitle:@"重试" confirmAction:^(UIAlertAction *action) {
                 [self askForUserId];
             } cancelTitle:@"取消" cancelAction:^(UIAlertAction *action) {
-                [self dismissViewControllerAnimated:YES completion:nil];
+                [self dismiss];
             }];
         } else {
             self.ID = userName;
@@ -79,7 +91,7 @@
             [self loadChat];
         }
     }]];
-    [self presentViewControllerSafe:alert];
+    [self presentViewControllerSafe:alertController];
 }
 
 - (void)refresh:(NSNotification *)noti {
@@ -95,12 +107,7 @@
     if (SIMPLE_VIEW) {
         return;
     }
-    if (!backgroundView) {
-        backgroundView = [[AnimatedImageView alloc] init];
-        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
-        self.tableView.backgroundView = backgroundView;
-    }
-    [backgroundView setBlurredImage:[UIImage imageWithData:self.iconData] animated:animated];
+    [backgroundView setImage:[UIImage imageWithData:self.iconData] blurred:YES animated:animated];
 }
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
@@ -112,8 +119,8 @@
     }
 }
 
-- (void)refreshControlValueChanged:(UIRefreshControl *)sender {
-    self.refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
+- (void)refreshControlValueChanged:(UIRefreshControl *)refreshControl {
+    refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
     shouldShowHud = YES;
     [self loadChat];
 }
@@ -126,7 +133,7 @@
         @"type" : @"chat",
         @"chatter" : self.ID
     };
-    [ActionPerformer callApiWithParams:dict toURL:@"msg" callback: ^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:dict toURL:@"msg" callback: ^(NSArray *result, NSError *err) {
         if (self.refreshControl.isRefreshing) {
             [self.refreshControl endRefreshing];
         }
@@ -153,15 +160,13 @@
             [self checkID:NO];
         }
         [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationAutomatic];
-        dispatch_main_after(0.5, ^{
-            [self scrollTableView];
-        });
+        [self scrollTableView:NO];
         shouldShowHud = NO;
     }];
 }
 
 - (void)checkID:(BOOL)hudVisible {
-    [ActionPerformer callApiWithParams:@{@"uid":self.ID, @"recent":@"YES"} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:@{@"uid":self.ID} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
         if (err || result.count == 0) {
             return;
         }
@@ -170,7 +175,7 @@
             [self showAlertWithTitle:@"错误" message:@"没有这个ID！" confirmTitle:@"重试" confirmAction:^(UIAlertAction *action) {
                 [self askForUserId];
             } cancelTitle:@"取消" cancelAction:^(UIAlertAction *action) {
-                [self dismissViewControllerAnimated:YES completion:nil];
+                [self dismiss];
             }];
             
             if (hudVisible) {
@@ -188,9 +193,9 @@
     }];
 }
 
-- (void)scrollTableView {
-    [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:1] atScrollPosition:UITableViewScrollPositionBottom animated:YES];
-    if (self.directTalk == YES) {
+- (void)scrollTableView:(BOOL)animated {
+    [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:1] atScrollPosition:UITableViewScrollPositionBottom animated:animated];
+    if (self.directTalk) {
         dispatch_main_after(0.5, ^{
             [self.textSend becomeFirstResponder];
         });
@@ -235,7 +240,7 @@
             cell = [tableView dequeueReusableCellWithIdentifier:@"chatOther" forIndexPath:indexPath];
             [cell.imageChat setImage:[[UIImage imageNamed:@"balloon_green"] stretchableImageWithLeftCapWidth:15 topCapHeight:15]];
             [cell.imageIcon setUrl:dict[@"icon"]];
-            cell.buttonIcon.userInteractionEnabled = (self.shouldHideInfo == NO);
+            cell.buttonIcon.userInteractionEnabled = !self.shouldHideInfo;
         } else {
             cell = [tableView dequeueReusableCellWithIdentifier:@"chatSelf" forIndexPath:indexPath];
             [cell.imageChat setImage:[[UIImage imageNamed:@"balloon_white_reverse"] stretchableImageWithLeftCapWidth:15 topCapHeight:15]];
@@ -252,15 +257,34 @@
     return cell;
 }
 
-- (IBAction)buttonBack:(id)sender {
+- (BOOL)shouldDisableClose {
+    return self.textSend.text.length > 0;
+}
+
+- (IBAction)done:(id)sender {
+    if ([self shouldDisableClose]) {
+        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"确定退出" message:@"您有尚未发送的聊天内容，确定继续退出？" preferredStyle:UIAlertControllerStyleActionSheet];
+        [alertController addAction:[UIAlertAction actionWithTitle:@"退出" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+            [self dismiss];
+        }]];
+        [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
+        if ([sender isKindOfClass:[UIBarButtonItem class]]) {
+            alertController.popoverPresentationController.barButtonItem = sender;
+        }
+        [self presentViewControllerSafe:alertController];
+    } else {
+        [self dismiss];
+    }
+}
+
+- (void)dismiss {
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
+
 - (IBAction)startCompose:(id)sender {
-    [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:1] atScrollPosition:UITableViewScrollPositionBottom animated:YES];
-    dispatch_main_after(0.5, ^{
-        [self.textSend becomeFirstResponder];
-    });
+    self.directTalk = YES;
+    [self scrollTableView:YES];
 }
 
 - (IBAction)buttonSend:(id)sender {
@@ -278,7 +302,7 @@
         @"to" : self.ID,
         @"text" : text
     };
-    [ActionPerformer callApiWithParams:dict toURL:@"sendmsg" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:dict toURL:@"sendmsg" callback:^(NSArray *result, NSError *err) {
         if (err || result.count == 0) {
             NSLog(@"%@",err);
             [hud hideWithFailureMessage:@"发送失败"];
@@ -315,6 +339,20 @@
             }
         }
     }];
+}
+
+#pragma mark - Text view delegate
+
+- (BOOL)textView:(UITextView *)textView shouldInteractWithURL:(NSURL *)URL inRange:(NSRange)characterRange interaction:(UITextItemInteraction)interaction {
+    return [AppDelegate textView:textView shouldInteractWithURL:URL inRange:characterRange interaction:interaction];
+}
+
+- (void)textViewDidChange:(UITextView *)textView {
+    if (textView != self.textSend) {
+        return;
+    }
+    // 如果有输入文字，不允许点击外部关闭
+    self.modalInPresentation = [self shouldDisableClose];
 }
 
 #pragma mark - Navigation

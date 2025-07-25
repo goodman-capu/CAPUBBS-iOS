@@ -13,9 +13,9 @@
 - (void)awakeFromNib {
     [super awakeFromNib];
     // Initialization code
+    self.backgroundColor = [UIColor clearColor];
+    
     [self.icon setRounded:YES];
-    self.layer.shouldRasterize = YES; // 光栅化 提高流畅度
-    self.layer.rasterizationScale = [UIScreen mainScreen].scale;
 }
 
 @end

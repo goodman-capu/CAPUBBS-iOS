@@ -10,6 +10,7 @@
 
 @interface MBProgressHUD (Custom)
 
+- (void)updateToProgress:(float)progress;
 - (void)showWithProgressMessage:(NSString *)message;
 - (void)showAndHideWithSuccessMessage:(NSString *)message;
 - (void)showAndHideWithSuccessMessage:(NSString *)message delay:(NSTimeInterval)delay;

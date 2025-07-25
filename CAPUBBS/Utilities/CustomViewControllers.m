@@ -9,23 +9,68 @@
 #import "CustomViewControllers.h"
 #import <objc/runtime.h>
 
+@implementation CustomNavigationController
+
+- (UIViewController *)childViewControllerForStatusBarStyle {
+    // 让状态栏样式跟随当前 topViewController
+    return self.topViewController;
+}
+
+@end
+
 @implementation CustomViewController
+
+#ifdef DEBUG
+- (void)dealloc {
+    NSLog(@"✅ dealloc VC: %@", self);
+}
+#endif
+
+- (UIStatusBarStyle)preferredStatusBarStyle {
+    return [AppDelegate preferredStatusBarStyle];
+}
 
 @end
 
 @implementation CustomTableViewController
 
+#ifdef DEBUG
+- (void)dealloc {
+    NSLog(@"✅ dealloc VC: %@", self);
+}
+#endif
+
+- (UIStatusBarStyle)preferredStatusBarStyle {
+    return [AppDelegate preferredStatusBarStyle];
+}
+
 @end
 
 @implementation CustomCollectionViewController
 
-@end
+#ifdef DEBUG
+- (void)dealloc {
+    NSLog(@"✅ dealloc VC: %@", self);
+}
+#endif
 
-@implementation CustomMailComposeViewController
+- (UIStatusBarStyle)preferredStatusBarStyle {
+    return [AppDelegate preferredStatusBarStyle];
+}
 
 @end
 
 @implementation CustomSearchController
+
+#ifdef DEBUG
+- (void)dealloc {
+    NSLog(@"✅ dealloc VC: %@", self);
+}
+#endif
+
+- (UIStatusBarStyle)preferredStatusBarStyle {
+    return [AppDelegate preferredStatusBarStyle];
+}
 
 @end
 
@@ -52,7 +97,6 @@ static char kIsAttemptingToPresentKey;
     objc_setAssociatedObject(self, &kPresentTimerKey, timer, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
-// 2. 新增一个BOOL属性的 getter/setter
 - (BOOL)_isAttemptingToPresent {
     return [objc_getAssociatedObject(self, &kIsAttemptingToPresentKey) boolValue];
 }
@@ -62,47 +106,58 @@ static char kIsAttemptingToPresentKey;
 }
 
 - (BOOL)_tryPresentNextVc {
-    if ([self _isAttemptingToPresent] || self.presentedViewController) {
-        return NO;
-    }
-    
-    NSMutableArray *queue = [self _getVcQueue];
-    if (queue.count == 0) {
-        if ([self _getPresentTimer]) {
-            [[self _getPresentTimer] invalidate];
-            [self _setPresentTimer:nil];
+    __block BOOL result = NO;
+    dispatch_main_sync_safe(^{
+        NSMutableArray *queue = [self _getVcQueue];
+        if (queue.count == 0) {
+            if ([self _getPresentTimer]) {
+                [[self _getPresentTimer] invalidate];
+                [self _setPresentTimer:nil];
+            }
+            result = NO;
+            return;
         }
-        return NO;
-    }
-    
-    [self _setAttemptingToPresent:YES];
-    UIViewController *item = queue.firstObject;
-    [queue removeObjectAtIndex:0];
-    dispatch_main_async_safe(^{
+        
+        if ([self _isAttemptingToPresent] || self.presentedViewController) {
+            result = NO;
+            return;
+        }
+        
+        [self _setAttemptingToPresent:YES];
+        UIViewController *item = queue.firstObject;
+        [queue removeObjectAtIndex:0];
         [self presentViewController:item animated:YES completion:^{
             [self _setAttemptingToPresent:NO];
         }];
+        result = YES;
     });
-    return YES;
+    return result;
 }
 
-- (void)_timerCheck {
-    [self _tryPresentNextVc];
-}
-
-- (void)presentViewControllerSafe:(UIViewController *)view {
-    [[self _getVcQueue] addObject:view];
-    if ([self _tryPresentNextVc]) {
+- (void)presentViewControllerSafe:(UIViewController *)viewController {
+    if (!viewController) {
         return;
     }
-    if (![self _getPresentTimer]) {
-        NSTimer *timer = [NSTimer scheduledTimerWithTimeInterval:0.2
-                                                          target:self
-                                                        selector:@selector(_timerCheck)
-                                                        userInfo:nil
-                                                         repeats:YES];
-        [self _setPresentTimer:timer];
-    }
+    dispatch_main_async_safe(^{
+        viewController.view.tintColor = self.view.tintColor; // Fix occasional color inconsistency
+        [[self _getVcQueue] addObject:viewController];
+        if ([self _tryPresentNextVc]) {
+            return;
+        }
+        if (![self _getPresentTimer]) {
+            // 使用 weakSelf 防止循环引用导致不能 dealloc
+            __weak typeof(self) weakSelf = self;
+            NSTimer *timer = [NSTimer scheduledTimerWithTimeInterval:0.1 repeats:YES block:^(NSTimer * _Nonnull timer) {
+                __strong typeof(weakSelf) strongSelf = weakSelf;
+                if (strongSelf) {
+                    [strongSelf _tryPresentNextVc];
+                } else {
+                    [timer invalidate];
+                }
+            }];
+            [self _setPresentTimer:timer];
+        }
+    });
 }
 
 - (void)showAlertWithTitle:(NSString *)title
@@ -111,18 +166,18 @@ static char kIsAttemptingToPresentKey;
              confirmAction:(void (^)(UIAlertAction *action))confirmAction
                cancelTitle:(NSString *)cancelTitle
               cancelAction:(void (^)(UIAlertAction *action))cancelAction {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:title
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:title
                                                                    message:message
                                                             preferredStyle:UIAlertControllerStyleAlert];
     if (confirmTitle && confirmAction) {
-        [alert addAction:[UIAlertAction actionWithTitle:confirmTitle
+        [alertController addAction:[UIAlertAction actionWithTitle:confirmTitle
                                                   style:[confirmTitle containsString:@"删除"] ? UIAlertActionStyleDestructive : UIAlertActionStyleDefault
                                                 handler:confirmAction]];
     }
-    [alert addAction:[UIAlertAction actionWithTitle:cancelTitle
+    [alertController addAction:[UIAlertAction actionWithTitle:cancelTitle
                                               style:UIAlertActionStyleCancel
                                             handler:cancelAction]];
-    [self presentViewControllerSafe:alert];
+    [self presentViewControllerSafe:alertController];
 };
 
 - (void)showAlertWithTitle:(NSString *)title
@@ -154,46 +209,6 @@ static char kIsAttemptingToPresentKey;
 
 - (void)showAlertWithTitle:(NSString *)title message:(NSString *)message {
     [self showAlertWithTitle:title message:message confirmTitle:nil confirmAction:nil cancelTitle:@"好" cancelAction:nil];
-}
-
-@end
-
-@implementation CustomViewController (Customize)
-
-- (UIStatusBarStyle)preferredStatusBarStyle {
-    return UIStatusBarStyleLightContent;
-}
-
-@end
-
-@implementation CustomTableViewController (Customize)
-
-- (UIStatusBarStyle)preferredStatusBarStyle {
-    return UIStatusBarStyleLightContent;
-}
-
-@end
-
-@implementation CustomCollectionViewController (Customize)
-
-- (UIStatusBarStyle)preferredStatusBarStyle {
-    return UIStatusBarStyleLightContent;
-}
-
-@end
-
-@implementation CustomMailComposeViewController (Customize)
-
-- (UIStatusBarStyle)preferredStatusBarStyle {
-    return UIStatusBarStyleLightContent;
-}
-
-@end
-
-@implementation CustomSearchController (Customize)
-
-- (UIStatusBarStyle)preferredStatusBarStyle {
-    return UIStatusBarStyleLightContent;
 }
 
 @end

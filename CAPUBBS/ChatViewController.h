@@ -7,9 +7,9 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "ChatCell.h"
+#import "AnimatedImageView.h"
 
-@interface ChatViewController : CustomTableViewController {
+@interface ChatViewController : CustomTableViewController<UITextViewDelegate> {
     MBProgressHUD *hud;
     AnimatedImageView *backgroundView;
     CGFloat width;
