@@ -24,6 +24,18 @@
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
+    if (!SIMPLE_VIEW) {
+        backgroundView = [[AnimatedImageView alloc] init];
+        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
+        [self.view addSubview:backgroundView];
+        [self.view sendSubviewToBack:backgroundView];
+        [backgroundView.layer setMasksToBounds:YES];
+        [backgroundView setTranslatesAutoresizingMaskIntoConstraints:NO];
+        int dir[4] = {NSLayoutAttributeTop, NSLayoutAttributeBottom, NSLayoutAttributeLeft, NSLayoutAttributeRight};
+        for (int i = 0; i < 4; i++) {
+            [self.view addConstraint:[NSLayoutConstraint constraintWithItem:backgroundView attribute:dir[i] relatedBy:NSLayoutRelationEqual toItem:self.view attribute:dir[i] multiplier:1.0 constant:0.0]];
+        }
+    }
     
     [self refreshBackgroundViewAnimated:NO];
     [self.inputText becomeFirstResponder];
@@ -47,25 +59,13 @@
     if (SIMPLE_VIEW) {
         return;
     }
-    if (!backgroundView) {
-        backgroundView = [[AnimatedImageView alloc] init];
-        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
-        [self.view addSubview:backgroundView];
-        [self.view sendSubviewToBack:backgroundView];
-        [backgroundView.layer setMasksToBounds:YES];
-        [backgroundView setTranslatesAutoresizingMaskIntoConstraints:NO];
-        int dir[4] = {NSLayoutAttributeTop, NSLayoutAttributeBottom, NSLayoutAttributeLeft, NSLayoutAttributeRight};
-        for (int i = 0; i < 4; i++) {
-            [self.view addConstraint:[NSLayoutConstraint constraintWithItem:backgroundView attribute:dir[i] relatedBy:NSLayoutRelationEqual toItem:self.view attribute:dir[i] multiplier:1.0 constant:0.0]];
-        }
-    }
-    self.view.backgroundColor = [UIColor whiteColor];
-    UIImage *image = [self.bid isEqualToString:@"-1"] ? [UIImage imageWithColor:GREEN_DARK size:CGSizeMake(100, 100)] : [UIImage imageNamed:[@"b" stringByAppendingString:self.bid]];
-    [backgroundView setBlurredImage:image animated:animated];
+    BOOL isAll = [self.bid isEqualToString:@"-1"];
+    UIImage *image = isAll ? [UIImage imageWithColor:GREEN_BACK size:CGSizeMake(100, 100)] : [UIImage imageNamed:[@"b" stringByAppendingString:self.bid]];
+    [backgroundView setImage:image blurred:!isAll animated:animated];
 }
 
 - (void)refreshControlValueChanged:(UIRefreshControl *)refreshControl {
-    control.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
+    refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
     [self search:nil];
 }
 
@@ -86,9 +86,7 @@
     endDatePicker = [[UIDatePicker alloc] init];
     for (UIDatePicker *picker in @[startDatePicker, endDatePicker]) {
         picker.datePickerMode = UIDatePickerModeDate;
-        if (@available(iOS 13.4, *)) {
-            picker.preferredDatePickerStyle = UIDatePickerStyleWheels;
-        }
+        picker.preferredDatePickerStyle = UIDatePickerStyleInline;
         picker.minimumDate = minDate;
         picker.maximumDate = today;
         [picker addTarget:self action:@selector(ValueChanged:) forControlEvents:UIControlEventValueChanged];
@@ -316,13 +314,13 @@
     // Pass the selected object to the new view controller.
     if ([segue.identifier isEqualToString:@"post"]) {
         ContentViewController *dest = [segue destinationViewController];
-        NSDictionary *one = searchResult[[self.tableview indexPathForCell:(UITableViewCell *)sender].row];
-        dest.bid = one[@"bid"];
-        dest.tid = one[@"tid"];
-        if (one[@"floor"]) {
-            dest.destinationFloor = one[@"floor"];
+        NSDictionary *dict = searchResult[[self.tableview indexPathForCell:(UITableViewCell *)sender].row];
+        dest.bid = dict[@"bid"];
+        dest.tid = dict[@"tid"];
+        if (dict[@"floor"]) {
+            dest.destinationFloor = dict[@"floor"];
         }
-        NSString *titleText = one[@"title"] ? one[@"title"] : one[@"text"];
+        NSString *titleText = dict[@"title"] ? dict[@"title"] : dict[@"text"];
         dest.title = [Helper restoreTitle:titleText];
         [self.navigationController setToolbarHidden:NO];
     }

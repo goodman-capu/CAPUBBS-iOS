@@ -26,5 +26,6 @@
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonBack;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonForward;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonShare;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonSafari;
 
 @end

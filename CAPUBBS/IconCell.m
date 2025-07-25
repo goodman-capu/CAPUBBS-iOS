@@ -12,10 +12,11 @@
 
 - (void)awakeFromNib {
     [super awakeFromNib];
-    [self.icon.layer setBorderColor:GREEN_LIGHT.CGColor];
+    // Initialization code
+    self.backgroundColor = [UIColor clearColor];
+    
+    self.icon.layer.borderColor = GREEN_LIGHT.CGColor;
     [self.icon setRounded:YES];
-    self.layer.shouldRasterize = YES; // 光栅化 提高流畅度
-    self.layer.rasterizationScale = [UIScreen mainScreen].scale;
 }
 
 @end

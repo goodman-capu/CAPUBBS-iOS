@@ -22,10 +22,15 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
-    self.preferredContentSize = CGSizeMake(400, 0);
+    self.preferredContentSize = CGSizeMake(400, 650);
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
+    if (!SIMPLE_VIEW) {
+        backgroundView = [[AnimatedImageView alloc] init];
+        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
+        self.tableView.backgroundView = backgroundView;
+    }
     
     textSize = [[DEFAULTS objectForKey:@"textSize"] intValue];
     if (self.iconData.length > 0) {
@@ -41,6 +46,7 @@
             self.navigationItem.rightBarButtonItems = @[self.buttoonEdit];
         } else {
             self.navigationItem.rightBarButtonItems = @[self.buttonChat];
+            self.buttonChat.enabled = [Helper checkLogin:NO];
         }
     }
     if ([self.ID isEqualToString:UID]) {
@@ -66,8 +72,8 @@
     
     [NOTIFICATION addObserver:self selector:@selector(getInformation) name:@"userUpdated" object:nil];
     
-    control = [[UIRefreshControl alloc] init];
-    [control addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
+    self.refreshControl = [[UIRefreshControl alloc] init];
+    [self.refreshControl addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
 //    self.tableView.rowHeight = UITableViewAutomaticDimension;
     
     [self getInformation];
@@ -101,16 +107,11 @@
     if (SIMPLE_VIEW) {
         return;
     }
-    if (!backgroundView) {
-        backgroundView = [[AnimatedImageView alloc] init];
-        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
-        self.tableView.backgroundView = backgroundView;
-    }
-    [backgroundView setBlurredImage:[UIImage imageWithData:self.iconData] animated:animated];
+    [backgroundView setImage:[UIImage imageWithData:self.iconData] blurred:YES animated:animated];
 }
 
 - (void)refreshControlValueChanged:(UIRefreshControl *)refreshControl {
-    control.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
+    refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
     [self getInformation];
 }
 
@@ -151,10 +152,14 @@
 
 - (void)getInformation {
     [self setDefault];
+    if (self.ID.length == 0) {
+        [hud showAndHideWithFailureMessage:@"用户名不合法"];
+        return;
+    }
     [hud showWithProgressMessage:@"查询中"];
     [Helper callApiWithParams:@{@"uid": self.ID, @"recent": @"YES", @"raw": @"YES"} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
-        if (control.isRefreshing) {
-            [control endRefreshing];
+        if (self.refreshControl.isRefreshing) {
+            [self.refreshControl endRefreshing];
         }
         if (err || result.count == 0) {
             [hud hideWithFailureMessage:@"查询失败"];
@@ -212,32 +217,18 @@
             
             for (int i = 0; i < webViewContainers.count; i++) {
                 heights[i] = @0;
-                CustomWebViewContainer *webViewContainer = webViewContainers[i];
+                WKWebView *webView = webViewContainers[i].webView;
                 NSString *content = i == 0 ? dict[@"intro"] : dict[[NSString stringWithFormat:@"sig%d", i]];
                 if ([content isEqualToString:@"Array"] || content.length == 0) {
                     content = @"<font color='gray'>暂无</font>";
                 }
                 content = [Helper transToHTML:content];
                 NSString *html = [Helper htmlStringWithText:nil attachments:nil sig:content textSize:textSize];
-                if (webViewContainer.webView.isLoading) {
-                    [webViewContainer.webView stopLoading];
+                if (webView.isLoading) {
+                    [webView stopLoading];
                 }
-                [webViewContainer.webView loadHTMLString:html baseURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/bbs/content/", CHEXIE]]];
+                [webView loadHTMLString:html baseURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/bbs/content/", CHEXIE]]];
             }
-            if (heightCheckTimer && [heightCheckTimer isValid]) {
-                [heightCheckTimer invalidate];
-            }
-
-            // 使用 weakSelf 防止循环引用导致不能 dealloc
-            __weak typeof(self) weakSelf = self;
-            // Do not trigger immediately, the webview might still be showing the previous content.
-            heightCheckTimer = [NSTimer scheduledTimerWithTimeInterval:0.2 repeats:YES block:^(NSTimer * _Nonnull timer) {
-                __strong typeof(weakSelf) strongSelf = weakSelf;
-                if (!strongSelf) {
-                    return;
-                }
-                [strongSelf updateWebViewHeight];
-            }];
             
             for (int i = 1; i < result.count; i++) {
                 if (result[i] && result[i][@"info"]) {
@@ -259,28 +250,50 @@
     }];
 }
 
-- (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
-    [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
-    for (int i = 0; i < webViewContainers.count; i++) {
-        heights[i] = @0;
+- (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation {
+    [webView setWeakScriptMessageHandler:self forNames:@[@"imageClickHandler", @"heightHandler"]];
+    [webView evaluateJavaScript:@"window._imageClickHandlerAvailable=true;window._lastReportedHeight=0;" completionHandler:nil];
+}
+
+- (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message {
+    if ([message.name isEqualToString:@"imageClickHandler"]) {
+        [AppDelegate handleImageClickWithMessage:message hud:hud];
+    }
+    if ([message.name isEqualToString:@"heightHandler"]) {
+        [self handleHeightWithMessage:message];
+    }
+}
+
+- (void)handleHeightWithMessage:(WKScriptMessage *)message {
+    float height = [message.body floatValue];
+    if (height <= 0) {
+        return;
+    }
+    NSInteger tag = message.webView.tag;
+    
+    height = height * (textSize / 100.0);
+    if (height > 0 && ABS(height - [heights[tag] floatValue]) >= 1) {
+        heights[tag] = @(height);
+        [self.tableView beginUpdates];
+        [self.tableView endUpdates];
     }
 }
 
 #pragma mark - Table view data source
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
-    if (indexPath.row == 0) {
+    if (indexPath.section == 0) {
         return UITableViewAutomaticDimension;
-    } else if (indexPath.row <= 4) {
-        return MIN(MAX([heights[indexPath.row - 1] floatValue], 14) + 35, WEB_VIEW_MAX_HEIGHT);
+    } else if (indexPath.section == 1) {
+        return MIN(MAX([heights[indexPath.row] floatValue], 14) + 35, WEB_VIEW_MAX_HEIGHT);
     } else {
-        return 55;
+        return 50;
     }
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    if (indexPath.section == 0 && indexPath.row == 7) {
+    if (indexPath.section == 2 && indexPath.row == 2) {
         if ([self.ID isEqualToString:UID]) {
             [NOTIFICATION postNotificationName:@"sendEmail" object:nil userInfo:@{
                 @"recipients": REPORT_EMAIL,
@@ -326,45 +339,12 @@
     
     if ([path hasPrefix:@"tel:"] || [path hasPrefix:@"sms:"] || [path hasPrefix:@"facetime:"] || [path hasPrefix:@"maps:"]) {
         // Directly open
-        if ([[UIApplication sharedApplication] canOpenURL:url]) {
-            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
-        }
-        decisionHandler(WKNavigationActionPolicyCancel);
+        decisionHandler(WKNavigationActionPolicyAllow);
         return;
     }
     
-    WebViewController *dest = [self.storyboard instantiateViewControllerWithIdentifier:@"webview"];
-    CustomNavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
-    dest.URL = path;
-    navi.modalPresentationStyle = UIModalPresentationFullScreen;
-    [self presentViewControllerSafe:navi];
+    [AppDelegate openURL:path fullScreen:YES];
     decisionHandler(WKNavigationActionPolicyCancel);
-}
-
-- (void)updateWebViewHeight {
-    if (!self.isViewLoaded || !self.view.window ||
-        !self.tableView || !self.tableView.window) { // Fix occasional crash
-        return;
-    }
-    
-    for (int i = 0; i < webViewContainers.count; i++) {
-        CustomWebViewContainer *webviewContainer = webViewContainers[i];
-        [webviewContainer.webView evaluateJavaScript:@"if(document.getElementById('body-wrapper')){document.getElementById('body-wrapper').scrollHeight;}" completionHandler:^(id _Nullable result, NSError * _Nullable error) {
-            if (error) {
-                NSLog(@"JS 执行失败: %@", error);
-                return;
-            }
-            float height = 0;
-            if (result && [result isKindOfClass:[NSNumber class]]) {
-                height = [result floatValue] * (textSize / 100.0);
-            }
-            if (height > 0 && height - [heights[i] floatValue] >= 1) {
-                heights[i] = @(height);
-                [self.tableView beginUpdates];
-                [self.tableView endUpdates];
-            }
-        }];
-    }
 }
 
 - (IBAction)sendMail:(id)sender {
@@ -381,7 +361,7 @@
 - (void)showPic:(NSString *)url {
     NSURL *imageUrl = [NSURL safeURLWithString:url];
     NSString *md5Url = [Helper md5:url];
-    NSString *cachePath = [NSString stringWithFormat:@"%@/%@", IMAGE_CACHE_PATH, md5Url];
+    NSString *cachePath = [NSString stringWithFormat:@"%@/%@", ICON_CACHE_PATH, md5Url];
     if ([MANAGER fileExistsAtPath:cachePath]) {
         NSData *imageData = [MANAGER contentsAtPath:cachePath];
         // 动图是未压缩的格式 可直接调取
@@ -443,6 +423,7 @@
     if ([segue.identifier isEqualToString:@"edit"]) {
         RegisterViewController *dest = [segue destinationViewController];
         dest.isEdit = YES;
+        dest.iconData = self.iconData;
         dest.navigationItem.leftBarButtonItems = nil;
     }
     if ([segue.identifier hasPrefix:@"recent"]) {

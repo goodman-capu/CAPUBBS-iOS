@@ -14,8 +14,8 @@
 #import "CollectionViewController.h"
 #import "MessageViewController.h"
 #import "ComposeViewController.h"
+#import "WebViewController.h"
 #import <CoreSpotlight/CoreSpotlight.h>
-#import <MobileCoreServices/MobileCoreServices.h>
 
 @implementation PreviewItem
 @end
@@ -25,84 +25,80 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
     
-    UINavigationBar *navBarAppearance = [UINavigationBar appearance];
-    if (@available(iOS 13.0, *)) {
-        UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
-        [appearance configureWithDefaultBackground];
-        appearance.backgroundColor = [GREEN_DARK colorWithAlphaComponent:0.8];
-        appearance.backgroundEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemUltraThinMaterialDark];
-        appearance.titleTextAttributes = @{NSForegroundColorAttributeName: [UIColor whiteColor]}; // title color
-        appearance.largeTitleTextAttributes = @{NSForegroundColorAttributeName: [UIColor whiteColor]}; // title color
-        
-        navBarAppearance.standardAppearance = appearance;
-        navBarAppearance.scrollEdgeAppearance = appearance;
-        navBarAppearance.compactAppearance = appearance;
-        if (@available(iOS 15.0, *)) {
-            navBarAppearance.compactScrollEdgeAppearance = appearance;
-        }
-        navBarAppearance.tintColor = [UIColor whiteColor]; // buttons color
+    if (LIQUID_GLASS) {
+        self.window.tintColor = GREEN_TINT;
     } else {
-        [navBarAppearance setBarTintColor:GREEN_DARK];
-        [navBarAppearance setBarStyle:UIBarStyleBlack];
-        [navBarAppearance setTintColor:[UIColor whiteColor]];
-        [navBarAppearance setTranslucent:NO];
-    }
-    
-    UIToolbar *toolbarAppearance = [UIToolbar appearance];
-    toolbarAppearance.tintColor = BLUE;
-    if (@available(iOS 13.0, *)) {
-        UIToolbarAppearance *appearance = [[UIToolbarAppearance alloc] init];
-        //        [appearance configureWithOpaqueBackground];
+        self.window.tintColor = BLUE;
         
-        toolbarAppearance.standardAppearance = appearance;
-        toolbarAppearance.compactAppearance = appearance;
-        if (@available(iOS 15.0, *)) {
-            toolbarAppearance.scrollEdgeAppearance = appearance;
-            toolbarAppearance.compactScrollEdgeAppearance = appearance;
-        }
+        UINavigationBar *navBar = [UINavigationBar appearance];
+        UINavigationBarAppearance *navBarAppearance = [[UINavigationBarAppearance alloc] init];
+        [navBarAppearance configureWithDefaultBackground];
+        navBarAppearance.backgroundColor = [GREEN_DARK colorWithAlphaComponent:0.8];
+        navBarAppearance.backgroundEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemUltraThinMaterialDark];
+        navBarAppearance.titleTextAttributes = @{NSForegroundColorAttributeName: [UIColor whiteColor]}; // title color
+        navBarAppearance.largeTitleTextAttributes = @{NSForegroundColorAttributeName: [UIColor whiteColor]}; // title color
+        
+        navBar.standardAppearance = navBarAppearance;
+        navBar.scrollEdgeAppearance = navBarAppearance;
+        navBar.compactAppearance = navBarAppearance;
+        navBar.compactScrollEdgeAppearance = navBarAppearance;
+        navBar.tintColor = [UIColor whiteColor]; // buttons color
+        
+        UIToolbar *toolbar = [UIToolbar appearance];
+        UIToolbarAppearance *toolBarAppearance = [[UIToolbarAppearance alloc] init];
+        //    [appearance configureWithOpaqueBackground];
+        
+        toolbar.standardAppearance = toolBarAppearance;
+        toolbar.compactAppearance = toolBarAppearance;
+        toolbar.scrollEdgeAppearance = toolBarAppearance;
+        toolbar.compactScrollEdgeAppearance = toolBarAppearance;
     }
     
     [[UITextField appearance] setClearButtonMode:UITextFieldViewModeWhileEditing];
     [[UITextField appearance] setBackgroundColor:[UIColor lightTextColor]];
     [[UITextView appearance] setBackgroundColor:[UIColor lightTextColor]];
-    [[UISegmentedControl appearance] setTintColor:BLUE];
-    [[UIStepper appearance] setTintColor:BLUE];
-    [[UISwitch appearance] setOnTintColor:BLUE];
-    [[UISwitch appearance] setTintColor:[UIColor whiteColor]];
-    [[UITableViewCell appearance] setBackgroundColor:[UIColor clearColor]];
+    [[UITableView appearance] setBackgroundColor:[UIColor clearColor]];
+    [[UITableViewCell appearance] setBackgroundColor:[UIColor colorWithWhite:1 alpha:0.6]];
+    [[UIButton appearance] setPointerInteractionEnabled:YES];
+    [[UISwitch appearance] setOnTintColor:[UIColor tintColor]];
+    [[UICollectionView appearance] setBackgroundColor:[UIColor clearColor]];
     
-    NSDictionary *dict = @{
+    NSDictionary *defaults = @{
         // @"proxy" : @2,
         @"autoLogin" : @YES,
         @"vibrate" : @YES,
         @"picOnlyInWifi" : @NO,
+        @"disableScript" : @NO,
         @"changeBackground" : @YES,
         @"autoSave" : @YES,
         @"oppositeSwipe" : @YES,
         @"toolbarEditor" : @1,
         @"viewCollectionType" : @1,
         @"textSize" : @100,
-        @"IDNum" : @(MAX_ID_NUM / 2),
-        @"hotNum" : @(MAX_HOT_NUM / 2),
+        @"superUser": @NO,
         @"checkUpdate" : @"2025-01-01",
     };
-    NSDictionary *group = @{
+    NSDictionary *groupDefaults = @{
         @"URL" : DEFAULT_SERVER_URL,
         @"token" : @"",
         @"userInfo" : @"",
         @"iconOnlyInWifi" : @NO,
-        @"simpleView" : @NO
+        @"simpleView" : @NO,
     };
-    [DEFAULTS registerDefaults:dict];
-    [GROUP_DEFAULTS registerDefaults:group];
-    [self transferDefaults];
+    [DEFAULTS registerDefaults:defaults];
+    [GROUP_DEFAULTS registerDefaults:groupDefaults];
     wakeLogin = NO;
+    
+    formatter = [[NSDateFormatter alloc] init];
+    [formatter setDateFormat:@"yyyy-MM-dd"];
+    NSTimeZone *beijingTimeZone = [NSTimeZone timeZoneWithName:@"Asia/Shanghai"];
+    [formatter setTimeZone:beijingTimeZone];
     
     [[NSURLCache sharedURLCache] setMemoryCapacity:128.0 * 1024 * 1024];
     [[NSURLCache sharedURLCache] setDiskCapacity:512.0 * 1024 * 1024];
-    dispatch_global_default_async(^{
-        [self transport];
-    });
+    [AnimatedImageView checkIconCachePath];
+    [self migrateLegacyData];
+    
     [NOTIFICATION addObserver:self selector:@selector(showAlert:) name:@"showAlert" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(collectionChanged) name:@"collectionChanged" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(sendEmail:) name:@"sendEmail" object:nil];
@@ -141,14 +137,16 @@
     
     static dispatch_once_t addTapListenerToken;
     dispatch_once(&addTapListenerToken, ^{
-        UIWindow *keyWindow = [UIApplication sharedApplication].keyWindow;
         UITapGestureRecognizer *globalTapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleGlobalTap:)];
         globalTapGesture.cancelsTouchesInView = NO;
-        [keyWindow addGestureRecognizer:globalTapGesture];
+        [[UIApplication sharedApplication].delegate.window addGestureRecognizer:globalTapGesture];
     });
     
 #ifdef DEBUG
-//    [self openLink:[Helper getLink:@"https://www.chexie.net/bbs/content/?p=25&bid=4&tid=19837#293"] postTitle:nil];
+//    [AppDelegate openLink:[Helper getLink:@"/bbs/content/?p=17&bid=4&tid=19919#195"] postTitle:nil]; // Apple Music
+//    [AppDelegate openLink:[Helper getLink:@"/bbs/content/?p=25&bid=4&tid=19837#298"] postTitle:nil]; // Pictures
+//    [AppDelegate openLink:[Helper getLink:@"/bbs/content/?p=25&bid=4&tid=19837#293"] postTitle:nil]; // Attachments
+//    [self _handleUrlRequestWithDictionary:@{@"open": @"compose", @"bid": @"9", @"title": @"Test"}]; // Compose
 #endif
     
     // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
@@ -159,14 +157,82 @@
 }
 
 + (UIViewController *)getTopViewController {
-    __block UIViewController *topVC;
+    __block UIViewController *topVC = nil;
     dispatch_main_sync_safe(^{
-        topVC = [UIApplication sharedApplication].keyWindow.rootViewController;
+        UIWindow *keyWindow = [UIApplication sharedApplication].delegate.window;
+        if (!keyWindow) {
+            return;
+        }
+        topVC = keyWindow.rootViewController;
         while (topVC.presentedViewController && !topVC.presentedViewController.isBeingDismissed && ![topVC isKindOfClass:[UIAlertController class]]) {
             topVC = topVC.presentedViewController;
         }
     });
     return topVC;
+}
+
++ (UIViewController *)viewControllerForView:(UIView *)view {
+    UIResponder *responder = view;
+    while (responder) {
+        responder = [responder nextResponder];
+        if ([responder isKindOfClass:[UIViewController class]]) {
+            return (UIViewController *)responder;
+        }
+    }
+    return nil;
+}
+
++ (void)setAdaptiveSheetFor:(UIViewController *)viewController popoverSource:(UIView *)source halfScreen:(BOOL)halfScreen {
+    if (!viewController || !viewController.navigationController) {
+        return;
+    }
+    UINavigationController *navi = viewController.navigationController;
+    UISheetPresentationController *sheetPC;
+    if (source && ([source isKindOfClass:[UIView class]] || [source isKindOfClass:[UIBarButtonItem class]])) {
+        navi.modalPresentationStyle = UIModalPresentationPopover;
+        UIPopoverPresentationController *popoverPC = navi.popoverPresentationController;
+        if (popoverPC) {
+            if ([source isKindOfClass:[UIBarButtonItem class]]) {
+                popoverPC.barButtonItem = (UIBarButtonItem *)source;
+            } else {
+                popoverPC.sourceView = source;
+                popoverPC.sourceRect = source.bounds;
+            }
+            sheetPC = popoverPC.adaptiveSheetPresentationController;
+        }
+    } else {
+        // This is not adaptive, but the best fallback we can do (sheet on iPhone but not iPad)
+        // The modal presentation style is form / page sheet by default
+        if (viewController.traitCollection.horizontalSizeClass == UIUserInterfaceSizeClassCompact ||
+            viewController.traitCollection.verticalSizeClass == UIUserInterfaceSizeClassCompact ||
+            !halfScreen) {
+            sheetPC = navi.sheetPresentationController;
+        }
+    }
+    if (!sheetPC) {
+        return;
+    }
+    if (halfScreen) {
+        sheetPC.detents = @[[UISheetPresentationControllerDetent mediumDetent], [UISheetPresentationControllerDetent largeDetent]];
+        sheetPC.prefersGrabberVisible = YES;
+        sheetPC.prefersScrollingExpandsWhenScrolledToEdge = NO;
+    }
+    sheetPC.prefersEdgeAttachedInCompactHeight = YES;
+    sheetPC.widthFollowsPreferredContentSizeWhenEdgeAttached = YES;
+}
+
++ (void)setPrefersLargeTitles:(UINavigationController *)navigationController {
+    if (LIQUID_GLASS) {
+        navigationController.navigationBar.prefersLargeTitles = YES;
+    }
+}
+
++ (UIStatusBarStyle)preferredStatusBarStyle {
+    if (LIQUID_GLASS) {
+        return UIStatusBarStyleDarkContent;
+    } else {
+        return UIStatusBarStyleLightContent;
+    }
 }
 
 + (UIBarButtonItem *)getCloseButtonForTarget:(id)target action:(SEL)action {
@@ -175,61 +241,58 @@
 
 + (UIView *)keyboardToolViewWithLeftButtons:(NSArray<UIButton *> *)leftButtons
                                 rightButtons:(NSArray<UIButton *> *)rightButtons {
+    UIView *wrapperView = [[UIView alloc] init];
+    wrapperView.translatesAutoresizingMaskIntoConstraints = NO;
+    wrapperView.frame = CGRectMake(0, 0, 0, 40); // Only height matters here
+    
     UIView *keyboardToolView = [[UIView alloc] init];
     keyboardToolView.translatesAutoresizingMaskIntoConstraints = NO;
-    keyboardToolView.frame = CGRectMake(0, 0, UIScreen.mainScreen.bounds.size.width, 40);
+    keyboardToolView.layer.cornerRadius = 18;
+    keyboardToolView.backgroundColor = [UIColor systemBackgroundColor];
+    
+    [wrapperView addSubview:keyboardToolView];
+    [NSLayoutConstraint activateConstraints:@[
+        [keyboardToolView.leadingAnchor constraintEqualToAnchor:wrapperView.leadingAnchor constant:4],
+        [keyboardToolView.trailingAnchor constraintEqualToAnchor:wrapperView.trailingAnchor constant:-4],
+        [keyboardToolView.topAnchor constraintEqualToAnchor:wrapperView.topAnchor],
+        [keyboardToolView.bottomAnchor constraintEqualToAnchor:wrapperView.bottomAnchor constant:-4],
+    ]];
 
     // 左侧 Stack
     UIStackView *leftStack = [[UIStackView alloc] initWithArrangedSubviews:leftButtons];
     leftStack.axis = UILayoutConstraintAxisHorizontal;
-    leftStack.spacing = 16;
+    leftStack.spacing = 12;
     leftStack.translatesAutoresizingMaskIntoConstraints = NO;
 
     // 右侧 Stack
     UIStackView *rightStack = [[UIStackView alloc] initWithArrangedSubviews:rightButtons];
     rightStack.axis = UILayoutConstraintAxisHorizontal;
-    rightStack.spacing = 16;
+    rightStack.spacing = 12;
     rightStack.translatesAutoresizingMaskIntoConstraints = NO;
 
     [keyboardToolView addSubview:leftStack];
     [keyboardToolView addSubview:rightStack];
 
-    // 设置 Auto Layout 约束
     [NSLayoutConstraint activateConstraints:@[
         // 左侧 stack 靠左
-        [leftStack.leadingAnchor constraintEqualToAnchor:keyboardToolView.leadingAnchor constant:16],
+        [leftStack.leadingAnchor constraintEqualToAnchor:keyboardToolView.safeAreaLayoutGuide.leadingAnchor constant:12],
         [leftStack.centerYAnchor constraintEqualToAnchor:keyboardToolView.centerYAnchor],
 
         // 右侧 stack 靠右
-        [rightStack.trailingAnchor constraintEqualToAnchor:keyboardToolView.trailingAnchor constant:-16],
+        [rightStack.trailingAnchor constraintEqualToAnchor:keyboardToolView.safeAreaLayoutGuide.trailingAnchor constant:-12],
         [rightStack.centerYAnchor constraintEqualToAnchor:keyboardToolView.centerYAnchor],
     ]];
 
-    return keyboardToolView;
+    return wrapperView;
 }
 
 + (UIButton *)keyboardToolButtonWithTitle:(NSString *)title target:(id)target action:(SEL)action {
     UIButton *btn = [UIButton buttonWithType:UIButtonTypeSystem];
     [btn setTitle:title forState:UIControlStateNormal];
-    btn.titleLabel.font = [UIFont systemFontOfSize:18];
+    btn.titleLabel.font = [UIFont systemFontOfSize:17];
     btn.translatesAutoresizingMaskIntoConstraints = NO;
     [btn addTarget:target action:action forControlEvents:UIControlEventTouchUpInside];
     return btn;
-}
-
-- (void)transferDefaults {
-    NSUserDefaults *appGroup = GROUP_DEFAULTS;
-    if (![[appGroup objectForKey:@"activated"] boolValue]) {
-        for (NSString *key in @[@"URL", @"uid", @"pass", @"token", @"userInfo", @"iconOnlyInWifi", @"simpleView"]) {
-            id obj = [DEFAULTS objectForKey:key];
-            if (obj) {
-                [appGroup setObject:obj forKey:key];
-                [DEFAULTS removeObjectForKey:key];
-            }
-        }
-        [appGroup setObject:@(YES) forKey:@"activated"];
-        [appGroup synchronize];
-    }
 }
 
 - (void)showAlert:(NSNotification *)noti {
@@ -240,7 +303,7 @@
 - (void)sendEmail:(NSNotification *)notification {
     NSDictionary *mailInfo = notification.userInfo;
     if ([MFMailComposeViewController canSendMail]) {
-        MFMailComposeViewController *mail = [[CustomMailComposeViewController alloc] init];
+        MFMailComposeViewController *mail = [[MFMailComposeViewController alloc] init];
         mail.mailComposeDelegate = self;
         [mail setToRecipients:mailInfo[@"recipients"]];
         if (mailInfo[@"subject"]) {
@@ -280,7 +343,7 @@
     if (!previewFileData || !previewFileName) {
         return;
     }
-    NSString *path = [NSString stringWithFormat:@"%@/%@", NSTemporaryDirectory(), previewFileName];
+    NSString *path = [NSTemporaryDirectory() stringByAppendingPathComponent:previewFileName];
     if (![previewFileData writeToFile:path atomically:YES]) {
         return;
     }
@@ -356,7 +419,7 @@
     return previewItem.previewFrame.bounds;
 }
 
-- (void)openLink:(NSDictionary *)linkInfo postTitle:(NSString *)title {
++ (void)openLink:(NSDictionary *)linkInfo postTitle:(NSString *)title {
     if ([linkInfo[@"bid"] length] == 0) {
         return;
     }
@@ -372,9 +435,115 @@
         @"bid": linkInfo[@"bid"],
         @"page": linkInfo[@"p"],
     };
-    dispatch_global_default_async(^{
-        [self _handleUrlRequestWithDictionary:naviDict];
+    dispatch_main_async_safe(^{
+        AppDelegate *appDelegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
+        dispatch_global_default_async(^{
+            [appDelegate _handleUrlRequestWithDictionary:naviDict];
+        });
     });
+}
+
++ (void)openURL:(NSString *)url fullScreen:(BOOL)fullScreen {
+    dispatch_main_async_safe((^{
+        AppDelegate *appDelegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
+        dispatch_global_default_async(^{
+            [appDelegate _handleUrlRequestWithDictionary:@{
+                @"open": @"web",
+                @"url": url,
+                @"fullScreen": @(fullScreen),
+            }];
+        });
+    }));
+}
+
++ (BOOL)textView:(UITextView *)textView shouldInteractWithURL:(NSURL *)URL inRange:(NSRange)characterRange interaction:(UITextItemInteraction)interaction {
+    if (interaction == UITextItemInteractionPresentActions) {
+        return YES;
+    }
+    NSString *path = URL.absoluteString;
+    if ([path hasPrefix:@"mailto:"]) {
+        NSString *mailAddress = [path substringFromIndex:@"mailto:".length];
+        [NOTIFICATION postNotificationName:@"sendEmail" object:nil userInfo:@{
+            @"recipients": @[mailAddress]
+        }];
+        return NO;
+    }
+    
+    if ([path hasPrefix:@"tel:"] || [path hasPrefix:@"sms:"] || [path hasPrefix:@"facetime:"] || [path hasPrefix:@"maps:"]) {
+        // Directly open
+        return YES;
+    }
+    
+    if ([Helper isHttpScheme:URL.scheme]) {
+        NSDictionary *linkInfo = [Helper getLink:path];
+        if (linkInfo.count > 0 && [linkInfo[@"bid"] length] > 0) {
+            [self openLink:linkInfo postTitle:nil];
+        } else {
+            [self openURL:path fullScreen:YES];
+        }
+        return NO;
+    } else {
+        return YES;
+    }
+}
+
++ (void)handleImageClickWithMessage:(WKScriptMessage *)message hud:(MBProgressHUD *)hud {
+    NSDictionary *payload = message.body;
+    if ([payload[@"loading"] boolValue]) {
+        [hud showWithProgressMessage:@"图片加载中"];
+        return;
+    }
+    NSString *base64Data = payload[@"data"] ?: @"";
+    NSString *imgSrc = payload[@"src"] ?: @"";
+    NSURL *imageUrl = [NSURL safeURLWithString:imgSrc];
+    NSString *alt = payload[@"alt"] ?: @"";
+    // 去掉前缀
+    NSRange range = [base64Data rangeOfString:@","];
+    if (range.location != NSNotFound) {
+        NSString *alt = payload[@"alt"];
+        NSString *base64String = [base64Data substringFromIndex:range.location + 1];
+        NSData *imageData = [[NSData alloc] initWithBase64EncodedString:base64String options:0];
+        ImageFileType type = [AnimatedImageView fileType:imageData];
+        if (type != ImageFileTypeUnknown) {
+            [hud hideWithSuccessMessage:@"图片加载成功"];
+            NSString *fileName = [Helper fileNameFromURL:imageUrl] ?: [[Helper md5:imgSrc] stringByAppendingPathExtension:[AnimatedImageView fileExtension:type]];
+            [self presentImage:imageData fileName:fileName title:alt];
+            return;
+        }
+    }
+    
+    NSString *errorMessage = payload[@"error"] ?: @"图片加载失败";
+    // Try reload in app to overcome CORS. (Most external sites will fail the js fetch request)
+    if (imageUrl) {
+        [hud showWithProgressMessage:@"图片加载中"];
+        [Downloader loadURL:imageUrl progress:^(float progress, NSUInteger expectedBytes) {
+            [hud updateToProgress:progress];
+        } completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+            ImageFileType type = [AnimatedImageView fileType:data];
+            if (error || type == ImageFileTypeUnknown) {
+                [hud hideWithFailureMessage:error ? errorMessage : @"图片格式不支持"];
+                return;
+            }
+            [hud hideWithSuccessMessage:@"图片加载成功"];
+            NSString *fileName;
+            if (response.suggestedFilename && response.suggestedFilename.pathExtension.length > 0) {
+                fileName = response.suggestedFilename;
+            } else {
+                fileName = [Helper fileNameFromURL:imageUrl] ?: [[Helper md5:imgSrc] stringByAppendingPathExtension:[AnimatedImageView fileExtension:type]];
+            }
+            [self presentImage:data fileName:fileName title:alt];
+        }];
+    } else {
+        [hud hideWithFailureMessage:errorMessage];
+    }
+}
+
++ (void)presentImage:(NSData *)imageData fileName:(NSString *)fileName title:(NSString *)alt {
+    [NOTIFICATION postNotificationName:@"previewFile" object:nil userInfo:@{
+        @"fileData": imageData,
+        @"fileName": fileName,
+        @"fileTitle": alt.length > 0 ? alt : @"查看图片"
+    }];
 }
 
 - (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity restorationHandler:(void (^)(NSArray<id<UIUserActivityRestoring>> * _Nullable))restorationHandler {
@@ -392,9 +561,7 @@
                 @"tid": collectionParts[2],
                 @"naviTitle": collectionParts[3]
             };
-            dispatch_global_default_async(^{
-                [self _handleUrlRequestWithDictionary:naviDict];
-            });
+            [self _handleUrlRequestWithDictionary:naviDict];
             return YES;
         }
     }
@@ -407,7 +574,7 @@
     }
     // From universal link or handfoff
     if ([linkInfo[@"bid"] length] > 0) {
-        [self openLink:linkInfo postTitle:isCompose ? @"" : userActivity.title];
+        [AppDelegate openLink:linkInfo postTitle:isCompose ? @"" : userActivity.title];
         if (!isCompose) {
             return YES;
         }
@@ -617,6 +784,7 @@
                 
                 UINavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
                 navi.modalPresentationStyle = UIModalPresentationPageSheet;
+                [AppDelegate setAdaptiveSheetFor:dest popoverSource:nil halfScreen:NO];
                 [view presentViewControllerSafe:navi];
             });
         }];
@@ -651,12 +819,26 @@
             if (dict[@"naviTitle"]) {
                 dest.title = dict[@"naviTitle"];
             } else {
-                dest.title = @"加载中";
+                dest.title = @"帖子加载中";
             }
             
             dest.navigationItem.leftBarButtonItem = [AppDelegate getCloseButtonForTarget:self action:@selector(back)];
             UINavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
             navi.modalPresentationStyle = UIModalPresentationFullScreen;
+            [view presentViewControllerSafe:navi];
+        });
+    } else if ([open isEqualToString:@"web"]) {
+        dispatch_main_sync_safe(^{
+            WebViewController *dest = [self.window.rootViewController.storyboard instantiateViewControllerWithIdentifier:@"webview"];
+            dest.URL = dict[@"url"];
+            
+            UINavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
+            if ([dict[@"fullScreen"] boolValue]) {
+                navi.modalPresentationStyle = UIModalPresentationFullScreen;
+            } else {
+                navi.modalPresentationStyle = UIModalPresentationPageSheet;
+                [AppDelegate setAdaptiveSheetFor:dest popoverSource:nil halfScreen:NO];
+            }
             [view presentViewControllerSafe:navi];
         });
     }
@@ -674,7 +856,7 @@
 }
 
 - (void)updateCollection {
-    NSMutableArray *seachableItems = [[NSMutableArray alloc] init];
+    NSMutableArray *seachableItems = [NSMutableArray array];
     NSArray *collections = [DEFAULTS objectForKey:@"collection"];
     if (!collections || collections.count == 0) {
         [[CSSearchableIndex defaultSearchableIndex] deleteSearchableItemsWithDomainIdentifiers:@[BUNDLE_IDENTIFIER] completionHandler:nil];
@@ -686,7 +868,7 @@
         NSString *title = dict[@"title"];
         NSString *author = dict[@"author"] ?: @"";
         NSString *text = dict[@"text"] ?: @"";
-        CSSearchableItemAttributeSet *attr = [[CSSearchableItemAttributeSet alloc] initWithItemContentType:(NSString *)kUTTypeText];
+        CSSearchableItemAttributeSet *attr = [[CSSearchableItemAttributeSet alloc] initWithContentType:UTTypeText];
         attr.title = title;
         if (text.length > 0) {
             if (author.length > 0) {
@@ -719,7 +901,18 @@
     }];
 }
 
-- (void)transport {
+- (void)migrateLegacyData {
+    if (![[GROUP_DEFAULTS objectForKey:@"activated"] boolValue]) {
+        for (NSString *key in @[@"URL", @"uid", @"pass", @"token", @"userInfo", @"iconOnlyInWifi", @"simpleView"]) {
+            id obj = [DEFAULTS objectForKey:key];
+            if (obj) {
+                [GROUP_DEFAULTS setObject:obj forKey:key];
+                [DEFAULTS removeObjectForKey:key];
+            }
+        }
+        [GROUP_DEFAULTS setObject:@(YES) forKey:@"activated"];
+    }
+    
     if (![[DEFAULTS objectForKey:@"clearDirtyData3.2"] boolValue]) { // 3.2之前版本采用NSUserDefaults储存头像 文件夹里面有许多垃圾数据
         NSString *rootFolder = NSHomeDirectory();
         NSArray *childPaths = [MANAGER subpathsAtPath:rootFolder];
@@ -738,8 +931,8 @@
     }
     
     if (![[DEFAULTS objectForKey:@"transportID3.3"] boolValue]) { // 3.3之后版本ID储存采用一个Dictionary
-        NSMutableArray *IDs = [[NSMutableArray alloc] init];
-        for (int i = 0; i < MAX_ID_NUM; i++) {
+        NSMutableArray *IDs = [NSMutableArray array];
+        for (int i = 0; i < 10; i++) {
             NSString *uid = [DEFAULTS objectForKey:[NSString stringWithFormat:@"id%d", i]];
             if (uid.length > 0) {
                 [IDs addObject:@{
@@ -754,10 +947,40 @@
         [DEFAULTS setObject:@(YES) forKey:@"transportID3.3"];
     }
     
-    if (![[DEFAULTS objectForKey:@"clearIconCache3.5"] boolValue]) { // 3.5之后链接全更改为https 缓存失效
-        [MANAGER removeItemAtPath:IMAGE_CACHE_PATH error:nil];
+//    if (![[DEFAULTS objectForKey:@"clearIconCache3.5"] boolValue]) { // 3.5之后链接全更改为https 缓存失效
+//        [MANAGER removeItemAtPath:ICON_CACHE_PATH error:nil];
+//        [DEFAULTS setObject:@(YES) forKey:@"clearIconCache3.5"];
+//    }
+    
+    if (![[DEFAULTS objectForKey:@"migrateIconCache4.1"] boolValue]) {
+        if ([[DEFAULTS objectForKey:@"clearIconCache3.5"] boolValue]) { // 3.5之前的旧缓存全部无效
+            NSString *oldCachePath1 = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"IconCache"];
+            NSString *oldCachePath2 = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"IconCache"];
+            for (NSString *oldPath in @[oldCachePath1, oldCachePath2]) {
+                if (![MANAGER fileExistsAtPath:oldPath]) {
+                    continue;
+                }
+                NSDirectoryEnumerator *enumerator = [MANAGER enumeratorAtPath:oldPath];
+                NSString *fileName;
+                while ((fileName = [enumerator nextObject])) {
+                    NSString *sourcePath = [oldPath stringByAppendingPathComponent:fileName];
+                    NSString *destinationPath = [ICON_CACHE_PATH stringByAppendingPathComponent:fileName];
+                    if (![MANAGER fileExistsAtPath:destinationPath]) {
+                        [MANAGER moveItemAtPath:sourcePath toPath:destinationPath error:nil];
+                    }
+                }
+                [MANAGER removeItemAtPath:oldPath error:nil];
+            }
+        }
         [DEFAULTS setObject:@(YES) forKey:@"clearIconCache3.5"];
+        [DEFAULTS setObject:@(YES) forKey:@"migrateIconCache4.1"];
     }
+    
+    if ([[DEFAULTS objectForKey:@"IDNum"] intValue] == 10 && [[DEFAULTS objectForKey:@"hotNum"] intValue] == 40) {
+        [DEFAULTS setObject:@(YES) forKey:@"superUser"];
+    }
+    [DEFAULTS removeObjectForKey:@"IDNum"];
+    [DEFAULTS removeObjectForKey:@"hotNum"];
 }
 
 - (void)handleGlobalTap:(UITapGestureRecognizer *)gesture {
@@ -795,10 +1018,6 @@
 }
 
 - (void)maybeCheckUpdate {
-    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-    [formatter setDateFormat:@"yyyy-MM-dd"];
-    NSTimeZone *beijingTimeZone = [NSTimeZone timeZoneWithName:@"Asia/Shanghai"];
-    [formatter setTimeZone:beijingTimeZone];
     NSDate *currentDate = [NSDate date];
     NSDate *lastDate =[formatter dateFromString:[DEFAULTS objectForKey:@"checkUpdate"]];
     NSTimeInterval time = [currentDate timeIntervalSinceDate:lastDate];

@@ -20,18 +20,18 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    [AppDelegate setPrefersLargeTitles:self.navigationController];
     self.view.backgroundColor = GRAY_PATTERN;
     self.preferredContentSize = CGSizeMake(400, 1000);
-    [self.iconUser setRounded:YES];
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
+    [self.iconUser setRounded:YES];
     
     [NOTIFICATION addObserver:self selector:@selector(userChanged) name:@"userChanged" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(refreshInfo) name:@"infoRefreshed" object:nil];
     [NOTIFICATION addObserver:self selector:@selector(cacheChanged:) name:nil object:nil];
     
-    isCalculatingCache = NO;
     [self setDefault];
     // Uncomment the following line to preserve selection between presentations.
     // self.clearsSelectionOnViewWillAppear = NO;
@@ -50,6 +50,7 @@
     [self.switchIcon setOn:[[GROUP_DEFAULTS objectForKey:@"iconOnlyInWifi"] boolValue]];
     [self.switchAutoSave setOn:[[DEFAULTS objectForKey:@"autoSave"] boolValue]];
     [self.switchSimpleView setOn:SIMPLE_VIEW];
+    [self.switchScript setOn:[[DEFAULTS objectForKey:@"disableScript"] boolValue]];
     [self.switchChangeBackground setOn:[[DEFAULTS objectForKey:@"changeBackground"] boolValue]];
     [self.stepperSize setValue:[[DEFAULTS objectForKey:@"textSize"] intValue]];
     [self.defaultSize setText:[NSString stringWithFormat:@"默认页面缩放 - %d%%", (int)self.stepperSize.value]];
@@ -103,38 +104,16 @@
     dispatch_global_default_async(^{
         unsigned long long cacheSize = 0;
         // tmp目录
-        cacheSize += [SettingViewController folderSizeAtPath:NSTemporaryDirectory()];
+        cacheSize += [Helper folderSizeAtPath:NSTemporaryDirectory()];
         // Caches目录
-        cacheSize += [SettingViewController folderSizeAtPath:CACHE_DIRECTORY];
-        unsigned long long iconCacheSize = [SettingViewController folderSizeAtPath:IMAGE_CACHE_PATH];
+        cacheSize += [Helper folderSizeAtPath:CACHE_PATH];
+        unsigned long long iconCacheSize = [Helper folderSizeAtPath:ICON_CACHE_PATH];
         isCalculatingCache = NO;
         dispatch_main_async_safe((^{
-            self.appCacheSize.text = [Helper fileSize:cacheSize - iconCacheSize];
-            self.iconCacheSize.text = [Helper fileSize:iconCacheSize];
+            self.appCacheSize.text = [Helper fileSizeStr:cacheSize];
+            self.iconCacheSize.text = [Helper fileSizeStr:iconCacheSize];
         }));
     });
-}
-
-//单个文件的大小
-+ (unsigned long long)fileSizeAtPath:(NSString *)filePath {
-    if ([MANAGER fileExistsAtPath:filePath]) {
-        return [[MANAGER attributesOfItemAtPath:filePath error:nil] fileSize];
-    }
-    return 0;
-}
-
-//遍历文件夹获得文件夹大小
-+ (unsigned long long)folderSizeAtPath:(NSString *)folderPath {
-    if (![MANAGER fileExistsAtPath:folderPath]) {
-        return 0;
-    }
-    NSArray *chileFiles = [MANAGER subpathsAtPath:folderPath];
-    unsigned long long folderSize = 0;
-    for (NSString *fileName in chileFiles) {
-        NSString* fileAbsolutePath = [folderPath stringByAppendingPathComponent:fileName];
-        folderSize += [self fileSizeAtPath:fileAbsolutePath];
-    }
-    return folderSize;
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -143,18 +122,22 @@
         if (indexPath.row == 0) {
             [self showAlertWithTitle:@"确认清除软件缓存？" message:@"将重点清除网络缓存\n不会清除头像缓存\n少数系统关键缓存无法彻底清除" confirmTitle:@"确认" confirmAction:^(UIAlertAction *action) {
                 [hud showWithProgressMessage:@"清除中"];
-                // Don't delete cache / tmp folder directly, otherwise will throw many db error
-                // NSURLCache
-                [[NSURLCache sharedURLCache] removeAllCachedResponses];
                 // WKWebView (WebKit) cache
                 [CustomWebViewContainer clearAllDataStores:^{
+                    // NSURLCache
+                    [[NSURLCache sharedURLCache] removeAllCachedResponses];
+                    // Temporary folder
+                    [Helper cleanUpFilesInDirectory:NSTemporaryDirectory() minInterval:60 * 60]; // 1 hour
+                    // Cache folder
+                    [Helper cleanUpFilesInDirectory:CACHE_PATH minInterval:24 * 60 * 60]; // 24 hour
+                    
                     [hud hideWithSuccessMessage:@"清除完成"];
                     [self cacheChanged:nil];
                 }];
             }];
         } else if (indexPath.row == 1) {
             [self showAlertWithTitle:@"确认清除头像缓存？" message:@"建议仅在头像出错时使用" confirmTitle:@"确认" confirmAction:^(UIAlertAction *action) {
-                [MANAGER removeItemAtPath:IMAGE_CACHE_PATH error:nil];
+                [MANAGER removeItemAtPath:ICON_CACHE_PATH error:nil];
                 [hud showAndHideWithSuccessMessage:@"清除完成"];
                 [self cacheChanged:nil];
             }];
@@ -201,7 +184,7 @@
 - (IBAction)iconChanged:(id)sender {
     [GROUP_DEFAULTS setObject:@(self.switchIcon.isOn) forKey:@"iconOnlyInWifi"];
     if (self.switchIcon.isOn) {
-        [self showAlertWithTitle:@"头像显示已关闭" message:@"使用流量时\n未缓存过的头像将以会标代替\n已缓存过的头像将会正常加载"];
+        [self showAlertWithTitle:@"头像显示已关闭" message:@"使用流量时\n未缓存过的头像将以会标代替\n已缓存过的头像将会正常显示"];
     }
 }
 
@@ -218,6 +201,13 @@
     [GROUP_DEFAULTS setObject:@(self.switchSimpleView.isOn) forKey:@"simpleView"];
     if (self.switchSimpleView.isOn) {
         [self showAlertWithTitle:@"简洁版内容已启用" message:@"将隐藏部分详细信息\n楼中楼不默认展示\n动图头像将静态显示\n模糊效果将禁用"];
+    }
+}
+
+- (IBAction)scriptChanged:(id)sender {
+    [DEFAULTS setObject:@(self.switchScript.isOn) forKey:@"disableScript"];
+    if (self.switchScript.isOn) {
+        [self showAlertWithTitle:@"JavaScript脚本已禁用" message:@"动态内容将失效（例如动态签名档）\n网页版不会受影响"];
     }
 }
 

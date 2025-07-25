@@ -18,6 +18,12 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
+    if (!SIMPLE_VIEW) {
+        backgroundView = [[AnimatedImageView alloc] init];
+        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
+        self.tableView.backgroundView = backgroundView;
+    }
+    
     if (self.iconData.length > 0) {
         [self refreshBackgroundViewAnimated:NO];
     } else {
@@ -44,12 +50,7 @@
     if (SIMPLE_VIEW) {
         return;
     }
-    if (!backgroundView) {
-        backgroundView = [[AnimatedImageView alloc] init];
-        [backgroundView setContentMode:UIViewContentModeScaleAspectFill];
-        self.tableView.backgroundView = backgroundView;
-    }
-    [backgroundView setBlurredImage:[UIImage imageWithData:self.iconData] animated:animated];
+    [backgroundView setImage:[UIImage imageWithData:self.iconData] blurred:YES animated:animated];
 }
 
 #pragma mark - Table view data source
@@ -61,32 +62,26 @@
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     // Return the number of rows in the section.
-    return MAX(self.data.count, 1);
+    return self.data.count;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell" forIndexPath:indexPath];
-    if (self.data.count > 0) {
-        cell.textLabel.text = [Helper restoreTitle:self.data[indexPath.row][@"title"]];
-        cell.detailTextLabel.text = self.data[indexPath.row][@"time"];
-    } else {
-        cell.textLabel.text = [@"暂无" stringByAppendingString:self.title];
-        cell.detailTextLabel.text = @"";
-        cell.accessoryType = UITableViewCellAccessoryNone;
-        cell.userInteractionEnabled = NO;
-    }
+//    cell.backgroundColor = [UIColor clearColor];
+    cell.textLabel.text = [Helper restoreTitle:self.data[indexPath.row][@"title"]];
+    cell.detailTextLabel.text = self.data[indexPath.row][@"time"];
     
     // Configure the cell...
     
     return cell;
 }
 
-- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+- (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
+    return self.data.count > 0 ? [NSString stringWithFormat:@"共%ld条", self.data.count] : @"暂无";
 }
 
-- (void)dismiss:(UIBarButtonItem *)sender {
-    [self dismissViewControllerAnimated:YES completion:nil];
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
 }
 
 #pragma mark - Navigation
@@ -101,7 +96,7 @@
         dest.bid = dict[@"bid"];
         dest.tid = dict[@"tid"];
         dest.destinationFloor = dict[@"pid"];
-        dest.title = dict[@"title"];
+        dest.title = [Helper restoreTitle:dict[@"title"]];
         dest.navigationItem.leftBarButtonItem = [AppDelegate getCloseButtonForTarget:self action:@selector(done)];
     }
 }

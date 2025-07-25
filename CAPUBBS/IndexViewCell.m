@@ -12,12 +12,19 @@
 
 - (void)awakeFromNib {
     [super awakeFromNib];
+    // Initialization code
+    self.backgroundColor = [UIColor clearColor];
+    
     self.text.backgroundColor = [UIColor colorWithWhite:1 alpha:0.6];
 }
 
 - (void)layoutSubviews {
     [super layoutSubviews];
-    [self.layer setCornerRadius:self.frame.size.width / 15];
+    if (LIQUID_GLASS) {
+        self.layer.cornerRadius = self.frame.size.width / 8;
+    } else {
+        self.layer.cornerRadius = self.frame.size.width / 15;
+    }
 }
 
 @end

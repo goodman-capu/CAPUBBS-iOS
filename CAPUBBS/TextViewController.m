@@ -21,16 +21,15 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
+    self.preferredContentSize = CGSizeMake(400, 650);
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
     
-    [self.labelPreview.layer setCornerRadius:10.0];
-    [self.labelPreview.layer setMasksToBounds:YES];
-    [self.textInput.layer setCornerRadius:10.0];
+    self.textInput.backgroundColor = [UIColor clearColor];
+    self.textInput.textContainerInset = UIEdgeInsetsMake(12, 12, 12, 12);
     self.textInput.text = self.defaultText;
     self.textInput.delegate = self;
-    [self.segmentColor addTarget:self action:@selector(changeColor:) forControlEvents:UIControlEventValueChanged];
     
     colors = @[[UIColor redColor], [UIColor orangeColor], [UIColor yellowColor], [UIColor greenColor], [UIColor cyanColor], [UIColor blueColor], [UIColor purpleColor], [UIColor whiteColor], [UIColor grayColor], [UIColor blackColor], [UIColor blackColor]];
     colorNames = @[@"red", @"orange", @"yellow", @"green", @"cyan", @"blue", @"purple", @"white", @"gray", @"black", @"default"];
@@ -52,10 +51,19 @@
 }
 
 - (void)textViewDidChange:(UITextView *)textView {
-    [self updateLabel];
+    [self updateInfo];
 }
 
-- (void)updateLabel {
+- (BOOL)shouldDisableClose {
+    NSString *text = [self getInsertText];
+    return ![text isEqualToString:self.textInput.text] || ![self.textInput.text isEqualToString:self.defaultText];
+}
+
+- (void)updateInfo {
+    self.title = numberOfInserts > 0 ? [NSString stringWithFormat:@"已插入%d个样式", numberOfInserts] : @"插入样式";
+    self.buttonUndo.enabled = numberOfInserts > 0;
+    self.modalInPresentation = [self shouldDisableClose];
+    
     NSString *previewText = self.textInput.text.length > 0 ? self.textInput.text : @"北大车协 CAPU";
     NSMutableAttributedString *textPreview = [[NSMutableAttributedString alloc] initWithString:previewText];
     int size = [[fontSizes objectAtIndex:fontSize] intValue];
@@ -63,9 +71,9 @@
     
     [textPreview addAttribute:NSForegroundColorAttributeName value:[colors objectAtIndex:color] range:range];
     if ([[colorNames objectAtIndex:color] isEqualToString:@"white"]) {
-        [self.labelPreview setBackgroundColor:[UIColor lightGrayColor]];
+        [self.labelPreview setBackgroundColor:[UIColor colorWithWhite:0 alpha:0.2]];
     } else {
-        [self.labelPreview setBackgroundColor:[UIColor whiteColor]];
+        [self.labelPreview setBackgroundColor:[UIColor colorWithWhite:1 alpha:0.2]];
     }
     UIFontDescriptor *desc = [UIFontDescriptor fontDescriptorWithName:[fontNames objectAtIndex:isBold] size:size];
     if (isItalics) {
@@ -82,6 +90,32 @@
     
     //NSLog(@"Update Status");
     self.labelPreview.attributedText = textPreview;
+}
+
+- (NSString *)getInsertText {
+    NSString *text = self.textInput.text;
+    if (text.length == 0) {
+        return text;
+    }
+    if (fontSize != DEFAULT_FONT_SIZE) {
+        text = [NSString stringWithFormat:@"[size=%d]%@[/size]", [self getActualFontSize], text];
+    }
+    if (color != DEFAULT_COLOR) {
+        text = [NSString stringWithFormat:@"[color=%@]%@[/color]", [colorNames objectAtIndex:color], text];
+    }
+    if (isBold) {
+        text = [NSString stringWithFormat:@"[b]%@[/b]", text];
+    }
+    if (isItalics) {
+        text = [NSString stringWithFormat:@"[i]%@[/i]", text];
+    }
+    if (isUnderscore) {
+        text = [NSString stringWithFormat:@"<u>%@</u>", text];
+    }
+    if (isDelete) {
+        text = [NSString stringWithFormat:@"<strike>%@</strike>", text];
+    }
+    return text;
 }
 
 - (int)getActualFontSize {
@@ -110,12 +144,12 @@
     [self.switchItalics setOn:isItalics];
     [self.switchUnderscore setOn:isUnderscore];
     [self.switchDelete setOn:isDelete];
-    [self updateLabel];
+    [self updateInfo];
 }
 
-- (void)changeColor:(UISegmentedControl *)sender {
+- (IBAction)changeColor:(UISegmentedControl *)sender {
     color = (int)sender.selectedSegmentIndex;
-    [self updateLabel];
+    [self updateInfo];
 }
 
 - (IBAction)changeSize:(UISlider *)sender {
@@ -124,74 +158,88 @@
     [sender setValue:fontSize];
     if (fontSize != oriSize) {
         [self setFontLabel];
-        [self updateLabel];
+        [self updateInfo];
     }
 }
 
 - (IBAction)changeBold:(id)sender {
     isBold = self.switchBold.isOn;
-    [self updateLabel];
+    [self updateInfo];
 }
 
 - (IBAction)changeItalics:(id)sender {
     isItalics = self.switchItalics.isOn;
-    [self updateLabel];
+    [self updateInfo];
 }
 
 - (IBAction)changeUnderscore:(id)sender {
     isUnderscore = self.switchUnderscore.isOn;
-    [self updateLabel];
+    [self updateInfo];
 }
 
 - (IBAction)changeDelete:(id)sender {
     isDelete = self.switchDelete.isOn;
-    [self updateLabel];
+    [self updateInfo];
+}
+
+- (IBAction)done:(id)sender {
+    if ([self shouldDisableClose]) {
+        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"确定退出" message:@"您有尚未插入的内容，确定继续退出？" preferredStyle:UIAlertControllerStyleActionSheet];
+        [alertController addAction:[UIAlertAction actionWithTitle:@"退出" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+            [self dismiss];
+        }]];
+        [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
+        if ([sender isKindOfClass:[UIBarButtonItem class]]) {
+            alertController.popoverPresentationController.barButtonItem = sender;
+        }
+        [self presentViewControllerSafe:alertController];
+    } else {
+        [self dismiss];
+    }
+}
+
+- (void)dismiss {
+    [self dismissViewControllerAnimated:YES completion:nil];
+}
+
+- (IBAction)undo:(id)sender {
+    [NOTIFICATION postNotificationName:@"undo" object:nil];
+    numberOfInserts--;
+    [self updateInfo];
 }
 
 - (IBAction)addText:(id)sender {
-    NSString *inputText = self.textInput.text;
-    if (inputText.length == 0) {
-        [self showAlertWithTitle:@"错误" message:@"您还未输入正文内容！" cancelAction:^(UIAlertAction *action) {
-            [self.textInput becomeFirstResponder];
+    NSString *text = [self getInsertText];
+    if (text.length == 0) {
+        [self showAlertWithTitle:@"错误" message:@"您还未输入正文内容" cancelAction:^(UIAlertAction *action) {
+            [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:2] atScrollPosition:UITableViewScrollPositionBottom animated:YES];
+            dispatch_main_after(0.5, ^{
+                [self.textInput becomeFirstResponder];
+            });
         }];
         return;
     }
-    NSString *text = inputText;
-    if (fontSize != DEFAULT_FONT_SIZE) {
-        text = [NSString stringWithFormat:@"[size=%d]%@[/size]", [self getActualFontSize], text];
-    }
-    if (color != DEFAULT_COLOR) {
-        text = [NSString stringWithFormat:@"[color=%@]%@[/color]", [colorNames objectAtIndex:color], text];
-    }
-    if (isBold) {
-        text = [NSString stringWithFormat:@"[b]%@[/b]", text];
-    }
-    if (isItalics) {
-        text = [NSString stringWithFormat:@"[i]%@[/i]", text];
-    }
-    if (isUnderscore) {
-        text = [NSString stringWithFormat:@"<u>%@</u>", text];
-    }
-    if (isDelete) {
-        text = [NSString stringWithFormat:@"<strike>%@</strike>", text];
-    }
-    if ([text isEqualToString:inputText]) {
+    if ([text isEqualToString:self.textInput.text]) {
         [self showAlertWithTitle:@"错误" message:@"您还未选择任何字体样式"];
         return;
     }
     
+    numberOfInserts++;
+    [self updateInfo];
     [NOTIFICATION postNotificationName:@"addContent" object:nil userInfo:@{ @"HTML" : text }];
-    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"插入成功" message:@"请选择下一步操作" preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"插入成功" message:@"是否继续操作？" preferredStyle:UIAlertControllerStyleActionSheet];
     [alertController addAction:[UIAlertAction actionWithTitle:@"清空输入并继续" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        self.textInput.text = @"";;
+        self.textInput.text = @"";
+        [self updateInfo];
         [self.textInput becomeFirstResponder];
     }]];
     [alertController addAction:[UIAlertAction actionWithTitle:@"直接继续" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [self.textInput becomeFirstResponder];
     }]];
     [alertController addAction:[UIAlertAction actionWithTitle:@"返回发帖" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
-        [self.navigationController popViewControllerAnimated:YES];
+        [self dismiss];
     }]];
+    alertController.popoverPresentationController.barButtonItem = self.buttonAdd;
     [self presentViewControllerSafe:alertController];
 }
 

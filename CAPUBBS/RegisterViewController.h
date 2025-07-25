@@ -9,12 +9,14 @@
 #import <UIKit/UIKit.h>
 #import "AnimatedImageView.h"
 
-@interface RegisterViewController : CustomTableViewController {
+@interface RegisterViewController : CustomTableViewController <UITableViewDelegate> {
     MBProgressHUD *hud;
+    AnimatedImageView *backgroundView;
     NSString *iconURL;
 }
 
 @property BOOL isEdit;
+@property NSData *iconData;
 @property (weak, nonatomic) IBOutlet UITextField *textUid;
 @property (weak, nonatomic) IBOutlet UIImageView *imageUidAvailable;
 @property (weak, nonatomic) IBOutlet UILabel *labelUidGuide;

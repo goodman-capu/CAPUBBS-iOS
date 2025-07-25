@@ -9,6 +9,8 @@
 #import <UIKit/UIKit.h>
 #import <MessageUI/MessageUI.h>
 #import <QuickLook/QuickLook.h>
+#import <WebKit/WebKit.h>
+#import <MBProgressHUD/MBProgressHUD.h>
 
 @interface PreviewItem : NSObject <QLPreviewItem>
 
@@ -22,13 +24,29 @@
 @interface AppDelegate : UIResponder <UIApplicationDelegate, MFMailComposeViewControllerDelegate, QLPreviewControllerDelegate, QLPreviewControllerDataSource> {
     NSArray<PreviewItem *> *previewItems;
     BOOL wakeLogin;
+    NSDateFormatter *formatter;
 }
 
 @property (strong, nonatomic) UIWindow *window;
 
-- (void)openLink:(NSDictionary *)linkInfo postTitle:(NSString *)title;
++ (void)openLink:(NSDictionary *)linkInfo postTitle:(NSString *)title;
+
++ (void)openURL:(NSString *)url fullScreen:(BOOL)fullScreen;
+
+// A generic text view delegate method
++ (BOOL)textView:(UITextView *)textView shouldInteractWithURL:(NSURL *)URL inRange:(NSRange)characterRange interaction:(UITextItemInteraction)interaction;
+
++ (void)handleImageClickWithMessage:(WKScriptMessage *)message hud:(MBProgressHUD *)hud;
 
 + (UIViewController *)getTopViewController;
+
++ (UIViewController *)viewControllerForView:(UIView *)view;
+
++ (void)setAdaptiveSheetFor:(UIViewController *)viewController popoverSource:(UIView *)source halfScreen:(BOOL)halfScreen;
+
++ (void)setPrefersLargeTitles:(UINavigationController *)navigationController;
+
++ (UIStatusBarStyle)preferredStatusBarStyle;
 
 + (UIBarButtonItem *)getCloseButtonForTarget:(id)target action:(SEL)action;
 

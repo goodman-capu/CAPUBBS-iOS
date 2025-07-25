@@ -22,7 +22,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
-    self.preferredContentSize = CGSizeMake(400, 0);
+    self.preferredContentSize = CGSizeMake(400, 650);
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
@@ -66,26 +66,34 @@
     [activity invalidate];
 }
 
-- (void)refreshControlValueChanged:(UIRefreshControl*)sender{
-    self.refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
+- (void)refreshControlValueChanged:(UIRefreshControl *)refreshControl {
+    refreshControl.attributedTitle = [[NSAttributedString alloc] initWithString:@"刷新"];
     shouldShowHud = YES;
     [self loadData];
 }
 
+- (BOOL)shouldDisableClose {
+    return self.textPost.text.length > 0;
+}
+
 - (IBAction)back:(id)sender {
-    if (self.textPost.text.length == 0) {
-        [self dismissViewControllerAnimated:YES completion:nil];
-    } else {
+    if ([self shouldDisableClose]) {
         UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"确定退出" message:@"您有尚未发表的楼中楼，建议先保存草稿，确定继续退出？" preferredStyle:UIAlertControllerStyleActionSheet];
         [alertController addAction:[UIAlertAction actionWithTitle:@"退出" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
-            [self dismissViewControllerAnimated:YES completion:nil];
+            [self dismiss];
         }]];
         [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
         if ([sender isKindOfClass:[UIBarButtonItem class]]) {
             alertController.popoverPresentationController.barButtonItem = sender;
         }
         [self presentViewControllerSafe:alertController];
+    } else {
+        [self dismiss];
     }
+}
+
+- (void)dismiss {
+    [self dismissViewControllerAnimated:YES completion:nil];
 }
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
@@ -163,7 +171,6 @@
         cell = [tableView dequeueReusableCellWithIdentifier:@"post" forIndexPath:indexPath];
         
         self.textPost = cell.textPost;
-        [self.textPost setDelegate:self];
         [self textViewDidChange:self.textPost];
         self.labelByte = cell.labelByte;
     }
@@ -185,51 +192,24 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     if (indexPath.section == 0) {
+        [self.textPost resignFirstResponder];
         UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"选择操作" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-        if ([Helper checkLogin:NO]) {
-            [alertController addAction:[UIAlertAction actionWithTitle:@"回复" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                [self directPost:nil];
-            }]];
-        }
-        [alertController addAction:[UIAlertAction actionWithTitle:@"复制" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            [[UIPasteboard generalPasteboard] setString:lzlText];
-            [hud showAndHideWithSuccessMessage:@"复制完成"];
-        }]];
+        UIAlertAction *replyAction = [UIAlertAction actionWithTitle:@"回复" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            [tableView deselectRowAtIndexPath:indexPath animated:YES];
+            lzlAuthor = data[indexPath.row][@"author"];
+            [self directPost:nil];
+        }];
+        replyAction.enabled = [Helper checkLogin:NO];
+        [alertController addAction:replyAction];
         if ([self tableView:tableView canEditRowAtIndexPath:indexPath]) {
             [alertController addAction:[UIAlertAction actionWithTitle:@"删除" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+                [tableView deselectRowAtIndexPath:indexPath animated:YES];
                 [self confirmDelete:indexPath];
             }]];
         }
-        [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
-        lzlText = data[indexPath.row][@"text"];
-        lzlAuthor = data[indexPath.row][@"author"];
-        NSString *exp = @"[a-zA-z]+://[^\\s]*"; // 提取网址链接
-        NSRange range = [lzlText rangeOfString:exp options:NSRegularExpressionSearch];
-        if (range.location != NSNotFound) {
-            lzlUrl = [lzlText substringWithRange:range];
-            [alertController addAction:[UIAlertAction actionWithTitle:@"打开链接" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                NSDictionary *dict = [Helper getLink:lzlUrl];
-                if (dict.count > 0 && [dict[@"tid"] length] > 0) {
-                    ContentViewController *dest = [self.storyboard instantiateViewControllerWithIdentifier:@"content"];
-                    dest.bid = dict[@"bid"];
-                    dest.tid = dict[@"tid"];
-                    dest.destinationPage = dict[@"p"];
-                    dest.title=@"帖子跳转中";
-                    dest.navigationItem.leftBarButtonItem = [AppDelegate getCloseButtonForTarget:self action:@selector(done)];
-                    CustomNavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
-                    [navi setToolbarHidden:NO];
-                    navi.modalPresentationStyle = UIModalPresentationFullScreen;
-                    [self presentViewControllerSafe:navi];
-                } else {
-                    WebViewController *dest = [self.storyboard instantiateViewControllerWithIdentifier:@"webview"];
-                    CustomNavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
-                    dest.URL = lzlUrl;
-                    [navi setToolbarHidden:NO];
-                    navi.modalPresentationStyle = UIModalPresentationFullScreen;
-                    [self presentViewControllerSafe:navi];
-                }
-            }]];
-        }
+        [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+            [tableView deselectRowAtIndexPath:indexPath animated:YES];
+        }]];
         LzlCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
         UIView *view = cell.imageBottom;
         alertController.popoverPresentationController.sourceView = view;
@@ -248,8 +228,6 @@
     }
     return NO;
 }
-
-
 
 // Override to support editing the table view.
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -318,7 +296,7 @@
         }
             if ([result[0][@"code"] integerValue]==0) {
                 [hud hideWithSuccessMessage:@"发布成功"];
-                [SKStoreReviewController requestReview];
+                [SKStoreReviewController requestReviewInScene:self.view.window.windowScene];
                 self.textPost.text = @"";
                 dispatch_global_after(0.5, ^{
                     [self loadData];
@@ -336,27 +314,14 @@
     }
     [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:1] atScrollPosition:UITableViewScrollPositionBottom animated:YES];
     if (sender == nil) {
-        [self.textPost insertText:[NSString stringWithFormat:@"回复 @%@: ", lzlAuthor]];
+        NSString *currentText = self.textPost.text;
+        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"^回复 @[^:]+:\\s*" options:0 error:nil];
+        currentText = [regex stringByReplacingMatchesInString:currentText options:0 range:NSMakeRange(0, currentText.length) withTemplate:@""];
+        self.textPost.text = [NSString stringWithFormat:@"回复 @%@: %@", lzlAuthor, currentText];
     }
-    dispatch_main_async_safe(^{
+    dispatch_main_after(0.5, ^{
         [self.textPost becomeFirstResponder];
-    })
-}
-
-- (void)textViewDidChange:(UITextView *)textView {
-    int length = (int)textView.text.length;
-    self.labelByte.text = [NSString stringWithFormat:@"%d/140", length];
-    if (length <= 120) {
-        [self.labelByte setTextColor:[UIColor darkGrayColor]];
-    } else if (length <= 140) {
-        [self.labelByte setTextColor:[UIColor orangeColor]];
-    } else {
-        [self.labelByte setTextColor:[UIColor redColor]];
-    }
-    // 如果有输入文字，不允许点击外部关闭
-    if (@available(iOS 13.0, *)) {
-        [self setModalInPresentation:length > 0];
-    }
+    });
 }
 
 - (void)longPress:(UILongPressGestureRecognizer *)sender {
@@ -372,6 +337,29 @@
         lzlAuthor = data[indexPath.row][@"author"];
         [self directPost:nil];
     }
+}
+
+#pragma mark - Text view delegate
+
+- (BOOL)textView:(UITextView *)textView shouldInteractWithURL:(NSURL *)URL inRange:(NSRange)characterRange interaction:(UITextItemInteraction)interaction {
+    return [AppDelegate textView:textView shouldInteractWithURL:URL inRange:characterRange interaction:interaction];
+}
+
+- (void)textViewDidChange:(UITextView *)textView {
+    if (textView != self.textPost) {
+        return;
+    }
+    NSUInteger length = textView.text.length;
+    self.labelByte.text = [NSString stringWithFormat:@"%ld/140", length];
+    if (length <= 120) {
+        [self.labelByte setTextColor:[UIColor darkGrayColor]];
+    } else if (length <= 140) {
+        [self.labelByte setTextColor:[UIColor orangeColor]];
+    } else {
+        [self.labelByte setTextColor:[UIColor redColor]];
+    }
+    // 如果有输入文字，不允许点击外部关闭
+    self.modalInPresentation = [self shouldDisableClose];
 }
 
 #pragma mark - Navigation
@@ -391,10 +379,6 @@
             dest.iconData = UIImagePNGRepresentation(cell.icon.image);
         }
     }
-}
-
-- (void)done {
-    [self dismissViewControllerAnimated:YES completion:nil];
 }
 
 @end

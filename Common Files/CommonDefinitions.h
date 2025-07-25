@@ -11,6 +11,9 @@
 #ifndef CommonDefinitions_h
 #define CommonDefinitions_h
 
+//#define LIQUID_GLASS NO
+#define LIQUID_GLASS @available(iOS 26.0, *)
+
 #define DEFAULT_SERVER_URL @"https://www.chexie.net"
 #define APP_GROUP_IDENTIFIER @"group.net.chexie.capubbs"
 
@@ -33,30 +36,29 @@
 #define USERINFO [GROUP_DEFAULTS objectForKey:@"userInfo"]
 #define HOTPOSTS [GROUP_DEFAULTS objectForKey:@"hotPosts"]
 #define SIMPLE_VIEW [[GROUP_DEFAULTS objectForKey:@"simpleView"] boolValue]
+#define IS_SUPER_USER [[DEFAULTS objectForKey:@"superUser"] boolValue]
+#define ID_NUM (IS_SUPER_USER ? 20 : 10)
+#define HOT_NUM (IS_SUPER_USER ? 50 : 25)
 
-#define BLUE [UIColor colorWithRed:45.0/255 green:144.0/255 blue:220.0/255 alpha:1.0]
-#define GREEN_DARK [UIColor colorWithRed:115.0/255 green:170.0/255 blue:135.0/255 alpha:1.0]
-#define GREEN_LIGHT [UIColor colorWithRed:154.0/255 green:191.0/255 blue:165.0/255 alpha:1.0]
-#define GREEN_BACK [UIColor colorWithRed:221.0/255 green:236.0/255 blue:222.0/255 alpha:1.0]
+#define BLUE [UIColor colorWithRed:22.0/255 green:133.0/255 blue:237.0/255 alpha:1.0]
+#define GREEN_TEXT [UIColor colorWithHue:142.0/360 saturation:0.75 brightness:0.35 alpha:1.0]
+#define GREEN_TINT [UIColor colorWithHue:142.0/360 saturation:0.64 brightness:0.58 alpha:1.0]
+#define GREEN_DARK [UIColor colorWithHue:142.0/360 saturation:0.33 brightness:0.68 alpha:1.0]
+#define GREEN_LIGHT [UIColor colorWithHue:142.0/360 saturation:0.19 brightness:0.79 alpha:1.0]
+#define GREEN_BACK [UIColor colorWithHue:142.0/360 saturation:0.06 brightness:0.93 alpha:1.0]
 #define GRAY_PATTERN [UIColor colorWithPatternImage:[UIImage imageNamed:@"软件背景"]]
 #define SUCCESSMARK [UIImage imageNamed:@"successmark"]
 #define FAILMARK [UIImage imageNamed:@"failmark"]
 #define QUESTIONMARK [UIImage imageNamed:@"questionmark"]
-#define PLACEHOLDER [UIImage imageNamed:@"placeholder"]
-#define CACHE_DIRECTORY [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0]
-#define IMAGE_CACHE_PATH [CACHE_DIRECTORY stringByAppendingString:@"/IconCache"]
+#define PLACEHOLDER [UIImage imageNamed:@"会标"]
+#define CACHE_PATH [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) firstObject]
+#define ICON_CACHE_PATH [[NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"IconCache"]
 #define ICON_NAMES @[@"dahlia.jpeg", @"whiterose.jpeg", @"red%20rose.jpeg", @"bowling.jpeg", @"yellow%20daisy.jpeg", @"snowflake.jpeg", @"zebra.jpeg", @"football.jpeg", @"smack.jpeg", @"target.jpeg", @"gingerbread%20man.jpeg", @"leaf.jpeg", @"soccer.jpeg", @"poppy.jpeg", @"earth.jpeg", @"turntable.jpeg", @"nest.jpeg", @"piano.jpeg", @"penguin.jpeg", @"dandelion.jpeg", @"lotus.jpeg", @"drum.jpeg", @"basketball.jpeg", @"ying%20yang.jpeg", @"sandollar.jpeg", @"flower.jpeg", @"owl.jpeg", @"zen.jpeg", @"medal.jpeg", @"sunflower.jpeg", @"fortune%20cookie.jpeg", @"cactus.jpeg", @"parrot.jpeg", @"hockey.jpeg", @"guitar.jpeg", @"violin.jpeg", @"baseball.jpeg", @"lightning.jpeg", @"chalk.jpeg", @"8ball.jpeg", @"eagle.jpeg", @"tennis.jpeg", @"golf.jpeg"]
 
 #define BUNDLE_IDENTIFIER [[NSBundle mainBundle] bundleIdentifier]
 #define APP_VERSION [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"]
 #define APP_BUILD [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"]
 #define IS_CELLULAR ([ReachabilityManager sharedManager].currentNetworkType == NetworkTypeCellular)
-
-#define MAX_ID_NUM 10
-#define MAX_HOT_NUM 40
-#define ID_NUM [[DEFAULTS objectForKey:@"IDNum"] intValue]
-#define HOT_NUM [[DEFAULTS objectForKey:@"hotNum"] intValue]
-#define IS_SUPER_USER (ID_NUM == MAX_ID_NUM && HOT_NUM == MAX_HOT_NUM)
 
 static inline void dispatch_main_async_safe(dispatch_block_t block) {
     dispatch_async(dispatch_get_main_queue(), block);
@@ -83,7 +85,6 @@ static inline void dispatch_global_after(double seconds, dispatch_block_t block)
 }
 
 #define WEB_VIEW_MAX_HEIGHT 100000
-#define EMPTY_HTML @"<html><head></head><body></body></html>"
 #define JQUERY_MIN_JS [[NSBundle mainBundle] pathForResource:@"jquery.min" ofType:@"js"]
 #define INJECTION_JS [[NSBundle mainBundle] pathForResource:@"injection" ofType:@"js"]
 #define SALT @"3UhvI9LXQy69lrUd" // Never change it

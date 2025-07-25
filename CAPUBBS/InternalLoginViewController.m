@@ -24,7 +24,7 @@
     
     self.textUid.text = self.defaultUid;
     self.textPass.text = self.defaultPass;
-    [self.buttonLogin.layer setCornerRadius:10.0];
+    self.buttonLogin.layer.cornerRadius = self.buttonLogin.frame.size.height / 2;
     if (self.textUid.text.length == 0) {
         [self.textUid becomeFirstResponder];
     }
@@ -33,7 +33,7 @@
 
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
-    if (shouldPop == NO) {
+    if (!shouldPop) {
         if (self.textUid.text.length > 0 && self.textPass.text.length > 0) {
             [self login:nil];
         }

@@ -305,6 +305,70 @@ void cleanupBuffer(void *userData, void *buf_data)
 
 @implementation UIImage (Extension)
 
+- (BOOL)hasAlphaChannel:(BOOL)strictValidation {
+    if (!self.CGImage) {
+        return NO;
+    }
+    CGImageRef cgImage = self.CGImage;
+    
+    // 快速排除不含 alpha 通道的格式
+    CGImageAlphaInfo alphaInfo = CGImageGetAlphaInfo(cgImage);
+    if (alphaInfo == kCGImageAlphaNone ||
+        alphaInfo == kCGImageAlphaNoneSkipLast ||
+        alphaInfo == kCGImageAlphaNoneSkipFirst) {
+        return NO;
+    } else if (!strictValidation) {
+        return YES;
+    }
+
+    size_t width = CGImageGetWidth(cgImage);
+    size_t height = CGImageGetHeight(cgImage);
+    if (width == 0 || height == 0) {
+        return NO;
+    }
+
+    size_t bytesPerPixel = 4;
+    size_t bytesPerRow = bytesPerPixel * width;
+    UInt8 *rawData = (UInt8 *)calloc(height * width, bytesPerPixel);
+    if (!rawData) {
+        return NO;
+    }
+
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    if (!colorSpace) {
+        free(rawData);
+        return NO;
+    }
+
+    CGContextRef context = CGBitmapContextCreate(rawData,
+                                                 width,
+                                                 height,
+                                                 8,
+                                                 bytesPerRow,
+                                                 colorSpace,
+                                                 (CGBitmapInfo)kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(colorSpace);
+
+    if (!context) {
+        free(rawData);
+        return NO;
+    }
+
+    CGContextDrawImage(context, CGRectMake(0, 0, width, height), cgImage);
+
+    BOOL hasAlphaPixel = NO;
+    for (size_t i = 0; i < width * height; i++) {
+        if (rawData[i * 4 + 3] < 255) {
+            hasAlphaPixel = YES;
+            break;
+        }
+    }
+
+    CGContextRelease(context);
+    free(rawData);
+    return hasAlphaPixel;
+}
+
 - (UIImage *)imageByApplyingCornerRadius:(CGFloat)cornerRadius {
     // 1. 开启图形上下文
     UIGraphicsBeginImageContextWithOptions(self.size, NO, 0.0);

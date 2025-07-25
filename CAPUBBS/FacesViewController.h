@@ -11,8 +11,9 @@
 
 @interface FacesViewController : CustomCollectionViewController {
     AnimatedImageView *previewImageView;
+    int numberOfInserts;
 }
 
-@property int numberOfFaces;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonUndo;
 
 @end

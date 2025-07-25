@@ -7,6 +7,7 @@
 //
 
 #import "CustomWebViewContainer.h"
+#import "WebViewController.h"
 //#import <CommonCrypto/CommonCrypto.h>
 
 // Just a random UUID
@@ -14,8 +15,6 @@
 
 @implementation CustomWebViewContainer
 
-static NSMutableDictionary *sharedProcessPools = nil;
-static dispatch_once_t onceSharedProcessPool;
 static NSMutableDictionary *sharedDataSources = nil;
 static dispatch_once_t onceSharedDataSource;
 
@@ -82,19 +81,6 @@ static dispatch_once_t onceSharedDataSource;
     });
 }
 
-+ (WKProcessPool *)sharedProcessPoolWithToken:(BOOL)hasToken {
-    dispatch_once(&onceSharedProcessPool, ^{
-        sharedProcessPools = [[NSMutableDictionary alloc] init];
-    });
-    @synchronized (sharedProcessPools) {
-        NSNumber *key = @(hasToken);
-        if (!sharedProcessPools[key]) {
-            sharedProcessPools[key] = [[WKProcessPool alloc] init];
-        }
-        return sharedProcessPools[key];
-    }
-}
-
 + (WKWebsiteDataStore *)sharedDataSourceWithToken:(BOOL)hasToken {
     dispatch_once(&onceSharedDataSource, ^{
         sharedDataSources = [[NSMutableDictionary alloc] init];
@@ -121,15 +107,11 @@ static dispatch_once_t onceSharedDataSource;
         [_webView stopLoading];
         [_webView setNavigationDelegate:nil];
         [_webView setUIDelegate:nil];
-        // Before iOS 14, WeakScriptMessageDelegate will be retained forever
-        if (@available(iOS 14.0, *)) {
-            [_webView.configuration.userContentController removeAllScriptMessageHandlers];
-        }
+        [_webView.configuration.userContentController removeAllScriptMessageHandlers];
     }
 }
 
 - (void)initiateWebViewWithToken:(BOOL)hasToken {
-    WKProcessPool *processPool = [CustomWebViewContainer sharedProcessPoolWithToken:hasToken];
     WKWebsiteDataStore *dataStore = [CustomWebViewContainer sharedDataSourceWithToken:hasToken];
     if (hasToken) {
         NSURL *url = [NSURL URLWithString:CHEXIE];
@@ -151,7 +133,7 @@ static dispatch_once_t onceSharedDataSource;
     if (_webView) {
         WKWebViewConfiguration *config = _webView.configuration;
         // No need to update here
-        if (config.processPool == processPool && config.websiteDataStore == dataStore) {
+        if (config.websiteDataStore == dataStore) {
             return;
         }
         
@@ -164,7 +146,6 @@ static dispatch_once_t onceSharedDataSource;
     
     WKWebViewConfiguration *config = [[WKWebViewConfiguration alloc] init];
     config.dataDetectorTypes = WKDataDetectorTypeAll;
-    config.processPool = processPool;
     config.websiteDataStore = dataStore;
     config.allowsInlineMediaPlayback = YES;
     
@@ -270,11 +251,11 @@ static dispatch_once_t onceSharedDataSource;
     [alertController addAction:[UIAlertAction actionWithTitle:@"确定"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction * action) {
-        __strong typeof(weakAlertController) alertController = weakAlertController;
-        if (!alertController) {
+        __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+        if (!strongAlertController) {
             return;
         }
-        NSString *input = alertController.textFields.firstObject.text;
+        NSString *input = strongAlertController.textFields[0].text;
         if (!safeHandler(input)) {
             [self showTimeoutMessage];
         }
@@ -305,10 +286,13 @@ static dispatch_once_t onceSharedDataSource;
         if ([sourceUrl.host isEqualToString:newUrl.host]) {
             // Same host, navigate directly
             [webView loadRequest:navigationAction.request];
+        } else if (![[AppDelegate viewControllerForView:webView] isKindOfClass:[WebViewController class]]) {
+            [AppDelegate openURL:newUrl.absoluteString fullScreen:YES];
         } else if ([[UIApplication sharedApplication] canOpenURL:newUrl]) {
             // Ask for user confirmation
-            [[AppDelegate getTopViewController] showAlertWithTitle:@"是否跳转至" message:newUrl.absoluteString confirmTitle:@"确定" confirmAction:^(UIAlertAction *action) {
-                NSString *scheme = newUrl.scheme.lowercaseString;
+            NSString *scheme = newUrl.scheme.lowercaseString;
+            NSString *displayUrl = newUrl.host ? [NSString stringWithFormat:@"%@://%@", scheme, newUrl.host] : newUrl.absoluteString;
+            [[AppDelegate getTopViewController] showAlertWithTitle:@"是否跳转至" message:displayUrl confirmTitle:@"确定" confirmAction:^(UIAlertAction *action) {
                 if ([Helper isHttpScheme:scheme]) {
                     [webView loadRequest:navigationAction.request];
                 } else {
@@ -356,10 +340,17 @@ static dispatch_once_t onceSharedDataSource;
 
 @implementation WKWebView (Custom)
 
-- (void)setWeakScriptMessageHandler:(id<WKScriptMessageHandler>)delegate forName:(NSString *)handlerName {
-    [self.configuration.userContentController removeScriptMessageHandlerForName:handlerName];
+- (void)clearForReuse {
+    [self setNavigationDelegate:nil];
+    [self loadHTMLString:@"" baseURL:nil];
+}
+
+- (void)setWeakScriptMessageHandler:(id<WKScriptMessageHandler>)delegate forNames:(NSArray<NSString *> *)handlerNames {
     WeakScriptMessageDelegate *weakDelegate = [delegate isKindOfClass:[WeakScriptMessageDelegate class]] ? delegate : [[WeakScriptMessageDelegate alloc] initWithDelegate:delegate];
-    [self.configuration.userContentController addScriptMessageHandler:weakDelegate name:handlerName];
+    for (NSString *handlerName in handlerNames) {
+        [self.configuration.userContentController removeScriptMessageHandlerForName:handlerName];
+        [self.configuration.userContentController addScriptMessageHandler:weakDelegate name:handlerName];
+    }
 }
 
 @end

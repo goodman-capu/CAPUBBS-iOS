@@ -13,16 +13,16 @@
 - (void)awakeFromNib {
     [super awakeFromNib];
     // Initialization code
+    self.backgroundColor = [UIColor clearColor];
+    
     [self.imageIcon setRounded:YES];
-    [self.labelNum.layer setMasksToBounds:YES];
-    self.layer.shouldRasterize = YES; // 光栅化 提高流畅度
-    self.layer.rasterizationScale = [UIScreen mainScreen].scale;
+    self.labelNum.layer.masksToBounds = YES;
 }
 
 - (void)layoutSubviews {
     [super layoutSubviews];
     [self.labelNum layoutIfNeeded];
-    [self.labelNum.layer setCornerRadius:self.labelNum.frame.size.height / 2]; // 圆形
+    self.labelNum.layer.cornerRadius = self.labelNum.frame.size.height / 2; // 圆形
 }
 
 @end

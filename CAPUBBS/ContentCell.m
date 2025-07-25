@@ -13,15 +13,16 @@
 - (void)awakeFromNib {
     [super awakeFromNib];
     // Initialization code
+    self.backgroundColor = [UIColor clearColor];
     [self.icon setRounded:YES];
-    [self.webViewContainer.layer setCornerRadius:10.0];
-    [self.webViewContainer.layer setBorderColor:GREEN_LIGHT.CGColor];
-    [self.webViewContainer.layer setBorderWidth:1.0];
-    [self.webViewContainer.layer setMasksToBounds:YES];
-    [self.webViewContainer setBackgroundColor:[UIColor whiteColor]];
+    self.webViewContainer.layer.cornerRadius = 10;
+    self.webViewContainer.layer.borderColor = GREEN_LIGHT.CGColor;
+    self.webViewContainer.layer.borderWidth = 1;
+    self.webViewContainer.layer.masksToBounds = YES;
+    self.webViewContainer.backgroundColor = [UIColor whiteColor];
     [self.webViewContainer initiateWebViewWithToken:NO];
-    [self.webViewContainer.webView.scrollView setScrollEnabled:NO];
-    [self.lzlTableView setBackgroundColor:[UIColor clearColor]];
+    self.webViewContainer.webView.scrollView.scrollEnabled = NO;
+    self.lzlTableView.backgroundColor = [UIColor clearColor];
 }
 
 - (void)dealloc {
@@ -38,8 +39,7 @@
 - (void)prepareForReuse {
     [super prepareForReuse];
     [self invalidateTimer];
-    // 加载空HTML以快速清空，防止reuse后还短暂显示之前的内容
-    [self.webViewContainer.webView loadHTMLString:EMPTY_HTML baseURL:nil];
+    [self.webViewContainer.webView clearForReuse];
 }
 
 - (nonnull UITableViewCell *)tableView:(nonnull UITableView *)tableView cellForRowAtIndexPath:(nonnull NSIndexPath *)indexPath { 
@@ -51,7 +51,7 @@
     cell.lzlText.text = [dict[@"text"] stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
     [cell.lzlIcon setUrl:dict[@"icon"]];
     
-    if (indexPath.row == [self tableView:tableView numberOfRowsInSection:indexPath.section] - 1) {
+    if (indexPath.row == self.lzlDetail.count - 1) {
         cell.separatorInset = UIEdgeInsetsMake(0, 10000, 0, 0); // 隐藏
     } else {
         cell.separatorInset = UIEdgeInsetsZero; // 正常显示
@@ -79,6 +79,7 @@
 - (void)awakeFromNib {
     [super awakeFromNib];
     // Initialization code
+    self.backgroundColor = [UIColor clearColor];
     [self.lzlIcon setRounded:YES];
 }
 

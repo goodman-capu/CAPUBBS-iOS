@@ -18,8 +18,11 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
+    if (LIQUID_GLASS) {
+        self.toolbarItems = @[self.buttonBack, self.buttonForward, [UIBarButtonItem flexibleSpaceItem], self.buttonShare, self.buttonSafari];
+    }
     [self.webViewContainer initiateWebViewWithToken:YES];
-    [self.webViewContainer setBackgroundColor:[UIColor clearColor]];
+    self.webViewContainer.backgroundColor = [UIColor whiteColor];
     [self.webViewContainer.webView setNavigationDelegate:self];
     [self.webViewContainer.webView.scrollView setDelegate:self];
     [self.webViewContainer.webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionNew context:nil];
@@ -123,10 +126,7 @@
     
     if ([path hasPrefix:@"tel:"] || [path hasPrefix:@"sms:"] || [path hasPrefix:@"facetime:"] || [path hasPrefix:@"maps:"]) {
         // Directly open
-        if ([[UIApplication sharedApplication] canOpenURL:url]) {
-            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
-        }
-        decisionHandler(WKNavigationActionPolicyCancel);
+        decisionHandler(WKNavigationActionPolicyAllow);
         return;
     }
     
@@ -426,11 +426,11 @@
 // 滚动时调用此方法
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
     // NSLog(@"scrollView.contentOffset:%f, %f", scrollView.contentOffset.x, scrollView.contentOffset.y);
-    if (isAtEnd == NO && scrollView.contentOffset.y >= scrollView.contentSize.height - scrollView.frame.size.height) {
+    if (!isAtEnd && scrollView.contentOffset.y >= scrollView.contentSize.height - scrollView.frame.size.height) {
         [self.navigationController setToolbarHidden:NO animated:YES];
         isAtEnd = YES;
     }
-    if (isAtEnd == NO && scrollView.dragging) { // 拖拽
+    if (!isAtEnd && scrollView.dragging) { // 拖拽
         if ((scrollView.contentOffset.y - contentOffsetY) > 5.0f) { // 向上拖拽
             [self.navigationController setToolbarHidden:YES animated:YES];
         } else if ((contentOffsetY - scrollView.contentOffset.y) > 5.0f) { // 向下拖拽

@@ -7,9 +7,11 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <PhotosUI/PhotosUI.h>
+#import "TOCropViewController.h"
 #import "AnimatedImageView.h"
 
-@interface IconViewController : CustomCollectionViewController<UINavigationControllerDelegate, UIImagePickerControllerDelegate> {
+@interface IconViewController : CustomCollectionViewController<UIImagePickerControllerDelegate, UINavigationControllerDelegate, PHPickerViewControllerDelegate, TOCropViewControllerDelegate> {
     NSArray *iconNames;
     MBProgressHUD *hud;
     AnimatedImageView *previewImageView;
@@ -17,6 +19,8 @@
     int oldIconNum;
     int largeCellSize;
     int smallCellSize;
+    BOOL imageHasAlpha;
+    BOOL useCamera;
 }
 
 @property NSString *userIcon;

@@ -11,6 +11,8 @@
 #import <CommonCrypto/CommonCrypto.h> // MD5
 #import "sys/utsname.h" // 设备型号
 
+#define LINE_BREAK @"\r\n"
+
 @implementation Helper
 
 #pragma mark Web Request
@@ -111,6 +113,7 @@
     NSString *postUrl = [NSString stringWithFormat:@"%@/api/client.php?ask=%@",CHEXIE, url];
 #ifdef DEBUG
     NSLog(@"🌐 Calling API: %@", url);
+//    postUrl = [NSString stringWithFormat:@"https://www.chexie.net/api/client_new.php?ask=%@", url];
 #endif
     NSMutableDictionary *requestParams = [@{
         @"os": @"ios",
@@ -120,29 +123,64 @@
         @"clientbuild": APP_BUILD,
         @"token": TOKEN
     } mutableCopy];
-    [requestParams addEntriesFromDictionary:params];
     
-    NSMutableURLRequest *request = [NSMutableURLRequest
-                                    requestWithURL:[NSURL URLWithString:postUrl]];
+    NSMutableDictionary *requestFiles = [NSMutableDictionary dictionary];
+    for (NSString *key in params) {
+        id value = params[key];
+        if ([value isKindOfClass:[NSData class]]) {
+            requestFiles[key] = value;
+        } else {
+            requestParams[key] = value;
+        }
+    }
+        
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:postUrl]];
     request.HTTPMethod = @"POST";
     request.timeoutInterval = 30;
     
-    // Convert parameters to x-www-form-urlencoded (or JSON, depending on server)
-    NSMutableArray *bodyParts = [NSMutableArray array];
-    [requestParams enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-        NSString *part = [NSString stringWithFormat:@"%@=%@",
-                          [self encodeURIComponent:key],
-                          [self encodeURIComponent:obj]];
-        [bodyParts addObject:part];
-    }];
-    NSString *bodyString = [bodyParts componentsJoinedByString:@"&"];
-    NSData *bodyData = [bodyString dataUsingEncoding:NSUTF8StringEncoding];
-    request.HTTPBody = bodyData;
-    [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
+    if (requestFiles.count == 0 ) {
+        [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
+        // Convert parameters to x-www-form-urlencoded
+        NSMutableArray *bodyParts = [NSMutableArray array];
+        [requestParams enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+            NSString *part = [NSString stringWithFormat:@"%@=%@",
+                              [self encodeURIComponent:key],
+                              [self encodeURIComponent:obj]];
+            [bodyParts addObject:part];
+        }];
+        NSString *bodyString = [bodyParts componentsJoinedByString:@"&"];
+        NSData *bodyData = [bodyString dataUsingEncoding:NSUTF8StringEncoding];
+        request.HTTPBody = bodyData;
+    } else {
+        NSString *boundary = [NSString stringWithFormat:@"Boundary-%@", [[NSUUID UUID] UUIDString]];
+        [request setValue:[NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary] forHTTPHeaderField:@"Content-Type"];
+        
+        NSMutableData *body = [NSMutableData data];
+        // 添加普通字段
+        for (NSString *key in requestParams) {
+            [body appendData:[[NSString stringWithFormat:@"--%@%@", boundary, LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"%@", key, LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:[LINE_BREAK dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:[requestParams[key] dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:[LINE_BREAK dataUsingEncoding:NSUTF8StringEncoding]];
+        }
+        // 添加文件字段
+        for (NSString *key in requestFiles) {
+            [body appendData:[[NSString stringWithFormat:@"--%@%@", boundary, LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"%@", key, key, LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:[[NSString stringWithFormat:@"Content-Type: application/octet-stream%@", LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:[LINE_BREAK dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:requestFiles[key]];
+            [body appendData:[LINE_BREAK dataUsingEncoding:NSUTF8StringEncoding]];
+        }
+        // 结束边界
+        [body appendData:[[NSString stringWithFormat:@"--%@--%@", boundary, LINE_BREAK] dataUsingEncoding:NSUTF8StringEncoding]];
+        request.HTTPBody = body;
+    }
     
     [Downloader loadRequest:request progress:nil completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         if (error) {
-            NSLog(@"API error: %@", error);
+            NSLog(@"⚠️ API error: %@", error);
             dispatch_main_async_safe(^{
                 block(nil, error);
             });
@@ -278,6 +316,15 @@
 }
 
 + (NSString *)htmlStringWithText:(NSString *)text attachments:(NSArray *)attachements sig:(NSString *)sig textSize:(int)textSize {
+    if ([[DEFAULTS objectForKey:@"disableScript"] boolValue]) {
+        if (text.length > 0) {
+            text = [text stringByReplacingOccurrencesOfString:@"(?i)(<script\\b[^>]*?>[\\s\\S]*?<\\/script>)" withString:@"<font color='gray'>[脚本被禁止执行]</font>" options:NSRegularExpressionSearch range:NSMakeRange(0, text.length)];
+        }
+        if (sig.length > 0) {
+            sig = [sig stringByReplacingOccurrencesOfString:@"(?i)(<script\\b[^>]*?>[\\s\\S]*?<\\/script>)" withString:@"<font color='gray'>[脚本被禁止执行]</font>" options:NSRegularExpressionSearch range:NSMakeRange(0, sig.length)];
+        }
+    }
+    
     NSString *body = @"";
     if (text) {
         body = [NSString stringWithFormat:@"<div class='textblock'>%@</div>", text];
@@ -291,7 +338,7 @@
                 NSString *fileName = attach[@"name"];
                 NSString *imageUrl = [self getFileImage:fileName];
                 NSString *price = [attach[@"price"] intValue] == 0 ? @"免费" : ([attach[@"free"] isEqualToString:@"YES"] ? @"您可以免费下载" : [NSString stringWithFormat:@"售价：%@", attach[@"price"]]);
-                NSString *size = [self fileSize:[attach[@"size"] intValue]];
+                NSString *size = [self fileSizeStr:[attach[@"size"] intValue]];
                 int count = [attach[@"count"] intValue];
                 NSString *downloadCount = count > 0 ? [NSString stringWithFormat:@"下载次数：%d", count] : @"暂时无人下载";
                 NSString *attachEl =
@@ -309,7 +356,7 @@
             body = [NSString stringWithFormat:@"%@<div class='attachblock'><span id='attachtipdark'>本帖包含以下%ld个附件：</span><div class='attachsdark'>%@</div></div>", body, attachEls.count, [attachEls componentsJoinedByString:@""]];
         }
     }
-    if (sig && sig.length > 0) {
+    if (sig.length > 0) {
         body = [NSString stringWithFormat:@"%@<div class='sigblock'>%@"
                 "<div class='sig'>%@</div></div>", body, text ? @"<span class='sigtip'>--------</span>" : @"", sig];
     }
@@ -651,7 +698,55 @@
     return text;
 }
 
-+ (NSString *)fileSize:(NSInteger)size {
+// 单个文件的大小
++ (unsigned long long)fileSizeAtPath:(NSString *)filePath {
+    NSDictionary<NSFileAttributeKey, id> *attributes = [MANAGER attributesOfItemAtPath:filePath error:nil];
+    if ([attributes[NSFileType] isEqualToString:NSFileTypeRegular]) {
+        return [attributes fileSize];
+    }
+    return 0;
+}
+
+// 遍历文件获得文件夹大小
++ (unsigned long long)folderSizeAtPath:(NSString *)folderPath {
+    if (![MANAGER fileExistsAtPath:folderPath]) {
+        return 0;
+    }
+    
+    NSDirectoryEnumerator *enumerator = [MANAGER enumeratorAtPath:folderPath];
+    NSString *fileName;
+    unsigned long long folderSize = 0;
+        
+    while ((fileName = [enumerator nextObject])) {
+        NSString *filePath = [folderPath stringByAppendingPathComponent:fileName];
+        folderSize += [self fileSizeAtPath:filePath];
+    }
+    
+    return folderSize;
+}
+
++ (void)cleanUpFilesInDirectory:(NSString *)directoryPath minInterval:(NSTimeInterval)interval {
+    NSDirectoryEnumerator *enumerator = [MANAGER enumeratorAtPath:directoryPath];
+    NSString *fileName;
+        
+    while ((fileName = [enumerator nextObject])) {
+        NSString *filePath = [directoryPath stringByAppendingPathComponent:fileName];
+        NSDictionary<NSFileAttributeKey, id> *attributes = [MANAGER attributesOfItemAtPath:filePath error:nil];
+        if (!attributes) {
+            continue;
+        }
+        // Skip folders. Don't delete folder entirely, otherwise will throw many db error (webkit related)
+        if ([attributes[NSFileType] isEqualToString:NSFileTypeDirectory]) {
+            continue;
+        }
+        NSDate *modificationDate = attributes[NSFileModificationDate];
+        if (-[modificationDate timeIntervalSinceNow] > interval) {
+            [MANAGER removeItemAtPath:filePath error:nil];
+        }
+    }
+}
+
++ (NSString *)fileSizeStr:(NSInteger)size {
     if (size >= 1024 * 1024) {
         float num = size * 1.0 / (1024 * 1024);
         return [NSString stringWithFormat:num >= 10 ? @"%.1fMB" : @"%.2fMB", num];
@@ -694,12 +789,26 @@
     const char* cStr=[str UTF8String];
     CC_LONG dataLength = (CC_LONG)[str lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
     unsigned char digist[CC_MD5_DIGEST_LENGTH]; // CC_MD5_DIGEST_LENGTH = 16
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    // Suppress CC_MD5 deprecated warning
     CC_MD5(cStr, dataLength, digist);
+#pragma clang diagnostic pop
     NSMutableString* outPutStr = [NSMutableString stringWithCapacity:CC_MD5_DIGEST_LENGTH * 2];
     for(int  i = 0; i < CC_MD5_DIGEST_LENGTH; i++) {
         [outPutStr appendFormat:@"%02X", digist[i]];// 小写 x 表示输出的是小写 MD5 ，大写 X 表示输出的是大写 MD5
     }
     return [outPutStr copy];
+}
+
++ (BOOL)isPureInt:(NSString *)str {
+    if (!str || str.length == 0) {
+            return NO;
+        }
+    NSScanner *scan = [NSScanner scannerWithString:str];
+    scan.charactersToBeSkipped = nil;
+    int val;
+    return [scan scanInt:&val] && [scan isAtEnd];
 }
 
 + (NSString *)getSigForData:(id)data {

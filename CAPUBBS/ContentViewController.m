@@ -13,7 +13,8 @@
 #import "UserViewController.h"
 #import "WebViewController.h"
 
-static const CGFloat kWebViewMinHeight = 40;
+#define WEB_VIEW_MIN_HEIGHT 40
+#define MAX_LZL_ROWS 8
 
 @interface ContentViewController ()
 
@@ -25,6 +26,7 @@ static const CGFloat kWebViewMinHeight = 40;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    self.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeNever; // Do not show large title
     self.view.backgroundColor = GRAY_PATTERN;
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
@@ -41,11 +43,14 @@ static const CGFloat kWebViewMinHeight = 40;
     selectedIndex = -1;
     isEdit = NO;
     [self cancelScroll];
-    heights = [[NSMutableArray alloc] init];
-    tempHeights = [[NSMutableArray alloc] init];
-    HTMLStrings = [[NSMutableArray alloc] init];
+    heights = [NSMutableArray array];
+    tempHeights = [NSMutableArray array];
+    HTMLStrings = [NSMutableArray array];
+    webViews = [NSHashTable weakObjectsHashTable]; // Use weak reference
     
+    self.refreshControl = [[UIRefreshControl alloc] init];
     [self.refreshControl addTarget:self action:@selector(refreshControlValueChanged:) forControlEvents:UIControlEventValueChanged];
+    
     UITapGestureRecognizer *tapTwice = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(doubleTapWeb:)];
     [tapTwice setNumberOfTapsRequired:2];
     [self.tableView addGestureRecognizer:tapTwice];
@@ -106,16 +111,13 @@ static const CGFloat kWebViewMinHeight = 40;
     [hud showWithProgressMessage:@"加载中"];
     int oldPage = page;
     page = pageNum;
-    if (page == 1) {
-        [self setToolbarItems:@[self.buttonCollection, self.barFreeSpace, self.buttonJump, self.barFreeSpace, self.buttonAction, self.barFreeSpace, self.buttonCompose, self.barFreeSpace, self.buttonForward] animated:YES];
-    } else {
-        [self setToolbarItems:@[self.buttonBack, self.barFreeSpace, self.buttonJump, self.barFreeSpace, self.buttonAction, self.barFreeSpace, self.buttonCompose, self.barFreeSpace, self.buttonForward] animated:YES];
-    }
-    self.buttonBack.enabled = (page > 1);
+    [self updateBackOrCollectIcon];
+    self.buttonBackOrCollect.enabled = NO;
     self.buttonForward.enabled = NO;
     self.buttonLatest.enabled = NO;
     self.buttonJump.enabled = NO;
-    self.buttonCompose.enabled = NO;
+    self.buttonAction.enabled = NO;
+    self.buttonCompose.enabled = [Helper checkLogin:NO];
     activity.webpageURL = [self getCurrentUrl];
     activity.title = self.title;
     NSDictionary *dict = @{
@@ -133,7 +135,6 @@ static const CGFloat kWebViewMinHeight = 40;
             if (!err && (result.count == 0 || [result[0][@"time"] hasPrefix:@"1970"])) {
                 self.title = @"没有这个帖子";
             }
-            self.buttonCollection.enabled = NO;
             [hud hideWithFailureMessage:@"加载失败"];
             NSLog(@"%@", err);
             if (err.code == 111) {
@@ -154,7 +155,8 @@ static const CGFloat kWebViewMinHeight = 40;
             [hud hideWithFailureMessage:@"加载失败"];
             return;
         }
-        data = [NSMutableArray array];
+        
+        NSMutableArray *tmpData = [NSMutableArray array];
         for (NSDictionary *entry in result) {
             NSMutableDictionary *fixedEntry = [NSMutableDictionary dictionaryWithDictionary:entry];
             for (NSString *key in @[@"lzldetail", @"attach"]) {
@@ -190,35 +192,45 @@ static const CGFloat kWebViewMinHeight = 40;
             fixedEntry[@"sig"] = sigRaw;
             [fixedEntry removeObjectForKey:@"sigraw"];
             
-            [data addObject:fixedEntry];
+            [tmpData addObject:fixedEntry];
         }
-        
+        data = [tmpData copy];
         if (!(self.isCollection && page > 1)) {
             [self updateCollection];
         }
-
-        NSString *titleText = data.firstObject[@"title"];
-        self.title = [Helper restoreTitle:titleText];
-        BOOL isLast = [data[0][@"nextpage"] isEqualToString:@"false"];
-        self.buttonForward.enabled = !isLast;
-        self.buttonLatest.enabled = !isLast;
-        self.buttonJump.enabled = ([[data lastObject][@"pages"] integerValue] > 1);
-        self.buttonCompose.enabled = [Helper checkLogin:NO];
+        
+        for (WKWebView *webView in webViews.allObjects) {
+            [webView clearForReuse];
+        }
+        isUpdating = YES;
         [self clearHeightsAndHTMLCaches:^{
+            NSString *titleText = data.firstObject[@"title"];
+            self.title = [Helper restoreTitle:titleText];
+            BOOL isLast = [data[0][@"nextpage"] isEqualToString:@"false"];
+            self.buttonBackOrCollect.enabled = YES;
+            self.buttonForward.enabled = !isLast;
+            self.buttonLatest.enabled = !isLast;
+            self.buttonJump.enabled = ([[data lastObject][@"pages"] integerValue] > 1);
+            self.buttonAction.enabled = YES;
             [hud hideWithSuccessMessage:@"加载成功"];
-            for (int i = 0; i < data.count; i++) {
-                ContentCell *cell = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:i inSection:0]];
-                if (cell) {
-                    if (cell.webViewContainer.webView.isLoading) {
-                        [cell.webViewContainer.webView stopLoading];
+            isUpdating = NO;
+            
+            if ([self.tableView numberOfRowsInSection:0] == 0) {
+                [self.tableView reloadData];
+            } else {
+                UITableViewRowAnimation rowAnimation = UITableViewRowAnimationNone;
+                if (!SIMPLE_VIEW) {
+                    if (oldPage > pageNum) {
+                        rowAnimation = UITableViewRowAnimationRight;
                     }
-                    [cell invalidateTimer];
-                    // 加载空HTML以快速清空，防止reuse后还短暂显示之前的内容
-                    [cell.webViewContainer.webView loadHTMLString:EMPTY_HTML baseURL:nil];
+                    if (oldPage < pageNum) {
+                        rowAnimation = UITableViewRowAnimationLeft;
+                    }
                 }
+                [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:rowAnimation];
             }
-            [self.tableView reloadData];
-            if (data.count != 0) {
+            
+            if (data.count > 0) {
                 if (self.willScrollToBottom) {
                     self.willScrollToBottom = NO;
                     [self tryScrollTo:data.count - 1 animated:NO];
@@ -246,7 +258,9 @@ static const CGFloat kWebViewMinHeight = 40;
 }
 
 - (void)updateCollection {
+    self.isCollection = NO;
     if (data.count == 0) {
+        [self updateBackOrCollectIcon];
         return;
     }
     NSMutableArray *collections = [NSMutableArray arrayWithArray:[DEFAULTS objectForKey:@"collection"]];
@@ -280,9 +294,18 @@ static const CGFloat kWebViewMinHeight = 40;
             self.isCollection = YES;
             break;
         }
-        self.isCollection = NO;
     }
-    [self.buttonCollection setImage:[UIImage imageNamed:(self.isCollection ? @"star-full" : @"star-empty")]];
+    [self updateBackOrCollectIcon];
+}
+
+- (void)updateBackOrCollectIcon {
+    if (page == 1) {
+        self.buttonBackOrCollect.image = [UIImage systemImageNamed:self.isCollection ? @"heart.fill" : @"heart"];
+        self.buttonBackOrCollect.style = self.isCollection ? UIBarButtonItemStyleDone : UIBarButtonItemStylePlain;
+    } else {
+        self.buttonBackOrCollect.image = [UIImage systemImageNamed:@"chevron.left"];
+        self.buttonBackOrCollect.style = UIBarButtonItemStylePlain;
+    }
 }
 
 - (void)clearHeightsAndHTMLCaches:(void (^)(void))callback {
@@ -306,7 +329,7 @@ static const CGFloat kWebViewMinHeight = 40;
                 NSError *error = nil;
                 // 去除img和iframe，严重拖慢速度
                 NSString *sanitizedHTML = [html stringByReplacingOccurrencesOfString:@"(?i)(<img\\b[^>]*?>|<iframe\\b[^>]*>[\\s\\S]*?<\\/iframe>)" withString:@"<div>block placeholder</div>" options:NSRegularExpressionSearch range:NSMakeRange(0, html.length)];
-
+                
                 NSAttributedString *attributedString = [[NSAttributedString alloc] initWithData:[sanitizedHTML dataUsingEncoding:NSUTF8StringEncoding] options:@{
                     NSDocumentTypeDocumentAttribute: NSHTMLTextDocumentType,
                     NSCharacterEncodingDocumentAttribute: @(NSUTF8StringEncoding)
@@ -321,12 +344,10 @@ static const CGFloat kWebViewMinHeight = 40;
             }
         }
         
-        // Do not clear tempHeights
-        [heights removeAllObjects];
-        [HTMLStrings removeAllObjects];
+        // Do not clear array to avoid multi thread race condition
         for (int i = 0; i < data.count; i++) {
-            [heights addObject:@0];
-            [HTMLStrings addObject:newHTMLStrings[i]];
+            heights[i] = @0;
+            HTMLStrings[i] = newHTMLStrings[i];
             if ([newTempHeights[i] floatValue] > 0) {
                 tempHeights[i] = newTempHeights[i];
             }
@@ -368,16 +389,16 @@ static const CGFloat kWebViewMinHeight = 40;
         textField.keyboardType = UIKeyboardTypeNumberPad;
     }];
     [alertController addAction:[UIAlertAction actionWithTitle:@"取消"
-                                              style:UIAlertActionStyleCancel
-                                            handler:nil]];
+                                                        style:UIAlertActionStyleCancel
+                                                      handler:nil]];
     [alertController addAction:[UIAlertAction actionWithTitle:@"好"
-                                              style:UIAlertActionStyleDefault
-                                            handler:^(UIAlertAction * _Nonnull action) {
-        __strong typeof(weakAlertController) alertController = weakAlertController;
-        if (!alertController) {
+                                                        style:UIAlertActionStyleDefault
+                                                      handler:^(UIAlertAction * _Nonnull action) {
+        __strong typeof(weakAlertController) strongAlertController = weakAlertController;
+        if (!strongAlertController) {
             return;
         }
-        NSString *pageip = alertController.textFields[0].text;
+        NSString *pageip = strongAlertController.textFields[0].text;
         int pagen = [pageip intValue];
         if (pagen <= 0 || pagen > [[data lastObject] [@"pages"] integerValue]) {
             [self showAlertWithTitle:@"错误" message:@"输入不合法"];
@@ -400,11 +421,8 @@ static const CGFloat kWebViewMinHeight = 40;
         return 0;
     }
     NSArray *lzlDetail = data[row][@"lzldetail"];
-    if (!lzlDetail || lzlDetail.count == 0) {
-        return 0;
-    }
     // Show at most 8 rows
-    return MIN(8, lzlDetail.count) * 44;
+    return MIN(MAX_LZL_ROWS, lzlDetail.count) * 44;
 }
 
 - (CGFloat)getWebViewHeightForRow:(NSUInteger)row {
@@ -415,7 +433,7 @@ static const CGFloat kWebViewMinHeight = 40;
             break;
         }
     }
-    return MIN(MAX(kWebViewMinHeight, webViewHeight), WEB_VIEW_MAX_HEIGHT);
+    return MIN(MAX(WEB_VIEW_MIN_HEIGHT, webViewHeight), WEB_VIEW_MAX_HEIGHT);
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
@@ -425,20 +443,20 @@ static const CGFloat kWebViewMinHeight = 40;
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     // Return the number of rows in the section.
-    return data.count;
+    return MIN(data.count, HTMLStrings.count);
 }
 
 - (CGFloat)tableView:(UITableView *)tableView estimatedHeightForRowAtIndexPath:(nonnull NSIndexPath *)indexPath {
     CGFloat lzlHeight = [self getLzlHeightForRow:indexPath.row];
     CGFloat webViewHeight = [self getWebViewHeightForRow:indexPath.row];
-    return 106 + lzlHeight + webViewHeight;
+    return 109 + lzlHeight + webViewHeight;
 }
 
-- (UITableViewCell *)getCellForView:(UIView *)view {
+- (ContentCell *)getCellForView:(UIView *)view {
     UIView *currentView = view;
     while (currentView != nil) {
-        if ([currentView isKindOfClass:[UITableViewCell class]]) {
-            return (UITableViewCell *)currentView;
+        if ([currentView isKindOfClass:[ContentCell class]]) {
+            return (ContentCell *)currentView;
         }
         currentView = currentView.superview;
     }
@@ -456,62 +474,19 @@ static const CGFloat kWebViewMinHeight = 40;
 }
 
 - (void)updateWebView:(WKWebView *)webView {
-    NSUInteger row = webView.tag;
-    if (!self.isViewLoaded || !self.view.window ||
-        !self.tableView || !self.tableView.window) { // Fix occasional crash
-        return;
-    }
-    ContentCell *cell = (ContentCell *)[self getCellForView:webView];
-    if (!cell || [self.tableView indexPathForCell:cell].row != row) {
-        return;
-    }
-    
-    [webView evaluateJavaScript:[NSString stringWithFormat:@"if(document.getElementById('body-wrapper')){document.body.style.zoom= '%d%%';document.getElementById('body-wrapper').scrollHeight;}", textSize] completionHandler:^(id _Nullable result, NSError * _Nullable error) {
-        if (error) {
-            NSLog(@"JS 执行失败: %@", error);
-            return;
-        }
-        float height = 0;
-        if (result && [result isKindOfClass:[NSNumber class]]) {
-            height = ([result floatValue] + 14) * (textSize / 100.0);
-        }
-        if (height > 0 && row < heights.count && height - [heights[row] floatValue] >= 1) {
-            heights[row] = @(height);
-            tempHeights[row] = @(height);
-            if (scrollTargetRow >= 0) {
-                [UIView performWithoutAnimation:^{
-                    [self.tableView beginUpdates];
-                    [cell.webviewHeight setConstant:MAX(height, kWebViewMinHeight)];
-                    [self.tableView endUpdates];
-                    [self maybeTriggerTableViewScrollAnimated:NO];
-                }];
-            } else {
-                [UIView animateWithDuration:0.15 animations:^{
-                    [self.tableView beginUpdates];
-                    [cell.webviewHeight setConstant:MAX(height, kWebViewMinHeight)];
-                    [self.tableView endUpdates];
-                    [self maybeTriggerTableViewScrollAnimated:NO];
-                }];
-            }
-        }
-    }];
+    [webView evaluateJavaScript:[NSString stringWithFormat:@"document.body.style.zoom='%d%%';window._lastReportedHeight=0;", textSize] completionHandler:nil];
 }
 
 - (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation {
-    NSUInteger row = webView.tag;
-    if (!self.isViewLoaded || !self.view.window ||
-        !self.tableView || !self.tableView.window) { // Fix occasional crash
-        return;
-    }
-    ContentCell *cell = (ContentCell *)[self getCellForView:webView];
-    if (!cell || [self.tableView indexPathForCell:cell].row != row) {
+    ContentCell *cell = [self getCellForView:webView];
+    if (!cell) {
         return;
     }
     [cell invalidateTimer];
     // 使用 weakSelf 防止循环引用导致不能 dealloc
     __weak typeof(self) weakSelf = self;
     // Do not trigger immediately, the webview might still be showing the previous content.
-    cell.webviewUpdateTimer = [NSTimer scheduledTimerWithTimeInterval:0.2 repeats:YES block:^(NSTimer * _Nonnull timer) {
+    cell.webviewUpdateTimer = [NSTimer scheduledTimerWithTimeInterval:0.1 repeats:YES block:^(NSTimer * _Nonnull timer) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) {
             [timer invalidate];
@@ -519,19 +494,61 @@ static const CGFloat kWebViewMinHeight = 40;
         }
         [strongSelf updateWebView:webView];
     }];
-    [webView evaluateJavaScript:@"window._imageClickHandlerAvailable = true;" completionHandler:^(id _Nullable result, NSError * _Nullable error) {
-        [webView setWeakScriptMessageHandler:self forName:@"imageClickHandler"];
-    }];
+    [webView setWeakScriptMessageHandler:self forNames:@[@"imageClickHandler", @"heightHandler"]];
+    [webView evaluateJavaScript:@"window._imageClickHandlerAvailable=true;window._lastReportedHeight=0;" completionHandler:nil];
+}
+
+- (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message {
+    if ([message.name isEqualToString:@"imageClickHandler"]) {
+        [AppDelegate handleImageClickWithMessage:message hud:hud];
+    }
+    if ([message.name isEqualToString:@"heightHandler"]) {
+        [self handleHeightWithMessage:message];
+    }
+}
+
+- (void)handleHeightWithMessage:(WKScriptMessage *)message {
+    if (isUpdating) {
+        return;
+    }
+    float height = [message.body floatValue];
+    if (height <= 0) {
+        return;
+    }
+    
+    WKWebView *webView = message.webView;
+    NSUInteger row = webView.tag;
+    ContentCell *cell = [self getCellForView:webView];
+    if (row >= heights.count || !cell || !cell.webviewUpdateTimer.valid) {
+        return;
+    }
+    
+    height = (height + 14) * (textSize / 100.0);
+    if (height - [heights[row] floatValue] >= 1) {
+        heights[row] = @(height);
+        tempHeights[row] = @(height);
+        float targetHeight = MIN(MAX(height, WEB_VIEW_MIN_HEIGHT), WEB_VIEW_MAX_HEIGHT);
+        if (scrollTargetRow >= 0) {
+            [UIView performWithoutAnimation:^{
+                [self.tableView beginUpdates];
+                [cell.webviewHeight setConstant:targetHeight];
+                [self.tableView endUpdates];
+                [self maybeTriggerTableViewScrollAnimated:NO];
+            }];
+        } else {
+            [UIView animateWithDuration:0.15 delay:0.0 options:UIViewAnimationOptionAllowUserInteraction animations:^{
+                [self.tableView beginUpdates];
+                [cell.webviewHeight setConstant:targetHeight];
+                [self.tableView endUpdates];
+                [self maybeTriggerTableViewScrollAnimated:NO];
+            } completion:nil];
+        }
+    }
 }
 
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
-    NSUInteger row = webView.tag;
-    if (!self.isViewLoaded || !self.view.window ||
-        !self.tableView || !self.tableView.window) { // Fix occasional crash
-        return;
-    }
-    ContentCell *cell = (ContentCell *)[self getCellForView:webView];
-    if (!cell || [self.tableView indexPathForCell:cell].row != row) {
+    ContentCell *cell = [self getCellForView:webView];
+    if (!cell) {
         return;
     }
     [cell.indicatorLoading stopAnimating];
@@ -539,7 +556,7 @@ static const CGFloat kWebViewMinHeight = 40;
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     NSString *header = @"";
-    if (SIMPLE_VIEW == NO && data.count > 0) {
+    if (!SIMPLE_VIEW && data.count > 0) {
         header = [NSString stringWithFormat:@"%@ 第%ld/%@页", [Helper getBoardTitle:self.bid], (long)page, [data lastObject] [@"pages"]];
         if ([data[0][@"click"] length] > 0) {
             header = [NSString stringWithFormat:@"%@ 查看：%@ 回复：%@%@", header, data[0][@"click"], data[0][@"reply"], self.isCollection ? @" 已收藏": @""];
@@ -585,14 +602,16 @@ static const CGFloat kWebViewMinHeight = 40;
             break;
     }
     cell.labelInfo.text = floor;
-    [cell.buttonLzl setTitle:[NSString stringWithFormat:@"评论 (%@)",dict[@"lzl"]] forState:UIControlStateNormal];
-    if ([dict[@"lzl"] isEqualToString:@"0"]) {
+    NSArray *lzlDetail = dict[@"lzldetail"];
+    NSUInteger lzlCount = lzlDetail.count;
+    [cell.buttonLzl setTitle:[NSString stringWithFormat:@"评论 (%ld)", lzlCount] forState:UIControlStateNormal];
+    if (lzlCount == 0) {
         [cell.buttonLzl setTitleColor:[UIColor darkGrayColor] forState:UIControlStateNormal];
     } else {
-        [cell.buttonLzl setTitleColor:BLUE forState:UIControlStateNormal];
+        [cell.buttonLzl setTitleColor:nil forState:UIControlStateNormal]; // use default color
     }
     
-    if (SIMPLE_VIEW== NO) {
+    if (!SIMPLE_VIEW) {
         if (dict[@"edittime"] && ![dict[@"edittime"] isEqualToString:dict[@"time"]]) {
             cell.labelDate.text = [NSString stringWithFormat:@"发布: %@\n编辑: %@", dict[@"time"], dict[@"edittime"]];
         } else {
@@ -616,6 +635,7 @@ static const CGFloat kWebViewMinHeight = 40;
     
     [cell.webViewContainer.webView setNavigationDelegate:self];
     [cell.webViewContainer.webView loadHTMLString:HTMLStrings[indexPath.row] baseURL:[self getCurrentUrl]];
+    [webViews addObject:cell.webViewContainer.webView];
     [cell.webviewHeight setConstant:[self getWebViewHeightForRow:indexPath.row]];
     
     
@@ -624,11 +644,11 @@ static const CGFloat kWebViewMinHeight = 40;
     } else {
         [cell.indicatorLoading startAnimating];
     }
-
+    
     CGFloat lzlHeight = [self getLzlHeightForRow:indexPath.row];
     if (lzlHeight > 0) {
         cell.lzlTableView.hidden = NO;
-        cell.lzlDetail = dict[@"lzldetail"];
+        cell.lzlDetail = lzlDetail;
         [cell.lzlHeight setConstant:[self getLzlHeightForRow:indexPath.row]];
     } else {
         cell.lzlTableView.hidden = YES;
@@ -682,85 +702,21 @@ static const CGFloat kWebViewMinHeight = 40;
 
 // 滚动时调用此方法
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
-    // NSLog(@"scrollView.contentOffset:%f, %f", scrollView.contentOffset.x, scrollView.contentOffset.y);
-    if (isAtEnd == NO && scrollView.contentOffset.y >= scrollView.contentSize.height - scrollView.frame.size.height) {
-        if (heights.count > 0 && [[heights lastObject] floatValue] > 0) {
-            [self.navigationController setToolbarHidden:NO animated:YES];
-            isAtEnd = YES;
-        }
+    if (LIQUID_GLASS) {
+        return;
     }
-    if (isAtEnd == NO && scrollView.dragging) { // 拖拽
+    // NSLog(@"scrollView.contentOffset:%f, %f", scrollView.contentOffset.x, scrollView.contentOffset.y);
+    if (!isAtEnd && scrollView.contentOffset.y >= scrollView.contentSize.height - scrollView.frame.size.height) {
+        [self.navigationController setToolbarHidden:NO animated:YES];
+        isAtEnd = YES;
+    }
+    if (!isAtEnd && scrollView.dragging) { // 拖拽
         if ((scrollView.contentOffset.y - contentOffsetY) > 5.0f) { // 向上拖拽
             [self.navigationController setToolbarHidden:YES animated:YES];
         } else if ((contentOffsetY - scrollView.contentOffset.y) > 5.0f) { // 向下拖拽
             [self.navigationController setToolbarHidden:NO animated:YES];
         }
     }
-}
-
-- (void)userContentController:(WKUserContentController *)userContentController
-      didReceiveScriptMessage:(WKScriptMessage *)message {
-    if ([message.name isEqualToString:@"imageClickHandler"]) {
-        [self handleImageClickWithPayload:message.body];
-    }
-}
-
-- (void)handleImageClickWithPayload:(NSDictionary *)payload {
-    if ([payload[@"loading"] boolValue]) {
-        [hud showWithProgressMessage:@"图片加载中"];
-        return;
-    }
-    NSString *base64Data = payload[@"data"] ?: @"";
-    NSString *imgSrc = payload[@"src"] ?: @"";
-    NSURL *imageUrl = [NSURL safeURLWithString:imgSrc];
-    NSString *alt = payload[@"alt"] ?: @"";
-    // 去掉前缀
-    NSRange range = [base64Data rangeOfString:@","];
-    if (range.location != NSNotFound) {
-        NSString *alt = payload[@"alt"];
-        NSString *base64String = [base64Data substringFromIndex:range.location + 1];
-        NSData *imageData = [[NSData alloc] initWithBase64EncodedString:base64String options:0];
-        ImageFileType type = [AnimatedImageView fileType:imageData];
-        if (type != ImageFileTypeUnknown) {
-            [hud hideWithSuccessMessage:@"图片加载成功"];
-            NSString *fileName = [Helper fileNameFromURL:imageUrl] ?: [[Helper md5:imgSrc] stringByAppendingPathExtension:[AnimatedImageView fileExtension:type]];
-            [self presentImage:imageData fileName:fileName title:alt];
-            return;
-        }
-    }
-    
-    NSString *errorMessage = payload[@"error"] ?: @"图片加载失败";
-    // Try reload in app to overcome CORS. (Most external sites will fail the fetch request)
-    if (imageUrl) {
-        [hud showWithProgressMessage:@"图片加载中"];
-        [Downloader loadURL:imageUrl progress:^(float progress, NSUInteger expectedBytes) {
-            [hud updateToProgress:progress];
-        } completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-            ImageFileType type = [AnimatedImageView fileType:data];
-            if (error || type == ImageFileTypeUnknown) {
-                [hud hideWithFailureMessage:!error ? errorMessage : @"未知图片格式"];
-                return;
-            }
-            [hud hideWithSuccessMessage:@"图片加载成功"];
-            NSString *fileName;
-            if (response.suggestedFilename && response.suggestedFilename.pathExtension.length > 0) {
-                fileName = response.suggestedFilename;
-            } else {
-                fileName = [Helper fileNameFromURL:imageUrl] ?: [[Helper md5:imgSrc] stringByAppendingPathExtension:[AnimatedImageView fileExtension:type]];
-            }
-            [self presentImage:data fileName:fileName title:alt];
-        }];
-    } else {
-        [hud hideWithFailureMessage:errorMessage];
-    }
-}
-
-- (void)presentImage:(NSData *)imageData fileName:(NSString *)fileName title:(NSString *)alt {
-    [NOTIFICATION postNotificationName:@"previewFile" object:nil userInfo:@{
-        @"fileData": imageData,
-        @"fileName": fileName,
-        @"fileTitle": alt.length > 0 ? alt : @"查看帖子图片"
-    }];
 }
 
 - (void)askForDownloadAttachment:(NSString *)path {
@@ -776,7 +732,7 @@ static const CGFloat kWebViewMinHeight = 40;
         return;
     }
     NSDictionary *attach = [NSJSONSerialization JSONObjectWithData:decodedData options:0 error:nil];
-    NSString *fileSize = [Helper fileSize:[attach[@"size"] intValue]];
+    NSString *fileSize = [Helper fileSizeStr:[attach[@"size"] intValue]];
     NSString *generalInfo = [NSString stringWithFormat:@"%@\n下载后请及时保存", attach[@"name"]];
     if ([attach[@"price"] intValue] == 0 || [attach[@"free"] isEqualToString:@"YES"]) {
         [self showAlertWithTitle:[NSString stringWithFormat:@"确认下载附件 (%@)", fileSize] message:generalInfo confirmTitle:@"确认" confirmAction:^(UIAlertAction *action) {
@@ -895,10 +851,7 @@ static const CGFloat kWebViewMinHeight = 40;
     
     if ([path hasPrefix:@"tel:"] || [path hasPrefix:@"sms:"] || [path hasPrefix:@"facetime:"] || [path hasPrefix:@"maps:"]) {
         // Directly open
-        if ([[UIApplication sharedApplication] canOpenURL:url]) {
-            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
-        }
-        decisionHandler(WKNavigationActionPolicyCancel);
+        decisionHandler(WKNavigationActionPolicyAllow);
         return;
     }
     
@@ -984,7 +937,9 @@ static const CGFloat kWebViewMinHeight = 40;
         switch (code) {
             case 0:{
                 [self.tableView setEditing:NO];
-                [data removeObjectAtIndex:selectedIndex];
+                NSMutableArray *tmpData = [NSMutableArray arrayWithArray:data];
+                [tmpData removeObjectAtIndex:selectedIndex];
+                data = [tmpData copy];
                 [self.tableView deleteRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:selectedIndex inSection:0]] withRowAnimation:UITableViewRowAnimationFade];
                 if ([self.tableView numberOfRowsInSection:0] == 0) {
                     if (page > 1) {
@@ -1053,7 +1008,7 @@ static const CGFloat kWebViewMinHeight = 40;
     }];
 }
 
-- (IBAction)changeCollection:(id)sender {
+- (void)toggleCollection {
     NSMutableArray *array = [NSMutableArray arrayWithArray:[DEFAULTS objectForKey:@"collection"]];
     NSMutableDictionary *mdic;
     if (self.isCollection) {
@@ -1077,7 +1032,7 @@ static const CGFloat kWebViewMinHeight = 40;
         [hud showAndHideWithSuccessMessage:@"收藏完成"];
     }
     [DEFAULTS setObject:array forKey:@"collection"];
-    if (self.isCollection == NO) {
+    if (!self.isCollection) {
         NSLog(@"Delete Collection");
         [NOTIFICATION postNotificationName:@"collectionChanged" object:nil];
     }
@@ -1087,8 +1042,12 @@ static const CGFloat kWebViewMinHeight = 40;
     }
 }
 
-- (IBAction)back:(id)sender {
-    [self jumpTo:page - 1];
+- (IBAction)backOrCollect:(id)sender {
+    if (page > 1) {
+        [self jumpTo:page - 1];
+    } else {
+        [self toggleCollection];
+    }
 }
 
 - (IBAction)forward:(id)sender {
@@ -1107,7 +1066,7 @@ static const CGFloat kWebViewMinHeight = 40;
         }];
     }]];
     [alertController addAction:[UIAlertAction actionWithTitle:self.isCollection ? @"取消收藏" : @"收藏" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        [self changeCollection:nil];
+        [self toggleCollection];
     }]];
     [alertController addAction:[UIAlertAction actionWithTitle:@"分享" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         NSString *title = self.title;
@@ -1117,12 +1076,7 @@ static const CGFloat kWebViewMinHeight = 40;
         [self presentViewControllerSafe:activityViewController];
     }]];
     [alertController addAction:[UIAlertAction actionWithTitle:@"打开网页版" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        WebViewController *dest = [self.storyboard instantiateViewControllerWithIdentifier:@"webview"];
-        CustomNavigationController *navi = [[CustomNavigationController alloc] initWithRootViewController:dest];
-        dest.URL = [[self getCurrentUrl] absoluteString];
-        [navi setToolbarHidden:NO];
-        navi.modalPresentationStyle = UIModalPresentationFullScreen;
-        [self presentViewControllerSafe:navi];
+        [AppDelegate openURL:[[self getCurrentUrl] absoluteString] fullScreen:YES];
     }]];
     int biggerSize = textSize + 10;
     int smallerSize = textSize - 10;
@@ -1155,9 +1109,9 @@ static const CGFloat kWebViewMinHeight = 40;
         if (swipeDirection == 2) { // Disable swipe
             return;
         }
-        if (self.buttonForward.enabled == YES && swipeDirection == 0)
+        if (self.buttonForward.enabled && swipeDirection == 0)
             [self jumpTo:page + 1];
-        if (self.buttonBack.enabled == YES && swipeDirection == 1)
+        if (page > 1 && swipeDirection == 1)
             [self jumpTo:page - 1];
     }
 }
@@ -1168,9 +1122,9 @@ static const CGFloat kWebViewMinHeight = 40;
         if (swipeDirection == 2) { // Disable swipe
             return;
         }
-        if (self.buttonForward.enabled == YES && swipeDirection == 1)
+        if (self.buttonForward.enabled && swipeDirection == 1)
             [self jumpTo:page + 1];
-        if (self.buttonBack.enabled == YES && swipeDirection == 0)
+        if (page > 1 && swipeDirection == 0)
             [self jumpTo:page - 1];
     }
 }
@@ -1179,7 +1133,6 @@ static const CGFloat kWebViewMinHeight = 40;
     if (selectedIndex >= 0 && selectedIndex < data.count && notification && [[notification.userInfo objectForKey:@"fid"] isEqualToString:data[selectedIndex][@"fid"]]) {
         NSDictionary *details = notification.userInfo[@"details"];
         data[selectedIndex][@"lzldetail"] = details;
-        data[selectedIndex][@"lzl"] = [NSString stringWithFormat:@"%ld", details.count];
         dispatch_main_async_safe(^{
             [self.tableView reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:selectedIndex inSection:0]] withRowAnimation:UITableViewRowAnimationAutomatic];
         });
@@ -1323,7 +1276,7 @@ static const CGFloat kWebViewMinHeight = 40;
     }
     
     int index = 0, count = 0;
-    NSMutableArray * htmlLabel = [[NSMutableArray alloc] init];
+    NSMutableArray * htmlLabel = [NSMutableArray array];
     NSArray *exception = @[@"br", @"br/", @"hr", @"img", @"input", @"isindex", @"area", @"base", @"basefont",@"bgsound", @"col", @"embed", @"frame", @"keygen", @"link",@"meta", @"nextid", @"param", @"plaintext", @"spacer", @"wbr"];
     while (YES) {
         if (index >= text.length) {
@@ -1348,7 +1301,7 @@ static const CGFloat kWebViewMinHeight = 40;
             while (YES) {
                 if ([[text substringWithRange:NSMakeRange(tempIndex, 1)] isEqualToString:@" "] || [[text substringWithRange:NSMakeRange(tempIndex, 1)] isEqualToString:@">"]) {
                     NSString *label = [text substringWithRange:NSMakeRange(index + 1 + isRemove, tempIndex - index - 1 - isRemove)];
-                    bool isBlank = NO;
+                    BOOL isBlank = NO;
                     for (NSString *exc in exception) {
                         if ([label isEqualToString:exc]) {
                             isBlank = YES;
@@ -1398,6 +1351,7 @@ static const CGFloat kWebViewMinHeight = 40;
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
     if ([segue.identifier isEqualToString:@"compose"]) {
         ComposeViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
+        [AppDelegate setAdaptiveSheetFor:dest popoverSource:nil halfScreen:NO];
         if (sender != nil) {
             defaultTitle = [NSString stringWithFormat:@"Re: %@",self.title];
         }
@@ -1412,17 +1366,9 @@ static const CGFloat kWebViewMinHeight = 40;
             dest.floor = [NSString stringWithFormat:@"%d",[data[selectedIndex][@"floor"] intValue]];
             dest.attachments = data[selectedIndex][@"attach"];
             if ([data[selectedIndex][@"author"] isEqualToString:UID]) {
-                NSString *sig = data[selectedIndex][@"sig"];
-                if ([data[selectedIndex][@"sig"] length] > 0) {
-                    for (int i = 1; i <= 3; i++) {
-                        NSString *key = [NSString stringWithFormat:@"sig%d", i];
-                        if ([USERINFO[key] isEqualToString:sig]) {
-                            dest.defaultSigIndex = [NSString stringWithFormat:@"%d", i];
-                            break;
-                        }
-                    }
-                } else {
-                    dest.defaultSigIndex = @"0";
+                NSString *sig = data[selectedIndex][@"signum"];
+                if ([Helper isPureInt:sig]) {
+                    dest.defaultSigIndex = sig;
                 }
             } else {
                 dest.showEditOthersAlert = YES;
@@ -1436,21 +1382,17 @@ static const CGFloat kWebViewMinHeight = 40;
         isEdit = NO;
     } else if ([segue.identifier isEqualToString:@"lzl"]) {
         LzlViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
-        UIView *origin;
+        UIView *source;
         if ([sender isKindOfClass:[UIButton class]]) {
-            origin = sender;
-            selectedIndex = origin.tag;
+            source = sender;
+            selectedIndex = source.tag;
         } else if (selectedIndex >= 0) {
             ContentCell *cell = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:selectedIndex inSection:0]];
             if (cell) {
-                origin = cell.buttonLzl;
+                source = cell.buttonLzl;
             }
         }
-        if (origin) {
-            dest.navigationController.modalPresentationStyle = UIModalPresentationPopover;
-            dest.navigationController.popoverPresentationController.sourceView = origin;
-            dest.navigationController.popoverPresentationController.sourceRect = origin.bounds;
-        }
+        [AppDelegate setAdaptiveSheetFor:dest popoverSource:source halfScreen:YES];
         dest.fid = data[selectedIndex][@"fid"];
         dest.URL = [NSURL URLWithString:[NSString stringWithFormat:@"%@#%@", [[self getCurrentUrl] absoluteString], data[selectedIndex][@"floor"]]];
         if (data[selectedIndex][@"lzldetail"]) {
@@ -1460,12 +1402,10 @@ static const CGFloat kWebViewMinHeight = 40;
         }
     } else if ([segue.identifier isEqualToString:@"userInfo"]) {
         UserViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
+        [AppDelegate setAdaptiveSheetFor:dest popoverSource:sender halfScreen:YES];
         if ([sender isKindOfClass:[UIButton class]]) {
             UIButton *button = sender;
             dest.ID = data[button.tag][@"author"];
-            dest.navigationController.modalPresentationStyle = UIModalPresentationPopover;
-            dest.navigationController.popoverPresentationController.sourceView = button;
-            dest.navigationController.popoverPresentationController.sourceRect = button.bounds;
             ContentCell *cell = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForItem:button.tag inSection:0]];
             if (cell && ![cell.icon.image isEqual:PLACEHOLDER]) {
                 dest.iconData = UIImagePNGRepresentation(cell.icon.image);
