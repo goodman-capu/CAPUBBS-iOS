@@ -151,7 +151,7 @@
                 [self jumpTo:page - 1];
                 return;
             }
-            [self showAlertWithTitle:@"读取失败" message:result[0][@"msg"]];
+            [self showAlertWithTitle:@"加载失败" message:result[0][@"msg"]];
             [hud hideWithFailureMessage:@"加载失败"];
             return;
         }

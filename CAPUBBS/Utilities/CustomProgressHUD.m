@@ -76,7 +76,7 @@
 }
 
 - (void)hideWithSuccessMessage:(NSString *)message {
-    [self hideWithSuccessMessage:message delay:0.5];
+    [self hideWithSuccessMessage:message delay:0.25];
 }
 
 - (void)hideWithSuccessMessage:(NSString *)message delay:(NSTimeInterval)delay {
@@ -84,7 +84,7 @@
 }
 
 - (void)hideWithFailureMessage:(NSString *)message {
-    [self hideWithFailureMessage:message delay:0.5];
+    [self hideWithFailureMessage:message delay:0.25];
 }
 
 - (void)hideWithFailureMessage:(NSString *)message delay:(NSTimeInterval)delay {
