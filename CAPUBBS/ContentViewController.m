@@ -196,7 +196,7 @@
         }
         data = [tmpData copy];
         if (!(self.isCollection && page > 1)) {
-            [self updateCollection];
+            [self updateCollection:YES];
         }
         
         for (WKWebView *webView in webViews.allObjects) {
@@ -257,16 +257,16 @@
     }];
 }
 
-- (void)updateCollection {
+- (void)updateCollection:(BOOL)notification {
     self.isCollection = NO;
     if (data.count == 0) {
         [self updateBackOrCollectIcon];
         return;
     }
-    NSMutableArray *collections = [NSMutableArray arrayWithArray:[DEFAULTS objectForKey:@"collection"]];
-    for (NSMutableDictionary *mdic in collections) {
-        if ([self.bid isEqualToString:mdic[@"bid"]] && [self.tid isEqualToString:mdic[@"tid"]]) {
-            if (page == 1) { // 更新楼主信息
+    if (page == 1) { // 更新楼主信息
+        NSMutableArray *collections = [NSMutableArray arrayWithArray:[DEFAULTS objectForKey:@"collection"]];
+        for (NSMutableDictionary *mdic in collections) {
+            if ([self.bid isEqualToString:mdic[@"bid"]] && [self.tid isEqualToString:mdic[@"tid"]]) {
                 NSMutableDictionary *tmp = [NSMutableDictionary dictionaryWithDictionary:mdic];
                 [tmp addEntriesFromDictionary:data[0]];
                 tmp[@"text"] = [self getCollectionText:tmp[@"text"]];
@@ -286,13 +286,13 @@
                 [collections removeObject:mdic];
                 [collections addObject:tmp];
                 [DEFAULTS setObject:collections forKey:@"collection"];
-                if (hasChange) {
+                if (hasChange && notification) {
                     NSLog(@"Update Collection");
                     [NOTIFICATION postNotificationName:@"collectionChanged" object:nil];
                 }
+                self.isCollection = YES;
+                break;
             }
-            self.isCollection = YES;
-            break;
         }
     }
     [self updateBackOrCollectIcon];
@@ -473,10 +473,6 @@
     return tableView.contentOffset.y >= tableView.contentSize.height - tableView.bounds.size.height - 1.0;
 }
 
-- (void)updateWebView:(WKWebView *)webView {
-    [webView evaluateJavaScript:[NSString stringWithFormat:@"document.body.style.zoom='%d%%';window._lastReportedHeight=0;", textSize] completionHandler:nil];
-}
-
 - (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation {
     ContentCell *cell = [self getCellForView:webView];
     if (!cell) {
@@ -494,8 +490,25 @@
         }
         [strongSelf updateWebView:webView];
     }];
-    [webView setWeakScriptMessageHandler:self forNames:@[@"imageClickHandler", @"heightHandler"]];
-    [webView evaluateJavaScript:@"window._imageClickHandlerAvailable=true;window._lastReportedHeight=0;" completionHandler:nil];
+}
+
+- (void)webView:(WKWebView *)webView didCommitNavigation:(WKNavigation *)navigation {
+    dispatch_main_async_safe((^{
+        [webView setWeakScriptMessageHandler:self forNames:@[@"imageClickHandler", @"heightHandler"]];
+        [webView evaluateJavaScript:@"window._imageClickHandlerAvailable=true;window._lastReportedHeight=0;" completionHandler:nil];
+    }));
+}
+
+- (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
+    ContentCell *cell = [self getCellForView:webView];
+    if (!cell) {
+        return;
+    }
+    [cell.indicatorLoading stopAnimating];
+}
+
+- (void)updateWebView:(WKWebView *)webView {
+    [webView evaluateJavaScript:[NSString stringWithFormat:@"document.body.style.zoom='%d%%';window._lastReportedHeight=0;", textSize] completionHandler:nil];
 }
 
 - (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message {
@@ -544,14 +557,6 @@
             } completion:nil];
         }
     }
-}
-
-- (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
-    ContentCell *cell = [self getCellForView:webView];
-    if (!cell) {
-        return;
-    }
-    [cell.indicatorLoading stopAnimating];
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
@@ -1032,11 +1037,9 @@
         [hud showAndHideWithSuccessMessage:@"收藏完成"];
     }
     [DEFAULTS setObject:array forKey:@"collection"];
-    if (!self.isCollection) {
-        NSLog(@"Delete Collection");
-        [NOTIFICATION postNotificationName:@"collectionChanged" object:nil];
-    }
-    [self updateCollection];
+    [self updateCollection:NO];
+    NSLog(@"Toggle Collection");
+    [NOTIFICATION postNotificationName:@"collectionChanged" object:nil];
     if ([[self.tableView visibleCells] containsObject:[self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:0]]]) {
         [self.tableView reloadData];
     }

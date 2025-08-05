@@ -165,6 +165,7 @@
             }
             self.buttonPrevious.enabled = (page > 1);
             self.buttonNext.enabled = (page < maxPage);
+            self.tableView.scrollEnabled = data.count > 1;
         }];
     }));
 }
@@ -314,7 +315,10 @@
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
-    return data && data.count <= 1 ? @"您还没有消息" : nil;
+    if (!data || data.count > 1) {
+        return nil;
+    }
+    return self.segmentType.selectedSegmentIndex == 0 ? @"您还没有系统消息" : @"您还没有私信消息";
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {

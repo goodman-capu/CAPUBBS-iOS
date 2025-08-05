@@ -110,7 +110,7 @@
         }
     }
     NSString *text = dict[@"text"];
-    int interval = [[NSDate date] timeIntervalSince1970] - [dict[@"time"] intValue];
+    NSTimeInterval interval = [[NSDate date] timeIntervalSince1970] - [dict[@"time"] intValue];
     if (interval <= 7 * 24 * 3600) { // 一周内的公告
         text = [@"📣 " stringByAppendingString:text];
     }
