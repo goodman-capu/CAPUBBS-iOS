@@ -42,16 +42,21 @@
     self.searchController.delegate = self;
     self.searchController.searchResultsUpdater = self;
     self.searchController.obscuresBackgroundDuringPresentation = NO;
-    self.searchController.hidesNavigationBarDuringPresentation = NO;
-    [self.searchController.searchBar sizeToFit];
-    self.searchController.searchBar.searchBarStyle = UISearchBarStyleMinimal;
+//    self.searchController.hidesNavigationBarDuringPresentation = NO;
+//    self.searchController.searchBar.searchBarStyle = UISearchBarStyleMinimal;
     self.searchController.searchBar.placeholder = @"搜索";
     self.searchController.searchBar.delegate = self;
     
-    self.tableView.tableHeaderView = self.searchController.searchBar;
+    self.navigationItem.searchController = self.searchController;
+    if (@available (iOS 16.0, *)) {
+        self.navigationItem.preferredSearchBarPlacement = UINavigationItemSearchBarPlacementInline;
+    } else {
+        self.navigationItem.hidesSearchBarWhenScrolling = NO;
+    }
     
+    // 确保搜索结果在当前视图控制器中正确展示
+    // 这行代码保证了当搜索激活时，视图的展示上下文是当前的 ViewController，而不是被推送到一个新的界面
     self.definesPresentationContext = YES;
-    // self.tableView.backgroundView = [[UIView alloc] init]; // 否则顶部颜色不一样
     
     formatter = [[NSDateFormatter alloc] init];
     [formatter setDateFormat:@"yyyy-MM-dd"];

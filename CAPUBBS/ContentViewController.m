@@ -711,14 +711,21 @@
         return;
     }
     // NSLog(@"scrollView.contentOffset:%f, %f", scrollView.contentOffset.x, scrollView.contentOffset.y);
-    if (!isAtEnd && scrollView.contentOffset.y >= scrollView.contentSize.height - scrollView.frame.size.height) {
+    if (isAtEnd) {
+        return;
+    }
+    CGFloat newOffsetY = scrollView.contentOffset.y;
+    if (newOffsetY >= scrollView.contentSize.height - scrollView.frame.size.height) {
         [self.navigationController setToolbarHidden:NO animated:YES];
         isAtEnd = YES;
+        return;
     }
-    if (!isAtEnd && scrollView.dragging) { // 拖拽
-        if ((scrollView.contentOffset.y - contentOffsetY) > 5.0f) { // 向上拖拽
+    if (scrollView.dragging) { // 拖拽
+        if ((newOffsetY - contentOffsetY) > 5.0f) { // 向上拖拽
+            contentOffsetY = newOffsetY;
             [self.navigationController setToolbarHidden:YES animated:YES];
-        } else if ((contentOffsetY - scrollView.contentOffset.y) > 5.0f) { // 向下拖拽
+        } else if ((contentOffsetY - newOffsetY) > 5.0f) { // 向下拖拽
+            contentOffsetY = newOffsetY;
             [self.navigationController setToolbarHidden:NO animated:YES];
         }
     }
