@@ -721,7 +721,7 @@
         return;
     }
     if (scrollView.dragging) { // 拖拽
-        if ((newOffsetY - contentOffsetY) > 5.0f) { // 向上拖拽
+        if (newOffsetY > 0 && (newOffsetY - contentOffsetY) > 5.0f) { // 向上拖拽
             contentOffsetY = newOffsetY;
             [self.navigationController setToolbarHidden:YES animated:YES];
         } else if ((contentOffsetY - newOffsetY) > 5.0f) { // 向下拖拽
