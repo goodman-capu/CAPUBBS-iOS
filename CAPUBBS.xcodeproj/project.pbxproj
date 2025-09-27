@@ -29,9 +29,11 @@
 		018DC2021BFF482600334BF1 /* IDCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 018DC2011BFF482600334BF1 /* IDCell.m */; };
 		0191373F2E131FAB00BCA61D /* Downloader.m in Sources */ = {isa = PBXBuildFile; fileRef = 0191373E2E131FAA00BCA61D /* Downloader.m */; };
 		019D7E952DEA179F00F91E41 /* jquery.min.js in Resources */ = {isa = PBXBuildFile; fileRef = 019D7E942DEA179500F91E41 /* jquery.min.js */; };
+		01A49F6B2E78FF8C0040A350 /* App Icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 01A49F6A2E78FF8C0040A350 /* App Icon.icon */; };
 		01A552BB1C1204AA002317C0 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 01A552BA1C1204AA002317C0 /* Images.xcassets */; };
 		01A616CB1AB7C9CD009A0D0A /* IconViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 01A616CA1AB7C9CD009A0D0A /* IconViewController.m */; };
 		01A616CE1AB7CA84009A0D0A /* IconCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 01A616CD1AB7CA84009A0D0A /* IconCell.m */; };
+		01B2CB142E8746FD004C2D6A /* CustomViews.m in Sources */ = {isa = PBXBuildFile; fileRef = 01B2CB132E8746FB004C2D6A /* CustomViews.m */; };
 		01C2D9B81AC82DC400CA4F02 /* TextViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 01C2D9B71AC82DC400CA4F02 /* TextViewController.m */; };
 		01D5A2F31B4A810F00174F4A /* RecentViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 01D5A2F21B4A810F00174F4A /* RecentViewController.m */; };
 		01D7A9571AB499D6001EAEB2 /* UserViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 01D7A9561AB499D6001EAEB2 /* UserViewController.m */; };
@@ -299,11 +301,14 @@
 		0191373D2E131FA100BCA61D /* Downloader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Downloader.h; sourceTree = "<group>"; };
 		0191373E2E131FAA00BCA61D /* Downloader.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Downloader.m; sourceTree = "<group>"; };
 		019D7E942DEA179500F91E41 /* jquery.min.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = jquery.min.js; sourceTree = "<group>"; };
+		01A49F6A2E78FF8C0040A350 /* App Icon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = "App Icon.icon"; sourceTree = "<group>"; };
 		01A552BA1C1204AA002317C0 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		01A616C91AB7C9CD009A0D0A /* IconViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IconViewController.h; sourceTree = "<group>"; };
 		01A616CA1AB7C9CD009A0D0A /* IconViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IconViewController.m; sourceTree = "<group>"; };
 		01A616CC1AB7CA84009A0D0A /* IconCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IconCell.h; sourceTree = "<group>"; };
 		01A616CD1AB7CA84009A0D0A /* IconCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IconCell.m; sourceTree = "<group>"; };
+		01B2CB122E8746F4004C2D6A /* CustomViews.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CustomViews.h; sourceTree = "<group>"; };
+		01B2CB132E8746FB004C2D6A /* CustomViews.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CustomViews.m; sourceTree = "<group>"; };
 		01C2D9B61AC82DC400CA4F02 /* TextViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TextViewController.h; sourceTree = "<group>"; };
 		01C2D9B71AC82DC400CA4F02 /* TextViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = TextViewController.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		01D5A2F11B4A810F00174F4A /* RecentViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RecentViewController.h; sourceTree = "<group>"; };
@@ -564,6 +569,8 @@
 		0169A9492DF0A98000F8978B /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				01B2CB122E8746F4004C2D6A /* CustomViews.h */,
+				01B2CB132E8746FB004C2D6A /* CustomViews.m */,
 				016CEE012DF2CC6900E5F5C2 /* CustomWebViewContainer.h */,
 				016CEE022DF2CC7500E5F5C2 /* CustomWebViewContainer.m */,
 				018590452DF103D7002E73D9 /* CustomProgressHUD.h */,
@@ -886,6 +893,7 @@
 				01729C271B01EFA300BC8218 /* WebViewController.m */,
 				01D80C9B1B4C2C86006F8957 /* Images-GIF */,
 				01A552BA1C1204AA002317C0 /* Images.xcassets */,
+				01A49F6A2E78FF8C0040A350 /* App Icon.icon */,
 				0169A9492DF0A98000F8978B /* Utilities */,
 				8BAC8EA918B0F2BE00F68A62 /* Supporting Files */,
 			);
@@ -1168,6 +1176,7 @@
 				01D80F341B4C2E56006F8957 /* 16_0.gif in Resources */,
 				01D80EF11B4C2E36006F8957 /* 114.gif in Resources */,
 				01D80E911B4C2E36006F8957 /* 18.gif in Resources */,
+				01A49F6B2E78FF8C0040A350 /* App Icon.icon in Resources */,
 				01D80EE41B4C2E36006F8957 /* 101.gif in Resources */,
 				01D80ED01B4C2E36006F8957 /* 81.gif in Resources */,
 				01D80F251B4C2E56006F8957 /* 1_0.gif in Resources */,
@@ -1244,6 +1253,7 @@
 				8B94FF3718B4E27500D083A6 /* ComposeViewController.m in Sources */,
 				0134178B1AB06CFF0086098F /* IDViewController.m in Sources */,
 				017785EA1AADDA700089361C /* FacesViewController.m in Sources */,
+				01B2CB142E8746FD004C2D6A /* CustomViews.m in Sources */,
 				8BD9862319CEFFD10006ECEC /* LzlCell.m in Sources */,
 				01F38EB71AE1516C007F25D0 /* ChatViewController.m in Sources */,
 				018DC2021BFF482600334BF1 /* IDCell.m in Sources */,
@@ -1435,13 +1445,14 @@
 		8BAC8ED518B0F2BE00F68A62 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon";
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = CAPUBBS/CAPUBBS.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 41109;
+				CURRENT_PROJECT_VERSION = 42006;
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 674549EE7Z;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -1450,7 +1461,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = CAPUBBS;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 4.1.1;
+				MARKETING_VERSION = 4.2.0;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xiongdianpku.CAPUBBS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1464,13 +1475,14 @@
 		8BAC8ED618B0F2BE00F68A62 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon";
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = CAPUBBS/CAPUBBS.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 41109;
+				CURRENT_PROJECT_VERSION = 42006;
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 674549EE7Z;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -1479,7 +1491,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = CAPUBBS;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 4.1.1;
+				MARKETING_VERSION = 4.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xiongdianpku.CAPUBBS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

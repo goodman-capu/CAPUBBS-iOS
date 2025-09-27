@@ -131,7 +131,12 @@
     
     if ([path hasPrefix:@"tel:"] || [path hasPrefix:@"sms:"] || [path hasPrefix:@"facetime:"] || [path hasPrefix:@"maps:"]) {
         // Directly open
-        decisionHandler(WKNavigationActionPolicyAllow);
+        if ([[UIApplication sharedApplication] canOpenURL:url]) {
+            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+            decisionHandler(WKNavigationActionPolicyCancel);
+        } else {
+            decisionHandler(WKNavigationActionPolicyAllow);
+        }
         return;
     }
     
