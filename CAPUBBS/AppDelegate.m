@@ -55,8 +55,11 @@
     }
     
     [[UITextField appearance] setClearButtonMode:UITextFieldViewModeWhileEditing];
-    [[UITextField appearance] setBackgroundColor:[UIColor lightTextColor]];
-    [[UITextView appearance] setBackgroundColor:[UIColor lightTextColor]];
+//    [[UITextField appearance] setBackgroundColor:[UIColor systemBackgroundColor]];
+//    if (LIQUID_GLASS) {
+//        [[UITextField appearanceWhenContainedInInstancesOfClasses:@[[UIAlertController class]]] setBackgroundColor:[UIColor clearColor]];
+//    }
+    [[UITextView appearance] setBackgroundColor:[UIColor systemBackgroundColor]];
     [[UITableView appearance] setBackgroundColor:[UIColor clearColor]];
     [[UITableViewCell appearance] setBackgroundColor:[UIColor colorWithWhite:1 alpha:0.6]];
     [[UIButton appearance] setPointerInteractionEnabled:YES];
@@ -147,6 +150,7 @@
 //    [AppDelegate openLink:[Helper getLink:@"/bbs/content/?p=25&bid=4&tid=19837#298"] postTitle:nil]; // Pictures
 //    [AppDelegate openLink:[Helper getLink:@"/bbs/content/?p=25&bid=4&tid=19837#293"] postTitle:nil]; // Attachments
 //    [self _handleUrlRequestWithDictionary:@{@"open": @"compose", @"bid": @"9", @"title": @"Test"}]; // Compose
+//    [self _handleUrlRequestWithDictionary:@{@"open": @"message"}]; // Message center
 #endif
     
     // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.

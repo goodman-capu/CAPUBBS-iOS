@@ -27,7 +27,6 @@
     self.textBody.layer.cornerRadius = 6;
     self.textBody.layer.borderColor = GREEN_LIGHT.CGColor;
     self.textBody.layer.borderWidth = 0.5;
-    self.textBody.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.5];
     
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
@@ -617,6 +616,22 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
     return CGSizeMake(width * scale, height * scale);
 }
 
+- (UILabel *)findMessageLabelInView:(UIView *)view matchingText:(NSAttributedString *)expected {
+    for (UIView *sub in view.subviews) {
+        if ([sub isKindOfClass:[UILabel class]]) {
+            UILabel *lab = (UILabel *)sub;
+            // 用内容匹配，确保是 messageLabel 而不是 titleLabel
+            if ([lab.attributedText isEqualToAttributedString:expected] ||
+                [lab.attributedText.string containsString:expected.string]) {
+                return lab;
+            }
+        }
+        UILabel *result = [self findMessageLabelInView:sub matchingText:expected];
+        if (result) return result;
+    }
+    return nil;
+}
+
 - (void)addPreviewImage:(UIImage *)image toAlertController:(UIAlertController *)alertController additionalMessage:(NSString *)additionalMessage {
     // 1. 获取压缩后的图片
     UIImage *thumbnailImage = image;
@@ -624,13 +639,27 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
     if (!CGSizeEqualToSize(thumbnailSize, CGSizeZero)) {
         thumbnailImage = [self resizeImage:image toSize:thumbnailSize opaque:NO];
     }
-    // 2. 创建图片附件 (Text Attachment)
-    NSTextAttachment *attachment = [[NSTextAttachment alloc] init];
+    
+    // 2. 计算目标高度/宽度
     CGFloat targetHeight = 150.0;
+    CGFloat targetWidth = targetHeight * (thumbnailImage.size.width / thumbnailImage.size.height);
     CGFloat targetCornerRadius = 8.0;
-    CGFloat scaleFactor = thumbnailImage.size.height / targetHeight;
-    attachment.image = [thumbnailImage imageByApplyingCornerRadius:targetCornerRadius * scaleFactor];
-    attachment.bounds = CGRectMake(0, 0, targetHeight * attachment.image.size.width / attachment.image.size.height, targetHeight); // 保持图片宽高比
+    
+    // 3. 创建图片附件 (Text Attachment)
+    NSTextAttachment *attachment = [[NSTextAttachment alloc] init];
+    attachment.bounds = CGRectMake(0, 0, targetWidth, targetHeight);
+    if (LIQUID_GLASS) {
+        // 用透明图像做占位 attachment，直接用真图会选染成黑色
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(targetWidth, targetHeight), NO, 0);
+        UIImage *blank = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+        attachment.image = blank;
+    } else {
+        // 用图像做 attachment
+        CGFloat scaleFactor = thumbnailImage.size.height / targetHeight;
+        attachment.image = [thumbnailImage imageByApplyingCornerRadius:targetCornerRadius * scaleFactor];
+    }
+    
     // 3. 创建完整的富文本消息
     NSDictionary<NSAttributedStringKey,id> *textAttributes = @{
         NSFontAttributeName: [UIFont systemFontOfSize:13],
@@ -642,6 +671,30 @@ CGSize scaledSizeForImage(UIImage *image, CGFloat maxLength) {
     }
     // 4. 使用 KVC 设置 attributedMessage
     [alertController setValue:finalMessage forKey:@"attributedMessage"];
+    
+    if (LIQUID_GLASS) {
+        // 5. 等 alert 显示后再 overlay 真图
+        dispatch_main_async_safe((^{
+            UILabel *messageLabel = [self findMessageLabelInView:alertController.view matchingText:finalMessage];
+            if (!messageLabel) return;
+            
+            UIImageView *imageView = [[UIImageView alloc] initWithImage:thumbnailImage];
+            imageView.contentMode = UIViewContentModeScaleAspectFill;
+            imageView.layer.cornerRadius = 8.0;
+            imageView.clipsToBounds = YES;
+            imageView.translatesAutoresizingMaskIntoConstraints = NO;
+
+            UIView *container = messageLabel.superview;
+            [container addSubview:imageView];
+
+            [NSLayoutConstraint activateConstraints:@[
+                [imageView.leadingAnchor constraintEqualToAnchor:messageLabel.leadingAnchor],
+                [imageView.topAnchor constraintEqualToAnchor:messageLabel.topAnchor constant:16],
+                [imageView.widthAnchor constraintEqualToConstant:targetWidth],
+                [imageView.heightAnchor constraintEqualToConstant:targetHeight]
+            ]];
+        }));
+    }
 }
 
 - (void)uploadOneImage:(id)imageData withCallback:(void (^)(NSString *url))callback {

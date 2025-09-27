@@ -126,7 +126,7 @@
 }
 
 - (void)jumpTo:(NSInteger)pageNum {
-    [hud showWithProgressMessage:@"读取中"];
+    [hud showWithProgressMessage:@"加载中"];
     NSInteger oldPage = self.page;
     self.page = pageNum;
     self.buttonAction.enabled = NO;
@@ -150,7 +150,7 @@
             if (err || result.count == 0) {
                 failCount++;
                 self.page = oldPage;
-                [hud hideWithFailureMessage:@"读取失败"];
+                [hud hideWithFailureMessage:@"加载失败"];
                 NSLog(@"%@",err);
             } else {
                 NSString *pages = [result lastObject][@"pages"];
@@ -162,13 +162,13 @@
                         [self showAlertWithTitle:@"错误" message:@"您未登录，不能查看本版！\n请登录或者前往其它版面"];
                     }
                     self.tableView.userInteractionEnabled = NO;
-                    [hud hideWithFailureMessage:@"读取失败"];
+                    [hud hideWithFailureMessage:@"加载失败"];
                 } else {
                     data = result;
                     isLast = [data[0][@"nextpage"] isEqualToString:@"false"];
                     self.title = [NSString stringWithFormat:@"%@(%ld/%@)", oriTitle, self.page, [data lastObject][@"pages"]];
                     self.tableView.userInteractionEnabled = YES;
-                    [hud hideWithSuccessMessage:@"读取成功"];
+                    [hud hideWithSuccessMessage:@"加载成功"];
                 }
                 
                 activity.webpageURL = [self getCurrentUrl];
@@ -204,7 +204,7 @@
                 self.buttonAction.enabled = YES;
                 if (topErr || hotErr || hotResult.count == 0) {
                     failCount++;
-                    [hud hideWithFailureMessage:@"读取失败"];
+                    [hud hideWithFailureMessage:@"加载失败"];
                     if (topErr) {
                         NSLog(@"globaltop error: %@",topErr);
                     }
@@ -215,7 +215,7 @@
                         NSLog(@"hot not found");
                     }
                 } else {
-                    [hud hideWithSuccessMessage:@"读取成功"];
+                    [hud hideWithSuccessMessage:@"加载成功"];
                     
                     NSMutableArray *tmpData = [NSMutableArray arrayWithArray:topResult];
                     globalTopCount = topResult.count;

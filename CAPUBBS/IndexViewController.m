@@ -201,7 +201,7 @@
         && ([text containsString:@"赞"] || [text containsString:@"棒"] || [text containsString:@"给力"] || [text containsString:@"威武"] || [text containsString:@"牛"] || [text containsString:@"厉害"] || [text containsString:@"帅"] || [text containsString:@"爱"] || [text containsString:@"V5"] || [text containsString:@"么么哒"] || [text containsString:@"漂亮"])
         && ![text containsString:@"不"] && ![text containsString:@"才怪"]
         ) {
-        [hud showAndHideWithSuccessMessage:@"~\(≧▽≦)/~" delay:1]; // (>^ω^<)
+        [hud showAndHideWithSuccessMessage:@"~\(≧▽≦)/~"]; // (>^ω^<)
         [DEFAULTS setObject:@(YES) forKey:@"superUser"];
     } else if (([text containsString:@"chexie"] || [text containsString:@"capu"] || [text containsString:@"local"] || [text containsString:@"test"] || [text rangeOfString:@"(?i)(?<![\\w:])((\\d{1,3}\\.){3}\\d{1,3}|([a-f0-9]{0,4}:){2,7}[a-f0-9]{0,4})(?![\\w:])" options:NSRegularExpressionSearch].location != NSNotFound) && ([text hasPrefix:@"http://"] || [text hasPrefix:@"https://"]) && ![text hasSuffix:@"/"] && ![text containsString:@"?"] && ![text containsString:@"#"]) {
         [hud showAndHideWithSuccessMessage:@"设置成功"];

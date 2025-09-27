@@ -19,11 +19,10 @@
 }
 
 @property NSString *URL;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonStop;
-@property (strong, nonatomic) IBOutlet UIBarButtonItem *buttonRefresh;
 @property (weak, nonatomic) IBOutlet CustomWebViewContainer *webViewContainer;
 @property (weak, nonatomic) IBOutlet UIProgressView *progressView;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonBack;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonRefreshOrStop;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonForward;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonShare;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonSafari;

@@ -22,6 +22,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = GREEN_BACK;
+    self.title = @"消息中心";
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
@@ -38,36 +39,27 @@
     
     if (LIQUID_GLASS) {
         [self.segmentBackgroundView removeFromSuperview];
-        self.navigationItem.titleView = self.segmentType;
-
-        // 普通状态文字
-//        [self.segmentType setTitleTextAttributes:@{
-//            NSFontAttributeName: [UIFont systemFontOfSize:14],
-//        } forState:UIControlStateNormal];
-        // 选中状态文字
-        [self.segmentType setTitleTextAttributes:@{
-            NSForegroundColorAttributeName: [UIColor tintColor],
-        } forState:UIControlStateSelected];
-//        self.segmentType.translatesAutoresizingMaskIntoConstraints = NO;
-//        [NSLayoutConstraint activateConstraints:@[
-//            [self.segmentType.heightAnchor constraintEqualToConstant:44],
-//        ]];
+        [self.segmentTypeInView removeFromSuperview];
+        activeSegment = self.segmentTypeInTitle;
     } else {
+        self.navigationItem.titleView = nil;
+        activeSegment = self.segmentTypeInView;
+        
         self.segmentBackgroundView.backgroundColor = [GREEN_BACK colorWithAlphaComponent:0.85];
         self.tableView.contentInset = UIEdgeInsetsMake(48, 0, 0, 0);
         self.tableView.scrollIndicatorInsets = self.tableView.contentInset;
         
-        self.segmentType.selectedSegmentTintColor = GREEN_DARK;
+        activeSegment.selectedSegmentTintColor = GREEN_DARK;
         // 普通状态文字
-        [self.segmentType setTitleTextAttributes:@{
+        [activeSegment setTitleTextAttributes:@{
             NSForegroundColorAttributeName: [UIColor darkGrayColor],
         } forState:UIControlStateNormal];
         // 选中状态文字
-        [self.segmentType setTitleTextAttributes:@{
+        [activeSegment setTitleTextAttributes:@{
             NSForegroundColorAttributeName: [UIColor whiteColor],
         } forState:UIControlStateSelected];
     }
-    [self typeChanged:self.segmentType];
+    [self typeChanged:activeSegment];
     // Do any additional setup after loading the view.
 }
 
@@ -116,7 +108,7 @@
             return;
         }
         messageRefreshing = YES;
-        NSString *type = (self.segmentType.selectedSegmentIndex == 0) ? @"system" : @"private";
+        NSString *type = (activeSegment.selectedSegmentIndex == 0) ? @"system" : @"private";
         [hud showWithProgressMessage:@"正在加载"];
         NSDictionary *dict = @{
             @"type" : type,
@@ -146,16 +138,16 @@
             } else {
                 UITableViewRowAnimation rowAnimation = UITableViewRowAnimationFade;
                 if (!SIMPLE_VIEW) {
-                    if (originalSegment < self.segmentType.selectedSegmentIndex) {
+                    if (originalSegment < activeSegment.selectedSegmentIndex) {
                         rowAnimation = UITableViewRowAnimationLeft;
                     }
-                    if (originalSegment > self.segmentType.selectedSegmentIndex) {
+                    if (originalSegment > activeSegment.selectedSegmentIndex) {
                         rowAnimation = UITableViewRowAnimationRight;
                     }
                 }
                 [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:rowAnimation];
             }
-            originalSegment = self.segmentType.selectedSegmentIndex;
+            originalSegment = activeSegment.selectedSegmentIndex;
             
             if (data.count > 1) {
                 [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UITableViewScrollPositionTop animated:YES];
@@ -165,6 +157,7 @@
             }
             self.buttonPrevious.enabled = (page > 1);
             self.buttonNext.enabled = (page < maxPage);
+            self.tableView.scrollEnabled = data.count > 1;
         }];
     }));
 }
@@ -196,13 +189,13 @@
         if (swipeDirection == 2) { // Disable swipe
             return;
         }
-        if (self.segmentType.selectedSegmentIndex == 0 && swipeDirection == 1) {
-            [self.segmentType setSelectedSegmentIndex:1];
-            [self typeChanged:self.segmentType];
+        if (activeSegment.selectedSegmentIndex == 0 && swipeDirection == 1) {
+            [activeSegment setSelectedSegmentIndex:1];
+            [self typeChanged:activeSegment];
         }
-        if (self.segmentType.selectedSegmentIndex == 1 && swipeDirection == 0) {
-            [self.segmentType setSelectedSegmentIndex:0];
-            [self typeChanged:self.segmentType];
+        if (activeSegment.selectedSegmentIndex == 1 && swipeDirection == 0) {
+            [activeSegment setSelectedSegmentIndex:0];
+            [self typeChanged:activeSegment];
         }
     }
 }
@@ -213,27 +206,27 @@
         if (swipeDirection == 2) { // Disable swipe
             return;
         }
-        if (self.segmentType.selectedSegmentIndex == 0 && swipeDirection == 0) {
-            [self.segmentType setSelectedSegmentIndex:1];
-            [self typeChanged:self.segmentType];
+        if (activeSegment.selectedSegmentIndex == 0 && swipeDirection == 0) {
+            [activeSegment setSelectedSegmentIndex:1];
+            [self typeChanged:activeSegment];
         }
-        if (self.segmentType.selectedSegmentIndex == 1 && swipeDirection == 1) {
-            [self.segmentType setSelectedSegmentIndex:0];
-            [self typeChanged:self.segmentType];
+        if (activeSegment.selectedSegmentIndex == 1 && swipeDirection == 1) {
+            [activeSegment setSelectedSegmentIndex:0];
+            [self typeChanged:activeSegment];
         }
     }
 }
 
 - (void)setMessageNum {
     if (data.count > 0 && [data[0][@"sysmsg"] integerValue] > 0) {
-        [self.segmentType setTitle:[NSString stringWithFormat:@"系统消息(%@)", data[0][@"sysmsg"]] forSegmentAtIndex:0];
+        [activeSegment setTitle:[NSString stringWithFormat:@"系统消息(%@)", data[0][@"sysmsg"]] forSegmentAtIndex:0];
     } else {
-        [self.segmentType setTitle:@"系统消息" forSegmentAtIndex:0];
+        [activeSegment setTitle:@"系统消息" forSegmentAtIndex:0];
     }
     if (data.count > 0 && [data[0][@"prvmsg"] integerValue] > 0) {
-        [self.segmentType setTitle:[NSString stringWithFormat:@"私信消息(%@)", data[0][@"prvmsg"]] forSegmentAtIndex:1];
+        [activeSegment setTitle:[NSString stringWithFormat:@"私信消息(%@)", data[0][@"prvmsg"]] forSegmentAtIndex:1];
     } else {
-        [self.segmentType setTitle:@"私信消息" forSegmentAtIndex:1];
+        [activeSegment setTitle:@"私信消息" forSegmentAtIndex:1];
     }
     if (data.count > 0 && ![USERINFO isEqual:@""]) {
         NSMutableDictionary *dict = [USERINFO mutableCopy];
@@ -314,16 +307,19 @@
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
-    return data && data.count <= 1 ? @"您还没有消息" : nil;
+    if (!data || data.count > 1) {
+        return nil;
+    }
+    return activeSegment.selectedSegmentIndex == 0 ? @"您还没有系统消息" : @"您还没有私信消息";
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    MessageCell *cell = [tableView dequeueReusableCellWithIdentifier:(self.segmentType.selectedSegmentIndex == 0) ? @"systemmsg" : @"privatemsg" forIndexPath:indexPath];
+    MessageCell *cell = [tableView dequeueReusableCellWithIdentifier:(activeSegment.selectedSegmentIndex == 0) ? @"systemmsg" : @"privatemsg" forIndexPath:indexPath];
     
     NSDictionary *dict = data[indexPath.row + 1];
     cell.labelUser.text = dict[@"username"];
     NSMutableAttributedString *text;
-    if (self.segmentType.selectedSegmentIndex == 0) {
+    if (activeSegment.selectedSegmentIndex == 0) {
         int textLenth = 0;
         NSString *titleText = dict[@"title"];
         titleText = [Helper restoreTitle:titleText];

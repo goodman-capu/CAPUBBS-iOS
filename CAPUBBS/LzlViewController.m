@@ -107,7 +107,7 @@
 
 - (void)loadData {
     if (shouldShowHud) {
-        [hud showWithProgressMessage:@"读取中"];
+        [hud showWithProgressMessage:@"加载中"];
     }
     NSDictionary *dict = @{
         @"fid" : self.fid,
@@ -119,13 +119,13 @@
         }
         if (err || result.count == 0) {
             if (shouldShowHud) {
-                [hud hideWithFailureMessage:@"读取失败"];
+                [hud hideWithFailureMessage:@"加载失败"];
             }
             return;
         }
         
         if (shouldShowHud) {
-            [hud hideWithSuccessMessage:@"读取成功"];
+            [hud hideWithSuccessMessage:@"加载成功"];
         }
         shouldShowHud = NO;
         

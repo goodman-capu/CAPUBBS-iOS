@@ -6,6 +6,7 @@
 
 #import "AppDelegate.h"
 #import "CommonDefinitions.h"
+#import "CustomViews.h"
 #import "CustomProgressHUD.h"
 #import "CustomViewControllers.h"
 #import "Downloader.h"

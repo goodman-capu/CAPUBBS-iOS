@@ -207,7 +207,7 @@
 - (IBAction)scriptChanged:(id)sender {
     [DEFAULTS setObject:@(self.switchScript.isOn) forKey:@"disableScript"];
     if (self.switchScript.isOn) {
-        [self showAlertWithTitle:@"JavaScript脚本已禁用" message:@"动态内容将失效（例如动态签名档）\n网页版不会受影响"];
+        [self showAlertWithTitle:@"JavaScript脚本已禁用" message:@"动态内容将失效（例如动态签名档）"];
     }
 }
 

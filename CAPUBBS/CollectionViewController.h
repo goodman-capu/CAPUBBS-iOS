@@ -19,7 +19,7 @@
     int sortType;
 }
 
-@property (strong, nonatomic) CustomSearchController *searchController;
+@property (strong, nonatomic) UISearchController *searchController;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonSelectAll;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonSelectReverse;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *buttonShare;

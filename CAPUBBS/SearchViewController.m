@@ -243,9 +243,7 @@
     }
     NSDate *begin = [formatter dateFromString:beginTime];
     NSDate *end = [formatter dateFromString:endTime];
-    NSTimeInterval earlyDate = [begin timeIntervalSince1970]*1;
-    NSTimeInterval lateDate = [end timeIntervalSince1970]*1;
-    if (earlyDate - lateDate > 0) {
+    if ([begin timeIntervalSince1970] > [end timeIntervalSince1970]) {
         [self showAlertWithTitle:@"错误" message:@"日期输入有误！"];
         if (control.isRefreshing) {
             [control endRefreshing];

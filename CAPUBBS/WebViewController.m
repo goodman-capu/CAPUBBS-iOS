@@ -19,7 +19,7 @@
     [super viewDidLoad];
     self.view.backgroundColor = GRAY_PATTERN;
     if (LIQUID_GLASS) {
-        self.toolbarItems = @[self.buttonBack, self.buttonForward, [UIBarButtonItem flexibleSpaceItem], self.buttonShare, self.buttonSafari];
+        self.toolbarItems = @[self.buttonBack, self.buttonRefreshOrStop, self.buttonForward, [UIBarButtonItem flexibleSpaceItem], self.buttonShare, self.buttonSafari];
     }
     [self.webViewContainer initiateWebViewWithToken:YES];
     self.webViewContainer.backgroundColor = [UIColor whiteColor];
@@ -30,15 +30,13 @@
     UIView *targetView = self.navigationController ? self.navigationController.view : self.view;
     hud = [[MBProgressHUD alloc] initWithView:targetView];
     [targetView addSubview:hud];
-    self.buttonBack.enabled = NO;
-    self.buttonForward.enabled = NO;
+    [self updateButtonStatus];
     NSURL *url = [NSURL URLWithString:self.URL];
     if (!url || !url.host || !url.scheme) {
         self.URL = [@"https://" stringByAppendingString:self.URL];
         url = [NSURL URLWithString:self.URL];
     }
     
-    self.navigationItem.rightBarButtonItems = @[self.buttonStop];
     [self.webViewContainer.webView loadRequest:[NSURLRequest requestWithURL:url]];
     // Do any additional setup after loading the view.
 }
@@ -95,6 +93,13 @@
     }
 }
 
+- (void)updateButtonStatus {
+    WKWebView *webView = self.webViewContainer.webView;
+    self.buttonForward.enabled = webView.canGoForward;
+    self.buttonBack.enabled = webView.canGoBack;
+    self.buttonRefreshOrStop.image = [UIImage systemImageNamed:webView.isLoading ? @"xmark" : @"arrow.clockwise"];
+}
+
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
     NSURL *url = navigationAction.request.URL;
     NSString *path = url.absoluteString;
@@ -126,7 +131,12 @@
     
     if ([path hasPrefix:@"tel:"] || [path hasPrefix:@"sms:"] || [path hasPrefix:@"facetime:"] || [path hasPrefix:@"maps:"]) {
         // Directly open
-        decisionHandler(WKNavigationActionPolicyAllow);
+        if ([[UIApplication sharedApplication] canOpenURL:url]) {
+            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+            decisionHandler(WKNavigationActionPolicyCancel);
+        } else {
+            decisionHandler(WKNavigationActionPolicyAllow);
+        }
         return;
     }
     
@@ -241,7 +251,7 @@
 
 - (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation {
     self.title = @"加载中";
-    self.navigationItem.rightBarButtonItems = @[self.buttonStop];
+    [self updateButtonStatus];
     [self.navigationController setToolbarHidden:NO animated:YES];
     [self setSafeActivityUrl:webView.URL];
 
@@ -265,10 +275,8 @@
 }
 
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
-    self.buttonBack.enabled = [webView canGoBack];
-    self.buttonForward.enabled = [webView canGoForward];
+    [self updateButtonStatus];
     self.URL = webView.URL.absoluteString;
-    self.navigationItem.rightBarButtonItems = @[self.buttonRefresh];
 }
 
 - (void)webView:(WKWebView *)webView didFailNavigation:(WKNavigation *)navigation withError:(NSError *)error {
@@ -282,9 +290,7 @@
 }
 
 - (void)handleWebView:(WKWebView *)webView error:(NSError *)error {
-    self.buttonBack.enabled = [webView canGoBack];
-    self.buttonForward.enabled = [webView canGoForward];
-    self.navigationItem.rightBarButtonItems = @[self.buttonRefresh];
+    [self updateButtonStatus];
     [self.progressView setProgress:0 animated:YES];
     self.progressView.hidden = YES;
         
@@ -377,12 +383,13 @@
     }
 }
 
-- (IBAction)stop:(id)sender {
-    [self.webViewContainer.webView stopLoading];
-}
-
-- (IBAction)refresh:(id)sender {
-    [self.webViewContainer.webView reload];
+- (IBAction)refreshOrStop:(id)sender {
+    WKWebView *webView = self.webViewContainer.webView;
+    if (webView.isLoading) {
+        [webView stopLoading];
+    } else {
+        [webView reload];
+    }
 }
 
 - (IBAction)close:(id)sender {
@@ -426,14 +433,22 @@
 // 滚动时调用此方法
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
     // NSLog(@"scrollView.contentOffset:%f, %f", scrollView.contentOffset.x, scrollView.contentOffset.y);
-    if (!isAtEnd && scrollView.contentOffset.y >= scrollView.contentSize.height - scrollView.frame.size.height) {
+    if (isAtEnd) {
+        return;
+    }
+    CGFloat newOffsetY = scrollView.contentOffset.y;
+    if (newOffsetY >= scrollView.contentSize.height - scrollView.frame.size.height) {
         [self.navigationController setToolbarHidden:NO animated:YES];
         isAtEnd = YES;
+        return;
     }
-    if (!isAtEnd && scrollView.dragging) { // 拖拽
-        if ((scrollView.contentOffset.y - contentOffsetY) > 5.0f) { // 向上拖拽
+    if (scrollView.dragging) { // 拖拽
+        CGFloat newOffsetY = scrollView.contentOffset.y;
+        if (newOffsetY > 0 && (newOffsetY - contentOffsetY) > 5.0f) { // 向上拖拽
+            contentOffsetY = newOffsetY;
             [self.navigationController setToolbarHidden:YES animated:YES];
-        } else if ((contentOffsetY - scrollView.contentOffset.y) > 5.0f) { // 向下拖拽
+        } else if ((contentOffsetY - newOffsetY) > 5.0f) { // 向下拖拽
+            contentOffsetY = newOffsetY;
             [self.navigationController setToolbarHidden:NO animated:YES];
         }
     }
