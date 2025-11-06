@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SDWebImage/SDWebImage.git",
       "state" : {
-        "revision" : "b62cb63bf4ed1f04c961a56c9c6c9d5ab8524ec6",
-        "version" : "5.21.1"
+        "revision" : "2053b120767c42a70bcba21095f34e4cfb54a75d",
+        "version" : "5.21.3"
       }
     },
     {
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/TimOliver/TOCropViewController",
       "state" : {
-        "revision" : "a634cb7cdfd580006e79a6e74e64417fe9e9783b",
-        "version" : "2.7.4"
+        "revision" : "d4a6d8100f4b886fdbc8ae399bf144ff3e9afb7e",
+        "version" : "2.8.0"
       }
     }
   ],
