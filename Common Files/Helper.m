@@ -578,32 +578,149 @@
 }
 
 + (NSString *)toCompatibleFormat:(NSString *)text {
-    if (!text || text.length == 0) {
-        return @"";
-    }
-    // Restore spaces & new lines
-    text = [text stringByReplacingOccurrencesOfString:@"\n<br>" withString:@"<br>"];
-    text = [text stringByReplacingOccurrencesOfString:@"\n\r" withString:@"<br>"];
-    text = [text stringByReplacingOccurrencesOfString:@"\r" withString:@"<br>"];
-    text = [text stringByReplacingOccurrencesOfString:@"\n" withString:@"<br>"];
-    int index = 0;
-    while (index < text.length) {
-        if ([[text substringWithRange:NSMakeRange(index, 1)] isEqualToString:@"<"]) {
-            index++;
-            while (index < text.length) {
-                if ([[text substringWithRange:NSMakeRange(index, 1)] isEqualToString:@">"]) {
-                    break;
+    if (!text || text.length == 0) return @"";
+
+    static NSRegularExpression *tagRegex;
+    static NSRegularExpression *tagNameRegex;
+    static NSRegularExpression *selfClosingTagRegex;
+    static NSSet<NSString *> *voidTags;
+    static NSSet<NSString *> *rawTextTags;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        // (?s) 开启 dot-all 模式。先匹配 <!--...-->，再匹配普通标签
+        tagRegex = [NSRegularExpression regularExpressionWithPattern:@"(?s)<!--.*?-->|</?[a-zA-Z!?](?:\"[^\"]*\"|'[^']*'|[^>\"']+)*>" options:0 error:nil];
+        tagNameRegex = [NSRegularExpression regularExpressionWithPattern:@"^</?([a-zA-Z][a-zA-Z0-9:-]*)" options:0 error:nil];
+        selfClosingTagRegex = [NSRegularExpression regularExpressionWithPattern:@"/\\s*>$" options:0 error:nil];
+        // 永远不会有闭合标签的 HTML 空元素
+        voidTags = [NSSet setWithObjects:@"img", @"br", @"hr", @"input", @"meta", @"link", @"area", @"base", @"col", @"param", @"source", @"track", @"wbr", @"embed", nil];
+        // 需要进入 Raw Text 模式的标签
+        rawTextTags = [NSSet setWithObjects:@"script", @"style", @"pre", nil];
+    });
+
+    NSMutableString *result = [NSMutableString stringWithCapacity:text.length];
+    NSMutableArray<NSString *> *tagStack = [NSMutableArray array];
+    
+    // 维护特殊状态
+    NSString *rawTextTag = nil;
+    NSUInteger searchLocation = 0;
+
+    while (searchLocation < text.length) {
+        
+        // 状态 1：如果进入了 script 或 style
+        if (rawTextTag) {
+            // 直接找对应的闭合标签，例如 </script> 或 </style>
+            NSString *closePattern = [NSString stringWithFormat:@"</%@\\s*>", rawTextTag];
+            NSRange searchRange = NSMakeRange(searchLocation, text.length - searchLocation);
+            
+            NSRange closeRange = [text rangeOfString:closePattern
+                                             options:NSRegularExpressionSearch | NSCaseInsensitiveSearch
+                                               range:searchRange];
+            
+            if (closeRange.location != NSNotFound) {
+                // 找到了完整的闭合标签
+                NSUInteger endLocation = NSMaxRange(closeRange);
+                NSRange rawRange = NSMakeRange(searchLocation, endLocation - searchLocation);
+                
+                // 这中间的所有内容（包括假 tag、空格、换行）完全原样保留
+                [result appendString:[text substringWithRange:rawRange]];
+                
+                // 出栈并恢复状态
+                if (tagStack.count > 0 && [[tagStack lastObject] isEqualToString:rawTextTag]) {
+                    [tagStack removeLastObject];
                 }
-                index++;
+                rawTextTag = nil;
+                searchLocation = endLocation;
+            } else {
+                // 如果找不到闭合标签（HTML 不规范），就把剩下的全当 raw text 处理
+                [result appendString:[text substringFromIndex:searchLocation]];
+                break;
+            }
+            continue;
+        }
+        
+        // 状态 2：正常找下一个 tag
+        NSRange searchRange = NSMakeRange(searchLocation, text.length - searchLocation);
+        NSTextCheckingResult *match = [tagRegex firstMatchInString:text options:0 range:searchRange];
+        
+        if (!match) {
+            // 没找到 tag，跳出循环处理末尾
+            break;
+        }
+        
+        NSRange tagRange = match.range;
+        
+        // 1. 处理 gap (两个 tag 之间的文本)
+        if (tagRange.location > searchLocation) {
+            NSString *gapText = [text substringWithRange:NSMakeRange(searchLocation, tagRange.location - searchLocation)];
+            if (tagStack.count > 0) {
+                [result appendString:gapText];
+            } else {
+                [result appendString:[self processPlainText:gapText]];
             }
         }
-        if (index < text.length && [[text substringWithRange:NSMakeRange(index, 1)] isEqualToString:@" "]) {
-            text = [text stringByReplacingCharactersInRange:NSMakeRange(index, 1) withString:@"&nbsp;"];
-            index += 5;
+        
+        // 2. 拼接标签本身
+        NSString *tagString = [text substringWithRange:tagRange];
+        [result appendString:tagString];
+        
+        // 3. 提取标签名并更新 stack 和 rawTextTag 状态
+        NSTextCheckingResult *nameMatch = [tagNameRegex firstMatchInString:tagString options:0 range:NSMakeRange(0, tagString.length)];
+        if (nameMatch && nameMatch.numberOfRanges > 1) {
+            NSString *tagName = [[tagString substringWithRange:[nameMatch rangeAtIndex:1]] lowercaseString];
+            
+            BOOL isClosing = [tagString hasPrefix:@"</"];
+            if (isClosing) {
+                // 容错退栈
+                NSInteger matchedIndex = [tagStack indexOfObjectWithOptions:NSEnumerationReverse passingTest:^BOOL(NSString *obj, NSUInteger idx, BOOL *stop) {
+                    return [obj isEqualToString:tagName];
+                }];
+                if (matchedIndex != NSNotFound) {
+                    NSRange popRange = NSMakeRange(matchedIndex, tagStack.count - matchedIndex);
+                    [tagStack removeObjectsInRange:popRange];
+                }
+            } else {
+                BOOL isSelfClosing = [selfClosingTagRegex firstMatchInString:tagString options:0 range:NSMakeRange(0, tagString.length)] != nil;
+                
+                if (![voidTags containsObject:tagName] && !isSelfClosing) {
+                    [tagStack addObject:tagName];
+                    
+                    if ([rawTextTags containsObject:tagName]) {
+                        rawTextTag = tagName;
+                    }
+                }
+            }
         }
-        index++;
+        
+        searchLocation = NSMaxRange(tagRange);
     }
-    return text;
+
+    // 4. 处理最后的尾部纯文本
+    if (searchLocation < text.length) {
+        NSString *remainder = [text substringFromIndex:searchLocation];
+        if (tagStack.count > 0) {
+            [result appendString:remainder];
+        } else {
+            [result appendString:[self processPlainText:remainder]];
+        }
+    }
+
+    return result;
+}
+
++ (NSString *)processPlainText:(NSString *)text {
+    if (!text || text.length == 0) return @"";
+    NSMutableString *mut = [text mutableCopy];
+    
+    static NSRegularExpression *newlineRegex;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        newlineRegex = [NSRegularExpression regularExpressionWithPattern:@"\r\n|\n\r|\r|\n" options:0 error:nil];
+    });
+    [newlineRegex replaceMatchesInString:mut options:0 range:NSMakeRange(0, mut.length) withTemplate:@"<br>"];
+    // 连续两个以上空格才转换
+    [mut replaceOccurrencesOfString:@"  " withString:@"&nbsp; " options:0 range:NSMakeRange(0, mut.length)];
+    
+    return mut;
 }
 
 + (NSString *)transToHTML:(NSString *)text {
