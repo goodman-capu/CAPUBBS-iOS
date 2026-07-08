@@ -7,6 +7,7 @@
 //
 
 #import "Downloader.h"
+#import "CommonDefinitions.h"
 
 @implementation NSURL (SafeURL)
 

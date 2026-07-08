@@ -37,6 +37,7 @@
 #define HOTPOSTS [GROUP_DEFAULTS objectForKey:@"hotPosts"]
 #define SIMPLE_VIEW [[GROUP_DEFAULTS objectForKey:@"simpleView"] boolValue]
 #define IS_SUPER_USER [[DEFAULTS objectForKey:@"superUser"] boolValue]
+#define HAS_SHOWN_EULA [[DEFAULTS objectForKey:@"hasShownEULA"] boolValue]
 #define ID_NUM (IS_SUPER_USER ? 20 : 10)
 #define HOT_NUM (IS_SUPER_USER ? 50 : 25)
 
