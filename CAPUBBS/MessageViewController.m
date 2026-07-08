@@ -232,9 +232,8 @@
         NSMutableDictionary *dict = [USERINFO mutableCopy];
         NSString *msgNum = [NSString stringWithFormat:@"%d", [data[0][@"sysmsg"] intValue] + [data[0][@"prvmsg"] intValue]];
         [dict setObject:msgNum forKey:@"newmsg"];
-        [GROUP_DEFAULTS setObject:dict forKey:@"userInfo"];
+        [Helper updateUserInfo:dict];
     }
-    [NOTIFICATION postNotificationName:@"infoRefreshed" object:nil];
 }
 
 - (IBAction)previous:(id)sender {

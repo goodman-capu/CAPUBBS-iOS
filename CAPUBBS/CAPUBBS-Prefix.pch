@@ -13,3 +13,4 @@
 #import "Helper.h"
 #import "ReachabilityManager.h"
 #import "UIImageEffects.h"
+#import "CAPUBBS-Swift.h"

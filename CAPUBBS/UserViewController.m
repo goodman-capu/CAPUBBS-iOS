@@ -179,7 +179,6 @@
             if ([dict[@"username"] isEqualToString:UID]) {
                 NSLog(@"User Info Refreshed");
                 [Helper updateUserInfo:dict];
-                [NOTIFICATION postNotificationName:@"infoRefreshed" object:nil];
             }
             if ([dict[@"sex"] isEqualToString:@"男"]) {
                 self.username.text = [dict[@"username"] stringByAppendingString:@" ♂"];

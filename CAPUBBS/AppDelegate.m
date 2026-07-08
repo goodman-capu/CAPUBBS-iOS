@@ -551,6 +551,10 @@
 }
 
 - (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity restorationHandler:(void (^)(NSArray<id<UIUserActivityRestoring>> * _Nullable))restorationHandler {
+    if (!HAS_SHOWN_EULA) {
+        return NO;
+    }
+    
     if ([userActivity.activityType isEqualToString:CSSearchableItemActionType]) {
         NSArray *collectionParts = @[];
         NSString *identifier = userActivity.userInfo[CSSearchableItemActivityIdentifier];
@@ -600,6 +604,11 @@
 }
 
 - (void)application:(UIApplication *)application performActionForShortcutItem:(UIApplicationShortcutItem *)shortcutItem completionHandler:(void (^)(BOOL))completionHandler {
+    if (!HAS_SHOWN_EULA) {
+        completionHandler(NO);
+        return;
+    }
+    
     dispatch_global_default_async(^{
         if ([shortcutItem.type isEqualToString:@"Hot"]) {
             [self _handleUrlRequestWithDictionary:@{@"open": @"hot"}];
@@ -615,6 +624,28 @@
 }
 
 - (BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options {
+    if (!HAS_SHOWN_EULA) {
+        return NO;
+    }
+    
+    if ([url.scheme isEqualToString:@"capubbs"]) {
+        NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+        NSMutableDictionary *params = [NSMutableDictionary dictionary];
+        for (NSURLQueryItem *item in components.queryItems) {
+            if (item.name.length == 0 || item.value == nil) {
+                continue;
+            }
+            params[item.name] = item.value;
+        }
+        if (params.count > 0) {
+            dispatch_global_default_async(^{
+                [self _handleUrlRequestWithDictionary:params];
+            });
+            return YES;
+        }
+        return NO;
+    }
+    
     if (url.isFileURL) {
         BOOL needsStopAccessing = [url startAccessingSecurityScopedResource];
 
@@ -651,32 +682,7 @@
         return hasValidCollection;
     }
     
-    if (![url.scheme isEqualToString:@"capubbs"]) {
-        return NO;
-    }
-    
-    NSString *urlString = [url absoluteString];
-    urlString = [urlString substringFromIndex:[@"capubbs://" length]];
-    NSArray *paramsArray = [urlString componentsSeparatedByString:@"&"];
-    NSMutableDictionary *params = [NSMutableDictionary dictionary];
-    for (NSString *param in paramsArray) {
-        if (param.length == 0) {
-            NSLog(@"Handle Url error - wrong parameter");
-            return NO;
-        }
-        NSArray *tempArray = [param componentsSeparatedByString:@"="];
-        if (tempArray.count != 2) {
-            NSLog(@"Handle Url error - wrong parameter");
-            return NO;
-        }
-        [params addEntriesFromDictionary:@{tempArray[0]: [tempArray[1] stringByRemovingPercentEncoding]}];
-    }
-    if (params.allKeys.count > 0) {
-        dispatch_global_default_async(^{
-            [self _handleUrlRequestWithDictionary:params];
-        });
-    }
-    return YES;
+    return NO;
 }
 
 - (void)_handleImportCollectionData:(NSArray *)data {
@@ -725,6 +731,10 @@
 }
 
 - (void)_handleUrlRequestWithDictionary:(NSDictionary *)dict {
+    if (!HAS_SHOWN_EULA) {
+        return;
+    }
+    
     NSString *open = dict[@"open"];
     if (open.length == 0) {
         return;
