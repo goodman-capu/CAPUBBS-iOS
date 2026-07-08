@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 70;
+	objectVersion = 73;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -38,6 +38,10 @@
 		01A616CE1AB7CA84009A0D0A /* IconCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 01A616CD1AB7CA84009A0D0A /* IconCell.m */; };
 		01B2CB142E8746FD004C2D6A /* CustomViews.m in Sources */ = {isa = PBXBuildFile; fileRef = 01B2CB132E8746FB004C2D6A /* CustomViews.m */; };
 		01B44E452FFCD5620009DD29 /* WidgetManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01B44E442FFCD55B0009DD29 /* WidgetManager.swift */; };
+		01B44EB42FFD8EB30009DD29 /* ReachabilityManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 01E042BE2DE4B1C800590A6C /* ReachabilityManager.m */; };
+		01B44EB52FFD91180009DD29 /* XMLDictionary.m in Sources */ = {isa = PBXBuildFile; fileRef = 01445B662DF558990000638F /* XMLDictionary.m */; };
+		01B44EB62FFD91250009DD29 /* Helper.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BAC8EE418B100B100F68A62 /* Helper.m */; };
+		01B44EB72FFD91300009DD29 /* Downloader.m in Sources */ = {isa = PBXBuildFile; fileRef = 0191373E2E131FAA00BCA61D /* Downloader.m */; };
 		01C2D9B81AC82DC400CA4F02 /* TextViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 01C2D9B71AC82DC400CA4F02 /* TextViewController.m */; };
 		01D5A2F31B4A810F00174F4A /* RecentViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 01D5A2F21B4A810F00174F4A /* RecentViewController.m */; };
 		01D7A9571AB499D6001EAEB2 /* UserViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 01D7A9561AB499D6001EAEB2 /* UserViewController.m */; };
@@ -572,8 +576,18 @@
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		01B44E512FFCDB560009DD29 /* PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = 01583AAA2FFCBD560053DEB2 /* Resources */;
+			membershipExceptions = (
+				"CAPUBBS_Widget-Bridging-Header.h",
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		01583AB22FFCBD560053DEB2 /* CAPUBBS Widget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (01583ABF2FFCBD580053DEB2 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "CAPUBBS Widget"; sourceTree = "<group>"; };
+		01583AB22FFCBD560053DEB2 /* CAPUBBS Widget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (01583ABF2FFCBD580053DEB2 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, 01B44E512FFCDB560009DD29 /* PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "CAPUBBS Widget"; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -618,6 +632,8 @@
 		0169A9492DF0A98000F8978B /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				0100A0D01C0C562C00A1282D /* AnimatedImageView.h */,
+				0100A0D11C0C562C00A1282D /* AnimatedImageView.m */,
 				01B2CB122E8746F4004C2D6A /* CustomViews.h */,
 				01B2CB132E8746FB004C2D6A /* CustomViews.m */,
 				016CEE012DF2CC6900E5F5C2 /* CustomWebViewContainer.h */,
@@ -626,6 +642,8 @@
 				018590462DF103EA002E73D9 /* CustomProgressHUD.m */,
 				0169A9532DF0B01A00F8978B /* CustomViewControllers.h */,
 				0169A9542DF0B02400F8978B /* CustomViewControllers.m */,
+				01E1B1591C28061500EC680D /* UIImageEffects.h */,
+				01E1B15A1C28061500EC680D /* UIImageEffects.m */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -827,16 +845,12 @@
 			isa = PBXGroup;
 			children = (
 				01F79C8D1D9CAEAC000594F1 /* CommonDefinitions.h */,
-				0100A0D01C0C562C00A1282D /* AnimatedImageView.h */,
-				0100A0D11C0C562C00A1282D /* AnimatedImageView.m */,
 				0191373D2E131FA100BCA61D /* Downloader.h */,
 				0191373E2E131FAA00BCA61D /* Downloader.m */,
 				8BAC8EE318B100B100F68A62 /* Helper.h */,
 				8BAC8EE418B100B100F68A62 /* Helper.m */,
 				01E042BD2DE4B1B700590A6C /* ReachabilityManager.h */,
 				01E042BE2DE4B1C800590A6C /* ReachabilityManager.m */,
-				01E1B1591C28061500EC680D /* UIImageEffects.h */,
-				01E1B15A1C28061500EC680D /* UIImageEffects.m */,
 				01445B652DF558740000638F /* XMLDictionary.h */,
 				01445B662DF558990000638F /* XMLDictionary.m */,
 			);
@@ -949,7 +963,6 @@
 				01A49F6A2E78FF8C0040A350 /* App Icon.icon */,
 				0169A9492DF0A98000F8978B /* Utilities */,
 				8BAC8EA918B0F2BE00F68A62 /* Supporting Files */,
-				01F9F9C92FFCC708002690A9 /* CAPUBBS-Bridging-Header.h */,
 			);
 			path = CAPUBBS;
 			sourceTree = "<group>";
@@ -963,6 +976,7 @@
 				8BAC8EAB18B0F2BE00F68A62 /* InfoPlist.strings */,
 				8BAC8EAE18B0F2BE00F68A62 /* main.m */,
 				8BAC8EB018B0F2BE00F68A62 /* CAPUBBS-Prefix.pch */,
+				01F9F9C92FFCC708002690A9 /* CAPUBBS-Bridging-Header.h */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
@@ -1078,7 +1092,6 @@
 				};
 			};
 			buildConfigurationList = 8BAC8E9A18B0F2BE00F68A62 /* Build configuration list for PBXProject "CAPUBBS" */;
-			compatibilityVersion = "Xcode 12.0";
 			developmentRegion = "zh-Hans";
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -1092,6 +1105,7 @@
 				01E042CB2DE4C9D700590A6C /* XCRemoteSwiftPackageReference "SDWebImage" */,
 				0133C5D72E26C21E00C13675 /* XCRemoteSwiftPackageReference "TOCropViewController" */,
 			);
+			preferredProjectObjectVersion = 54;
 			productRefGroup = 8BAC8EA018B0F2BE00F68A62 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -1311,6 +1325,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				01B44EB62FFD91250009DD29 /* Helper.m in Sources */,
+				01B44EB72FFD91300009DD29 /* Downloader.m in Sources */,
+				01B44EB42FFD8EB30009DD29 /* ReachabilityManager.m in Sources */,
+				01B44EB52FFD91180009DD29 /* XMLDictionary.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1437,7 +1455,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 42200;
+				CURRENT_PROJECT_VERSION = 43000;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 674549EE7Z;
@@ -1453,7 +1471,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 4.2.2;
+				MARKETING_VERSION = 4.3;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xiongdianpku.CAPUBBS.widget;
@@ -1465,6 +1483,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "CAPUBBS Widget/CAPUBBS_Widget-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
@@ -1488,8 +1507,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 42200;
+				CURRENT_PROJECT_VERSION = 43000;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 674549EE7Z;
@@ -1505,7 +1523,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 4.2.2;
+				MARKETING_VERSION = 4.3;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xiongdianpku.CAPUBBS.widget;
@@ -1517,6 +1535,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "CAPUBBS Widget/CAPUBBS_Widget-Bridging-Header.h";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1657,7 +1676,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 42200;
+				CURRENT_PROJECT_VERSION = 43000;
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 674549EE7Z;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -1666,7 +1685,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = CAPUBBS;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 4.2.2;
+				MARKETING_VERSION = 4.3;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xiongdianpku.CAPUBBS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1690,7 +1709,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 42200;
+				CURRENT_PROJECT_VERSION = 43000;
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 674549EE7Z;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -1699,7 +1718,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = CAPUBBS;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 4.2.2;
+				MARKETING_VERSION = 4.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xiongdianpku.CAPUBBS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

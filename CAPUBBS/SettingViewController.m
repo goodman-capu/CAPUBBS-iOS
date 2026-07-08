@@ -147,7 +147,7 @@
             [NOTIFICATION postNotificationName:@"sendEmail" object:nil userInfo:@{
                 @"recipients": FEEDBACK_EMAIL,
                 @"subject": @"CAPUBBS iOS客户端反馈",
-                @"body": [NSString stringWithFormat:@"\n设备：%@\n系统：iOS %@\n客户端版本：%@ Build %@", [Helper doDevicePlatform], [[UIDevice currentDevice] systemVersion], APP_VERSION, APP_BUILD],
+                @"body": [NSString stringWithFormat:@"\n设备：%@\n系统：%@\n客户端版本：%@ Build %@", [Helper getDevicePlatform], [Helper getOsVersionString], APP_VERSION, APP_BUILD],
                 @"fallbackMessage": @"请前往网络维护板块反馈"
             }];
         } else if (indexPath.row == 4) {

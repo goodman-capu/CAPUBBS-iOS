@@ -13,6 +13,9 @@ typedef void (^ApiCompletionBlock)(NSArray* result, NSError* err);
 @interface Helper: NSObject
 
 + (void)callApiWithParams:(NSDictionary*)params toURL:(NSString*)url callback:(ApiCompletionBlock)block;
++ (void)fetchCurrentUserInfoWithCallback: (void (^)(NSDictionary *info, NSError *err))block;
++ (void)fetchHotPostsWithCallback:(void (^)(NSArray *data, NSInteger globalTopCount, NSError *err))block;
+
 + (BOOL)checkLogin:(BOOL)showAlert;
 + (int)checkRight;
 + (void)updateUserInfo:(NSDictionary *)userInfo;
@@ -43,6 +46,7 @@ typedef void (^ApiCompletionBlock)(NSArray* result, NSError* err);
 + (NSString *)md5:(NSString *)str;
 + (BOOL)isPureInt:(NSString *)str;
 + (NSString *)getSigForData:(id)data;
-+ (NSString *)doDevicePlatform;
++ (NSString *)getDevicePlatform;
++ (NSString *)getOsVersionString;
 
 @end

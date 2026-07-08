@@ -195,43 +195,34 @@
             [self checkRobSofa];
         }];
     } else {
-        [Helper callApiWithParams:nil toURL:@"globaltop" callback:^(NSArray *topResult, NSError *topErr) {
-            [Helper callApiWithParams:@{@"hotnum":[NSString stringWithFormat:@"%d", HOT_NUM]} toURL:@"hot" callback:^(NSArray *hotResult, NSError *hotErr) {
-                if (self.refreshControl.isRefreshing) {
-                    self.page = 1;
-                    [self.refreshControl endRefreshing];
+        [Helper fetchHotPostsWithCallback:^(NSArray *result, NSInteger topCount, NSError *err) {
+            if (self.refreshControl.isRefreshing) {
+                self.page = 1;
+                [self.refreshControl endRefreshing];
+            }
+            self.buttonAction.enabled = YES;
+            if (err || result.count == 0) {
+                failCount++;
+                [hud hideWithFailureMessage:@"加载失败"];
+                if (err) {
+                    NSLog(@"hot posts error: %@", err);
+                } else if (result.count == 0) {
+                    NSLog(@"hot posts not found");
                 }
-                self.buttonAction.enabled = YES;
-                if (topErr || hotErr || hotResult.count == 0) {
-                    failCount++;
-                    [hud hideWithFailureMessage:@"加载失败"];
-                    if (topErr) {
-                        NSLog(@"globaltop error: %@",topErr);
-                    }
-                    if (hotErr) {
-                        NSLog(@"hot error: %@",hotErr);
-                    }
-                    if (hotResult.count == 0) {
-                        NSLog(@"hot not found");
-                    }
+            } else {
+                [hud hideWithSuccessMessage:@"加载成功"];
+                data = result;
+                globalTopCount = topCount;
+                [WidgetManager reloadWidgets];
+                
+                if ([self.tableView numberOfRowsInSection:0] == 0) {
+                    [self.tableView reloadData];
                 } else {
-                    [hud hideWithSuccessMessage:@"加载成功"];
-                    
-                    NSMutableArray *tmpData = [NSMutableArray arrayWithArray:topResult];
-                    globalTopCount = topResult.count;
-                    [tmpData addObjectsFromArray:hotResult];
-                    data = [tmpData copy];
-                    [GROUP_DEFAULTS setObject:@(globalTopCount) forKey:@"globalTopCount"];
-                    [GROUP_DEFAULTS setObject:data forKey:@"hotPosts"];
-                    if ([self.tableView numberOfRowsInSection:0] == 0) {
-                        [self.tableView reloadData];
-                    } else {
-                        [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationFade];
-                    }
-                    [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UITableViewScrollPositionTop animated:YES];
+                    [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationFade];
                 }
-                [self checkRobSofa];
-            }];
+                [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UITableViewScrollPositionTop animated:YES];
+            }
+            [self checkRobSofa];
         }];
     }
 }

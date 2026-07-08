@@ -7,9 +7,12 @@
 //
 
 #import "Helper.h"
-#import "XMLDictionary.h" // XML parsing
 #import <CommonCrypto/CommonCrypto.h> // MD5
 #import "sys/utsname.h" // 设备型号
+#import "XMLDictionary.h" // XML parsing
+#import "CommonDefinitions.h"
+#import "Downloader.h"
+#import "ReachabilityManager.h"
 
 #define LINE_BREAK @"\r\n"
 
@@ -117,8 +120,8 @@
 #endif
     NSMutableDictionary *requestParams = [@{
         @"os": @"ios",
-        @"device": [Helper doDevicePlatform],
-        @"version": [[UIDevice currentDevice] systemVersion],
+        @"device": [Helper getDevicePlatform],
+        @"version": [Helper getOsVersionString],
         @"clientversion": APP_VERSION,
         @"clientbuild": APP_BUILD,
         @"token": TOKEN
@@ -249,6 +252,49 @@
     }];
 }
 
++ (void)fetchCurrentUserInfoWithCallback: (void (^)(NSDictionary *info, NSError *err))block {
+    NSString *userName = UID;
+    if (!UID) { // Not logged in
+        block(nil, nil);
+        return;
+    }
+    [Helper callApiWithParams:@{@"uid": userName} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
+        if (!err && result.count > 0) {
+            NSDictionary *userInfo = result[0];
+            [Helper updateUserInfo:userInfo];
+            block(userInfo, nil);
+        } else {
+            block(nil, err);
+        }
+    }];
+}
+
++ (void)fetchHotPostsWithCallback:(void (^)(NSArray *data, NSInteger globalTopCount, NSError *err))block {
+    [Helper callApiWithParams:nil toURL:@"globaltop" callback:^(NSArray *topResult, NSError *topErr) {
+        if (topErr) {
+            block(nil, 0, topErr);
+            return;
+        }
+        [Helper callApiWithParams:@{@"hotnum":[NSString stringWithFormat:@"%d", HOT_NUM]} toURL:@"hot" callback:^(NSArray *hotResult, NSError *hotErr) {
+            if (hotErr || hotResult.count == 0) {
+                if (hotErr) {
+                    block(nil, 0, hotErr);
+                } else {
+                    block(nil, 0, nil);
+                }
+                return;
+            }
+            
+            NSMutableArray *tmpData = [NSMutableArray arrayWithArray:topResult];
+            [tmpData addObjectsFromArray:hotResult];
+            [GROUP_DEFAULTS setObject:@(topResult.count) forKey:@"globalTopCount"];
+            [GROUP_DEFAULTS setObject:tmpData forKey:@"hotPosts"];
+            [GROUP_DEFAULTS setObject:@([[NSDate date] timeIntervalSince1970]) forKey:@"hotPostsUpdateTime"];
+            block(tmpData, topResult.count, nil);
+        }];
+    }];
+}
+
 #pragma mark Common Functions
 
 + (BOOL)checkLogin:(BOOL)showAlert {
@@ -272,6 +318,8 @@
 
 + (void)updateUserInfo:(NSDictionary *)userInfo {
     [GROUP_DEFAULTS setObject:userInfo forKey:@"userInfo"];
+    [GROUP_DEFAULTS setObject:@([[NSDate date] timeIntervalSince1970]) forKey:@"userInfoUpdateTime"];
+    
     NSMutableArray *data = [NSMutableArray arrayWithArray:[DEFAULTS objectForKey:@"ID"]];
     for (int i = 0; i < data.count; i++) {
         if (![data[i][@"id"] isEqualToString:userInfo[@"username"]]) {
@@ -285,6 +333,8 @@
         }
         break;
     }
+    
+    [NOTIFICATION postNotificationName:@"infoRefreshed" object:nil];
 }
 
 + (NSString *)restoreTitle:(NSString *)text {
@@ -942,7 +992,7 @@
     return nil;
 }
 
-+ (NSString *)doDevicePlatform { // 获取设备信息
++ (NSString *)getDevicePlatform { // 获取设备信息
     struct utsname systemInfo;
     uname(&systemInfo);
     NSString *platform = [NSString stringWithCString:systemInfo.machine encoding:NSUTF8StringEncoding];
@@ -960,6 +1010,26 @@
     
     // NSLog(@"Platform = %@",platform);
     return platform;
+}
+
++ (NSString *)getOsVersionString {
+    NSOperatingSystemVersion version = [[NSProcessInfo processInfo] operatingSystemVersion];
+    NSString *versionString;
+
+    if (version.patchVersion > 0) {
+        // 如果有第三位版本号 (例如 18.6.5)
+        versionString = [NSString stringWithFormat:@"%ld.%ld.%ld",
+                         (long)version.majorVersion,
+                         (long)version.minorVersion,
+                         (long)version.patchVersion];
+    } else {
+        // 如果只有前两位版本号 (例如 15.0)
+        versionString = [NSString stringWithFormat:@"%ld.%ld",
+                         (long)version.majorVersion,
+                         (long)version.minorVersion];
+    }
+    // NSLog(@"VersionString = %@",versionString);
+    return versionString;
 }
 
 @end

@@ -234,14 +234,12 @@
             [self refreshUserInfo];
             if (!userInfoRefreshing) {
                 userInfoRefreshing = YES;
-                [Helper callApiWithParams:@{@"uid": UID} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
+                [Helper fetchCurrentUserInfoWithCallback:^(NSDictionary *info, NSError *err) {
                     userInfoRefreshing = NO;
-                    if (!err && result.count > 0) {
-                        [Helper updateUserInfo:result[0]];
+                    if (!err && info.count > 0) {
                         if (shouldResetVibrate) {
                             vibrateTime = 0;
                         }
-                        [NOTIFICATION postNotificationName:@"infoRefreshed" object:nil];
                     }
                 }];
             }
@@ -290,6 +288,7 @@
             [self.iconUser setImage:PLACEHOLDER];
         }
         [self.buttonAddNews setHidden:([Helper checkRight] < 1)];
+        [WidgetManager reloadWidgets];
     }));
 }
 
@@ -345,8 +344,8 @@
     NSDictionary *dict = @{
         @"username" : uid,
         @"password" : [Helper md5:pass],
-        @"device" : [Helper doDevicePlatform],
-        @"version" : [[UIDevice currentDevice] systemVersion]
+        @"device" : [Helper getDevicePlatform],
+        @"version" : [Helper getOsVersionString]
     };
     [Helper callApiWithParams:dict toURL:@"login" callback:^(NSArray *result, NSError *err) {
         //NSLog(@"%@",result);
@@ -445,7 +444,7 @@
 }
 
 - (void)showEULA {
-    if ([[DEFAULTS objectForKey:@"hasShownEULA"] boolValue]) {
+    if (HAS_SHOWN_EULA) {
         return;
     }
     
