@@ -124,7 +124,7 @@
         @"version": [Helper getOsVersionString],
         @"clientversion": APP_VERSION,
         @"clientbuild": APP_BUILD,
-        @"token": TOKEN
+        @"token": TOKEN ?: @""
     } mutableCopy];
     
     NSMutableDictionary *requestFiles = [NSMutableDictionary dictionary];
@@ -253,12 +253,11 @@
 }
 
 + (void)fetchCurrentUserInfoWithCallback: (void (^)(NSDictionary *info, NSError *err))block {
-    NSString *userName = UID;
-    if (!UID) { // Not logged in
+    if (![Helper checkLogin:NO]) {
         block(nil, nil);
         return;
     }
-    [Helper callApiWithParams:@{@"uid": userName} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
+    [Helper callApiWithParams:@{@"uid": UID} toURL:@"userinfo" callback:^(NSArray *result, NSError *err) {
         if (!err && result.count > 0) {
             NSDictionary *userInfo = result[0];
             [Helper updateUserInfo:userInfo];
@@ -309,8 +308,9 @@
 }
 
 + (int)checkRight {
-    if ([self checkLogin:NO] && ![USERINFO isEqual:@""]) {
-        return [USERINFO[@"rights"] intValue];
+    NSDictionary *infoDict = USERINFO;
+    if ([self checkLogin:NO] && infoDict && ![infoDict isEqual:@""]) {
+        return [infoDict[@"rights"] intValue];
     } else {
         return -1;
     }
