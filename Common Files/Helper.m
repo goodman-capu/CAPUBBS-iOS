@@ -113,6 +113,11 @@
 }
 
 + (void)callApiWithParams:(NSDictionary *)params toURL:(NSString*)url callback:(ApiCompletionBlock)block {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        [[XMLDictionaryParser sharedInstance] setTrimWhiteSpace:NO];
+    });
+    
     NSString *postUrl = [NSString stringWithFormat:@"%@/api/client.php?ask=%@",CHEXIE, url];
 #ifdef DEBUG
     NSLog(@"🌐 Calling API: %@", url);
