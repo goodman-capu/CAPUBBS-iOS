@@ -120,13 +120,18 @@ static dispatch_once_t onceSharedDataSource;
             url = [NSURL URLWithString:fixedString];
         }
         if (url && url.host) {
-            NSHTTPCookie *cookie = [NSHTTPCookie cookieWithProperties:@{
+            [dataStore.httpCookieStore setCookie:[NSHTTPCookie cookieWithProperties:@{
                 NSHTTPCookieDomain: url.host,
                 NSHTTPCookiePath: @"/",
                 NSHTTPCookieName: @"token",
                 NSHTTPCookieValue: TOKEN
-            }];
-            [dataStore.httpCookieStore setCookie:cookie completionHandler:nil];
+            }] completionHandler:nil];
+//            [dataStore.httpCookieStore setCookie:[NSHTTPCookie cookieWithProperties:@{
+//                NSHTTPCookieDomain: url.host,
+//                NSHTTPCookiePath: @"/",
+//                NSHTTPCookieName: @"capubbs_forum_mode",
+//                NSHTTPCookieValue: @"new"
+//            }] completionHandler:nil];
         }
     }
     

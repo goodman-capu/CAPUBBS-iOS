@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		010067C5304B40D00026C06B /* HTMLFetcher.m in Sources */ = {isa = PBXBuildFile; fileRef = 010067C4304B40CE0026C06B /* HTMLFetcher.m */; };
 		0100A0D21C0C562C00A1282D /* AnimatedImageView.m in Sources */ = {isa = PBXBuildFile; fileRef = 0100A0D11C0C562C00A1282D /* AnimatedImageView.m */; };
 		011509C11BF21B080076D6F3 /* CollectionViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 011509C01BF21B080076D6F3 /* CollectionViewController.m */; };
 		0117FF772DF7ECE10005F5D2 /* injection.js in Resources */ = {isa = PBXBuildFile; fileRef = 0117FF762DF7ECD20005F5D2 /* injection.js */; };
@@ -278,6 +279,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		010067C3304B40C30026C06B /* HTMLFetcher.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = HTMLFetcher.h; sourceTree = "<group>"; };
+		010067C4304B40CE0026C06B /* HTMLFetcher.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HTMLFetcher.m; sourceTree = "<group>"; };
 		0100A0D01C0C562C00A1282D /* AnimatedImageView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AnimatedImageView.h; sourceTree = "<group>"; };
 		0100A0D11C0C562C00A1282D /* AnimatedImageView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnimatedImageView.m; sourceTree = "<group>"; };
 		011509BF1BF21B080076D6F3 /* CollectionViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CollectionViewController.h; sourceTree = "<group>"; };
@@ -642,6 +645,8 @@
 				018590462DF103EA002E73D9 /* CustomProgressHUD.m */,
 				0169A9532DF0B01A00F8978B /* CustomViewControllers.h */,
 				0169A9542DF0B02400F8978B /* CustomViewControllers.m */,
+				010067C3304B40C30026C06B /* HTMLFetcher.h */,
+				010067C4304B40CE0026C06B /* HTMLFetcher.m */,
 				01E1B1591C28061500EC680D /* UIImageEffects.h */,
 				01E1B15A1C28061500EC680D /* UIImageEffects.m */,
 			);
@@ -1366,6 +1371,7 @@
 				8BAC8EE218B0F58500F68A62 /* LoginViewController.m in Sources */,
 				017785E41AAC48400089361C /* IndexViewCell.m in Sources */,
 				8B94FF3718B4E27500D083A6 /* ComposeViewController.m in Sources */,
+				010067C5304B40D00026C06B /* HTMLFetcher.m in Sources */,
 				0134178B1AB06CFF0086098F /* IDViewController.m in Sources */,
 				017785EA1AADDA700089361C /* FacesViewController.m in Sources */,
 				01B2CB142E8746FD004C2D6A /* CustomViews.m in Sources */,
@@ -1455,7 +1461,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 43101;
+				CURRENT_PROJECT_VERSION = 43102;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 674549EE7Z;
@@ -1507,7 +1513,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 43101;
+				CURRENT_PROJECT_VERSION = 43102;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 674549EE7Z;

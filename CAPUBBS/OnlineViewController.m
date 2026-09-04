@@ -11,6 +11,7 @@
 #import "ContentViewController.h"
 #import "UserViewController.h"
 #import "WebViewController.h"
+#import "HTMLFetcher.h"
 
 @interface OnlineViewController ()
 
@@ -139,17 +140,22 @@
     }
 }
 
-- (void)getData:(NSString *)type{
-    NSString * HTMLString = [[NSString alloc] initWithContentsOfURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/bbs/%@", CHEXIE, type]] encoding:NSUTF8StringEncoding error:nil];
-    if ([type isEqualToString:@"online"]) {
-        dispatch_main_async_safe(^{
-            [self loadOnline:HTMLString];
-        });
-    } else if ([type isEqualToString:@"sign"]) {
-        dispatch_main_async_safe(^{
-            [self loadSign:HTMLString];
-        });
-    }
+- (void)getData:(NSString *)type {
+    [HTMLFetcher fetchHTMLWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/bbs/%@", CHEXIE, type]]
+                       cookieDict:@{@"capubbs_forum_mode": @"legacy"}
+                            delay:0
+                       completion:^(NSString * _Nullable html, NSError * _Nullable error) {
+        if (error) {
+            [hud hideWithFailureMessage:@"加载失败"];
+            return;
+        }
+        
+        if ([type isEqualToString:@"online"]) {
+            [self loadOnline:html];
+        } else if ([type isEqualToString:@"sign"]) {
+            [self loadSign:html];
+        }
+    }];
 }
 
 #pragma mark - Table view data source
