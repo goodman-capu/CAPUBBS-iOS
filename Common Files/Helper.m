@@ -209,6 +209,20 @@
                     NSLog(@"API data recovery success!");
                 }
             }
+            
+            // XML非法字符集 https://www.w3.org/TR/xml/#charsets
+            static NSRegularExpression *illegalXMLRegex = nil;
+            static dispatch_once_t onceToken;
+            dispatch_once(&onceToken, ^{
+                illegalXMLRegex = [NSRegularExpression regularExpressionWithPattern:@"[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]"
+                                                                            options:0
+                                                                              error:nil];
+            });
+            xmlString = [illegalXMLRegex stringByReplacingMatchesInString:xmlString
+                                                                  options:0
+                                                                    range:NSMakeRange(0, xmlString.length)
+                                                             withTemplate:@""];
+
             NSDictionary *xmlData = [NSDictionary dictionaryWithXMLString:xmlString];
             if (!xmlData || ![xmlData[@"__name"] isEqualToString:@"capu"]) {
                 hasError = YES;
