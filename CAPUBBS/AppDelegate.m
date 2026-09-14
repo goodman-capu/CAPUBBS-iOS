@@ -990,6 +990,12 @@
         [DEFAULTS setObject:@(YES) forKey:@"migrateIconCache4.1"];
     }
     
+    // Reset default server URL
+    if (![[DEFAULTS objectForKey:@"resetUrl4.3"] boolValue]) {
+        [GROUP_DEFAULTS setObject:DEFAULT_SERVER_URL forKey:@"URL"];
+        [DEFAULTS setObject:@(YES) forKey:@"resetUrl4.3"];
+    }
+    
     if ([[DEFAULTS objectForKey:@"IDNum"] intValue] == 10 && [[DEFAULTS objectForKey:@"hotNum"] intValue] == 40) {
         [DEFAULTS setObject:@(YES) forKey:@"superUser"];
     }
