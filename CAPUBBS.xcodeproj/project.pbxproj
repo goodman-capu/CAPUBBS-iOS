@@ -233,6 +233,7 @@
 		8BAC8EAD18B0F2BE00F68A62 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8BAC8EAB18B0F2BE00F68A62 /* InfoPlist.strings */; };
 		8BAC8EAF18B0F2BE00F68A62 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BAC8EAE18B0F2BE00F68A62 /* main.m */; };
 		8BAC8EB318B0F2BE00F68A62 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BAC8EB218B0F2BE00F68A62 /* AppDelegate.m */; };
+		8BAC8EB318B0F2BE00F68A93 /* SceneDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BAC8EB218B0F2BE00F68A92 /* SceneDelegate.m */; };
 		8BAC8EB918B0F2BE00F68A62 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 8BAC8EB718B0F2BE00F68A62 /* Main.storyboard */; };
 		8BAC8ECF18B0F2BE00F68A62 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8BAC8ECD18B0F2BE00F68A62 /* InfoPlist.strings */; };
 		8BAC8ED118B0F2BE00F68A62 /* CAPUBBSTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BAC8ED018B0F2BE00F68A62 /* CAPUBBSTests.m */; };
@@ -543,6 +544,8 @@
 		8BAC8EB018B0F2BE00F68A62 /* CAPUBBS-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "CAPUBBS-Prefix.pch"; sourceTree = "<group>"; };
 		8BAC8EB118B0F2BE00F68A62 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		8BAC8EB218B0F2BE00F68A62 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = AppDelegate.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
+		8BAC8EB118B0F2BE00F68A91 /* SceneDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SceneDelegate.h; sourceTree = "<group>"; };
+		8BAC8EB218B0F2BE00F68A92 /* SceneDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = SceneDelegate.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		8BAC8EB818B0F2BE00F68A62 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		8BAC8EC318B0F2BE00F68A62 /* CAPUBBSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CAPUBBSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8BAC8ECC18B0F2BE00F68A62 /* CAPUBBSTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "CAPUBBSTests-Info.plist"; sourceTree = "<group>"; };
@@ -895,6 +898,8 @@
 				017FE5F11A9DC2E5001BDD15 /* Launch Screen.xib */,
 				8BAC8EB118B0F2BE00F68A62 /* AppDelegate.h */,
 				8BAC8EB218B0F2BE00F68A62 /* AppDelegate.m */,
+				8BAC8EB118B0F2BE00F68A91 /* SceneDelegate.h */,
+				8BAC8EB218B0F2BE00F68A92 /* SceneDelegate.m */,
 				8BAC8EE018B0F58500F68A62 /* LoginViewController.h */,
 				8BAC8EE118B0F58500F68A62 /* LoginViewController.m */,
 				8B7403DE18B5ADC3009753FE /* RegisterViewController.h */,
@@ -1365,6 +1370,7 @@
 				8BAC8EF118B112E300F68A62 /* ListCell.m in Sources */,
 				8BAC8EE518B100B100F68A62 /* Helper.m in Sources */,
 				8BAC8EB318B0F2BE00F68A62 /* AppDelegate.m in Sources */,
+				8BAC8EB318B0F2BE00F68A93 /* SceneDelegate.m in Sources */,
 				01460DA21AA9962000762761 /* SearchViewCell.m in Sources */,
 				8BAC8EAF18B0F2BE00F68A62 /* main.m in Sources */,
 				01F38EB41AE15149007F25D0 /* MessageViewController.m in Sources */,

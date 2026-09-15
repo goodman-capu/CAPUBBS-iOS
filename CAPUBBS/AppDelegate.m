@@ -22,14 +22,47 @@
 
 @implementation AppDelegate
 
+@synthesize window = _window;
+
+- (UIWindow *)window {
+    if (_window) {
+        return _window;
+    }
+    for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+        if ([scene isKindOfClass:[UIWindowScene class]]) {
+            UIWindowScene *windowScene = (UIWindowScene *)scene;
+            id<UIWindowSceneDelegate> delegate = (id<UIWindowSceneDelegate>)windowScene.delegate;
+            if ([delegate respondsToSelector:@selector(window)]) {
+                UIWindow *win = [delegate window];
+                if (win) {
+                    return win;
+                }
+            }
+        }
+    }
+    return nil;
+}
+
+- (void)setWindow:(UIWindow *)window {
+    _window = window;
+}
+
+#pragma mark - UISceneSession lifecycle
+
+- (UISceneConfiguration *)application:(UIApplication *)application configurationForConnectingSceneSession:(UISceneSession *)connectingSceneSession options:(UISceneConnectionOptions *)options {
+    return [[UISceneConfiguration alloc] initWithName:@"Default Configuration" sessionRole:connectingSceneSession.role];
+}
+
+- (void)application:(UIApplication *)application didDiscardSceneSessions:(NSSet<UISceneSession *> *)sceneSessions {
+}
+
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
     
     if (LIQUID_GLASS) {
-        self.window.tintColor = GREEN_TINT;
+//        self.window.tintColor = GREEN_TINT;
     } else {
-        self.window.tintColor = BLUE;
-        
+//        self.window.tintColor = BLUE;
         UINavigationBar *navBar = [UINavigationBar appearance];
         UINavigationBarAppearance *navBarAppearance = [[UINavigationBarAppearance alloc] init];
         [navBarAppearance configureWithDefaultBackground];
@@ -67,7 +100,6 @@
     [[UICollectionView appearance] setBackgroundColor:[UIColor clearColor]];
     
     NSDictionary *defaults = @{
-        // @"proxy" : @2,
         @"autoLogin" : @YES,
         @"vibrate" : @YES,
         @"picOnlyInWifi" : @NO,
@@ -164,6 +196,22 @@
     __block UIViewController *topVC = nil;
     dispatch_main_sync_safe(^{
         UIWindow *keyWindow = [UIApplication sharedApplication].delegate.window;
+        if (!keyWindow) {
+            for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+                if (scene.activationState == UISceneActivationStateForegroundActive && [scene isKindOfClass:[UIWindowScene class]]) {
+                    UIWindowScene *windowScene = (UIWindowScene *)scene;
+                    for (UIWindow *w in windowScene.windows) {
+                        if (w.isKeyWindow) {
+                            keyWindow = w;
+                            break;
+                        }
+                    }
+                    if (!keyWindow && windowScene.windows.count > 0) {
+                        keyWindow = windowScene.windows.firstObject;
+                    }
+                }
+            }
+        }
         if (!keyWindow) {
             return;
         }
