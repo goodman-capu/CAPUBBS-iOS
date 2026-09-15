@@ -68,7 +68,6 @@
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER).content</string>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER).lzl</string>
 	</array>
-
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

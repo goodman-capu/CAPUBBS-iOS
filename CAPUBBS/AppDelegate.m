@@ -61,6 +61,7 @@
     
     if (LIQUID_GLASS) {
 //        self.window.tintColor = GREEN_TINT;
+        [[UIScrollView appearance] setUseSoftEdgeEffect:YES];
     } else {
 //        self.window.tintColor = BLUE;
         UINavigationBar *navBar = [UINavigationBar appearance];
