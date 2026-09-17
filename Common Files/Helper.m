@@ -657,7 +657,7 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         // (?s) 开启 dot-all 模式。先匹配 <!--...-->，再匹配普通标签
-        tagRegex = [NSRegularExpression regularExpressionWithPattern:@"(?s)<!--.*?-->|</?[a-zA-Z!?](?:\"[^\"]*\"|'[^']*'|[^>\"']+)*>" options:0 error:nil];
+        tagRegex = [NSRegularExpression regularExpressionWithPattern:@"(?s)<!--.*?-->|</?[a-zA-Z!?](?:\"[^\"]*\"|'[^']*'|[^>\"']+)*+>" options:0 error:nil];
         tagNameRegex = [NSRegularExpression regularExpressionWithPattern:@"^</?([a-zA-Z][a-zA-Z0-9:-]*)" options:0 error:nil];
         selfClosingTagRegex = [NSRegularExpression regularExpressionWithPattern:@"/\\s*>$" options:0 error:nil];
         // 永远不会有闭合标签的 HTML 空元素
