@@ -126,12 +126,6 @@ static dispatch_once_t onceSharedDataSource;
                 NSHTTPCookieName: @"token",
                 NSHTTPCookieValue: TOKEN
             }] completionHandler:nil];
-//            [dataStore.httpCookieStore setCookie:[NSHTTPCookie cookieWithProperties:@{
-//                NSHTTPCookieDomain: url.host,
-//                NSHTTPCookiePath: @"/",
-//                NSHTTPCookieName: @"capubbs_forum_mode",
-//                NSHTTPCookieValue: @"new"
-//            }] completionHandler:nil];
         }
     }
     

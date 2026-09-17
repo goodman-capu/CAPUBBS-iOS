@@ -187,14 +187,19 @@
     if (cell.labelBoard.text.length == 0) {
         cell.labelBoard.text = @"未知";
     }
-    if ([dict[@"type"] isEqualToString:@"web版登录"]) {
-        cell.labelType.text = @"💻";
-    } else if ([dict[@"type"] isEqualToString:@"Android客户端登录"]) {
+    NSString *type = dict[@"type"];
+    if ([type isEqualToString:@"网页端"]) {
+        cell.labelType.text = @"🌐";
+    } else if ([type isEqualToString:@"桌面端网页"]) {
+        cell.labelType.text = @"💻🌐";
+    } else if ([type isEqualToString:@"移动端网页"]) {
+        cell.labelType.text = @"📱🌐";
+    } else if ([type isEqualToString:@"Android客户端登录"]) {
         cell.labelType.text = @"📱";
-    } else if ([dict[@"type"] isEqualToString:@"iOS客户端登录"]) {
+    } else if ([type isEqualToString:@"iOS客户端登录"]) {
         cell.labelType.text = @"📱";
     } else {
-        cell.labelType.text = @"❓";
+        cell.labelType.text = type.length > 0 ? type : @"❓";
     }
     // Configure the cell...
     
@@ -221,7 +226,8 @@
     }
     if ([segue.identifier isEqualToString:@"web"]) {
         WebViewController *dest = [[[segue destinationViewController] viewControllers] firstObject];
-        dest.URL = [NSString stringWithFormat:@"%@/bbs/online", CHEXIE];
+        bool legacyMode = [[GROUP_DEFAULTS objectForKey:@"webMode"] isEqualToString:@"legacy"];
+        dest.URL = [NSString stringWithFormat:legacyMode ? @"%@/bbs/online" : @"%@/bbs/data", CHEXIE];
         [AppDelegate setAdaptiveSheetFor:dest popoverSource:nil halfScreen:NO];
     }
     // Get the new view controller using [segue destinationViewController].
